@@ -149,8 +149,8 @@ void setup_lvgl_menu() {
     tft.fillScreen(TFT_BLACK);
     
     // Backlight ON
-    pinMode(TFT_BL, OUTPUT);
-    digitalWrite(TFT_BL, HIGH);
+    pinMode(PIN_TFT_BL, OUTPUT);
+    digitalWrite(PIN_TFT_BL, HIGH);
     
     Serial.println("[DISPLAY] ILI9341 initialized (240x320)");
     
