@@ -49,21 +49,24 @@ bool WardrivingLogger::init() {
 void WardrivingLogger::logWiFi(String ssid, String bssid, int32_t rssi, int32_t channel, String encrypt) {
     if (!_initialized) return;
     
-    GPSData gps = GPSDriver::getData();
-    if (!gps.isValid) return; // Only log with valid GPS
+    // GPSData gps = GPSDriver::getData();
+    bool isValid = GPSDriver::isValid();
+    if (!isValid) return; // Only log with valid GPS
     
     // Format: SSID,MAC,RSSI,Channel,Encryption,Lat,Lon,Alt,HDOP,Time
     String timestamp;
-    if (gps.isValid && gps.year > 2000) {
-        timestamp = GPSDriver::getDateString() + " " + GPSDriver::getTimeString();
+    // Basic check, assume valid if isValid is true, or check date string
+    String ds = GPSDriver::getDateString();
+    if (isValid && ds.length() > 0) {
+       timestamp = ds + " " + GPSDriver::getTimeString();
     } else {
         // Fallback to RTC
         timestamp = RTCDriver::getDateTimeString();
     }
 
     String line = ssid + "," + bssid + "," + String(rssi) + "," + String(channel) + "," + encrypt + ",";
-    line += String(gps.latitude, 6) + "," + String(gps.longitude, 6) + "," + String(gps.altitude, 1) + ",";
-    line += String(gps.hdop, 1) + "," + timestamp;
+    line += String(GPSDriver::getLatitude(), 6) + "," + String(GPSDriver::getLongitude(), 6) + "," + String(GPSDriver::getAltitude(), 1) + ",";
+    line += String(GPSDriver::getHDOP(), 1) + "," + timestamp;
     
     appendToFile(LOG_FILE_WIFI, line);
     _logCount++;
@@ -72,21 +75,23 @@ void WardrivingLogger::logWiFi(String ssid, String bssid, int32_t rssi, int32_t 
 void WardrivingLogger::logBLE(String name, String address, int32_t rssi) {
     if (!_initialized) return;
     
-    GPSData gps = GPSDriver::getData();
-    if (!gps.isValid) return;
+    // GPSData gps = GPSDriver::getData();
+    bool isValid = GPSDriver::isValid();
+    if (!isValid) return;
     
     // Format: Name,Address,RSSI,Lat,Lon,Alt,HDOP,Time
     String timestamp;
-    if (gps.isValid && gps.year > 2000) {
-        timestamp = GPSDriver::getDateString() + " " + GPSDriver::getTimeString();
+    String ds = GPSDriver::getDateString();
+    if (isValid && ds.length() > 0) {
+        timestamp = ds + " " + GPSDriver::getTimeString();
     } else {
         // Fallback to RTC
         timestamp = RTCDriver::getDateTimeString();
     }
 
     String line = name + "," + address + "," + String(rssi) + ",";
-    line += String(gps.latitude, 6) + "," + String(gps.longitude, 6) + "," + String(gps.altitude, 1) + ",";
-    line += String(gps.hdop, 1) + "," + timestamp;
+    line += String(GPSDriver::getLatitude(), 6) + "," + String(GPSDriver::getLongitude(), 6) + "," + String(GPSDriver::getAltitude(), 1) + ",";
+    line += String(GPSDriver::getHDOP(), 1) + "," + timestamp;
     
     appendToFile(LOG_FILE_BLE, line);
     _logCount++;

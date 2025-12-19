@@ -42,7 +42,7 @@ void create_gps_menu(lv_obj_t* parent) {
     lv_obj_t* title = lv_label_create(parent);
     lv_label_set_text(title, "GPS - GY-NEO6MV2");
     lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 10);
-    lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
+    lv_obj_set_style_text_font(title, &lv_font_montserrat_16, 0);
     lv_obj_set_style_text_color(title, lv_color_hex(0xFFDD00), 0); // Gold
 
     // Status
@@ -82,11 +82,12 @@ void create_gps_menu(lv_obj_t* parent) {
 void update_gps_menu() {
     if (!label_lat) return; // Menu not created
 
-    GPSData data = GPSDriver::getData();
+    // GPSData data = GPSDriver::getData(); // REMOVED - Deprecated
+    bool isValid = GPSDriver::isValid(); // Check validity directly
     char buf[32];
 
     // Status Update
-    if (data.isValid) {
+    if (isValid) {
         lv_label_set_text(label_status, "Status: 3D FIX LOCKED");
         lv_obj_set_style_text_color(label_status, lv_color_hex(0x00FF00), 0); // Green
     } else {
@@ -95,30 +96,30 @@ void update_gps_menu() {
     }
 
     // Values Update
-    if (data.isValid) {
-        snprintf(buf, sizeof(buf), "%.6f", data.latitude);
+    if (isValid) {
+        snprintf(buf, sizeof(buf), "%.6f", GPSDriver::getLatitude());
         lv_label_set_text(label_lat, buf);
 
-        snprintf(buf, sizeof(buf), "%.6f", data.longitude);
+        snprintf(buf, sizeof(buf), "%.6f", GPSDriver::getLongitude());
         lv_label_set_text(label_lng, buf);
 
-        snprintf(buf, sizeof(buf), "%.1f m", data.altitude);
+        snprintf(buf, sizeof(buf), "%.1f m", GPSDriver::getAltitude());
         lv_label_set_text(label_alt, buf);
 
-        snprintf(buf, sizeof(buf), "%.1f km/h", data.speed);
+        snprintf(buf, sizeof(buf), "%.1f km/h", GPSDriver::getSpeedKmh());
         lv_label_set_text(label_speed, buf);
 
-        snprintf(buf, sizeof(buf), "%d sats (%.1f)", data.satellites, data.hdop);
+        snprintf(buf, sizeof(buf), "%d sats (%.1f)", GPSDriver::getSatellites(), GPSDriver::getHDOP());
         lv_label_set_text(label_sats, buf);
 
         lv_label_set_text(label_time, GPSDriver::getTimeString().c_str());
     } else {
         // Show partial data if available (e.g. satellites without fix)
-        snprintf(buf, sizeof(buf), "%d visible", data.satellites);
+        snprintf(buf, sizeof(buf), "%d visible", GPSDriver::getSatellites());
         lv_label_set_text(label_sats, buf);
         
         // Keep "..." for others if no valid data
-        if (data.satellites == 0) {
+        if (GPSDriver::getSatellites() == 0) {
            // reset calls if needed
         }
     }

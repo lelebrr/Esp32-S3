@@ -7,8 +7,8 @@
 #include <WiFi.h>
 #include <esp_wifi.h>
 #include <NimBLEDevice.h>
-#include <IRremoteESP8266.h>
-#include <IRsend.h>
+// #include <IRremoteESP8266.h> // Removed for YS-IRTM
+// #include <IRsend.h>          // Removed for YS-IRTM
 
 // Internal Drivers
 #include "gps_driver.h"
@@ -21,8 +21,8 @@ static AttackType current_attack = ATTACK_NONE;
 static TaskHandle_t attack_task_handle = NULL;
 static volatile bool stop_requested = false;
 
-// IR Object
-static IRsend irsend(PIN_IR_TX);
+// IR Object (YS-IRTM)
+static YsIrtm irDriver(PIN_YS_IR_RX, PIN_YS_IR_TX);
 
 // ============================================================================
 // HELPER WRAPPERS
@@ -310,27 +310,59 @@ static void task_rf_spectrum(void *pvParameters) {
     vTaskDelete(NULL);
 }
 
-// --- IR TV OFF ---
+// --- IR TV OFF (NEC ONLY) ---
 static void task_ir_tv_off(void *pvParameters) {
-    Serial.println("[ATTACK] Starting IR TV-B-Gone...");
-    irsend.begin();
+    Serial.println("[ATTACK] Starting IR TV-B-Gone (NEC Only)...");
+    irDriver.begin();
     
-    // Common TV off codes
-    const uint32_t codes[] = {
-        0x20DF10EF,  // LG
-        0xE0E040BF,  // Samsung
-        0xA90       ,  // Sony
-        0x20DF10EF,  // Philips
+    // Common NEC TV Power Codes
+    // Struct: { UserCode, CommandCode }
+    struct IrCode { uint16_t user; uint8_t cmd; };
+    
+    const IrCode codes[] = {
+        {0x20DF, 0x10}, // LG Power (User: 20DF, Cmd: 10)
+        {0x0707, 0x02}, // Generic NEC
+        {0x0000, 0x12}, // Example
+        // Note: Samsung/Sony are NOT NEC, so they are removed
     };
     
     while(!stop_requested) {
-        for (int i = 0; i < 4 && !stop_requested; i++) {
-            irsend.sendNEC(codes[i], 32);
+        for (int i = 0; i < 3 && !stop_requested; i++) {
+            irDriver.sendNEC(codes[i].user, codes[i].cmd);
             delay(100);
         }
-        delay(500);
+        delay(1000);
     }
     
+    irDriver.end();
+    vTaskDelete(NULL);
+}
+
+// --- IR CLONE (NEC) ---
+static void task_ir_clone(void *pvParameters) {
+    Serial.println("[ATTACK] Starting IR Cloner...");
+    irDriver.begin();
+    
+    while(!stop_requested) {
+        uint16_t userCode;
+        uint8_t cmdCode;
+        
+        if (irDriver.read(&userCode, &cmdCode)) {
+            Serial.printf("[IR] Captured: User=0x%04X, Cmd=0x%02X\n", userCode, cmdCode);
+            
+            // Save to SD
+            char filename[64];
+            snprintf(filename, sizeof(filename), "/ir_capture.txt"); // Simple append
+            char logLine[64];
+            snprintf(logLine, sizeof(logLine), "NEC,0x%04X,0x%02X\n", userCode, cmdCode);
+            SDAdapter::appendFile(SD, filename, logLine);
+            
+            // Blink LED or feedback?
+        }
+        delay(10);
+    }
+    
+    irDriver.end();
     vTaskDelete(NULL);
 }
 
@@ -439,9 +471,16 @@ void attacks_start(AttackType type) {
             
         // IR
         case ATTACK_IR_TV_OFF:
-        case ATTACK_IR_BRUTE:
             xTaskCreate(task_ir_tv_off, "Att_IR", 4096, NULL, 2, &attack_task_handle);
             break;
+        case ATTACK_IR_BRUTE:
+             // Reuse TV OFF logic or create brute force task
+             // For now mapping to TV off or unimplemented
+             current_attack = ATTACK_NONE; 
+             break;
+        case ATTACK_IR_CLONE:
+             xTaskCreate(task_ir_clone, "Att_IR", 4096, NULL, 2, &attack_task_handle);
+             break;
             
         default:
             current_attack = ATTACK_NONE;
@@ -508,7 +547,8 @@ const char* attacks_get_name(AttackType type) {
         
         // IR
         case ATTACK_IR_BRUTE: return "IR Brute";
-        case ATTACK_IR_TV_OFF: return "TV-B-Gone";
+        case ATTACK_IR_TV_OFF: return "TV-B-Gone (NEC)";
+        case ATTACK_IR_CLONE: return "IR Cloner";
         
         // USB
         case ATTACK_USB_BADUSB: return "BadUSB";

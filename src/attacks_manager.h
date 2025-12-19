@@ -2,6 +2,7 @@
 #define ATTACKS_MANAGER_H
 
 #include <Arduino.h>
+#include "YsIrtm.h"
 
 // ============================================================================
 // ATTACK TYPES - Complete Attack Suite

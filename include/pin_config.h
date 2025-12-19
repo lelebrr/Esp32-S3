@@ -90,9 +90,10 @@
 #define PIN_I2S_DOUT    38     // I2S Data Out
 
 // ========================================
-// INFRARED
+// INFRARED - YS-IRTM Module (UART NEC)
 // ========================================
-#define PIN_IR_TX       3      // IR Transmitter LED
+#define PIN_YS_IR_TX    3      // ESP32 TX -> YS-IRTM RXD
+#define PIN_YS_IR_RX    27     // ESP32 RX <- YS-IRTM TXD
 
 // ========================================
 // LEGACY BUTTON ALIASES (for compatibility)
@@ -135,6 +136,13 @@
 #define DS3231_I2C_ADDR     0x68   // RTC I2C address
 #define DS3231_EEPROM_ADDR  0x57   // AT24C32 EEPROM address (if present)
 #define DS3231_ENABLED      1      // Enable RTC module
+
+// ========================================
+// MICROPHONE - INMP441 (I2S Input)
+// ========================================
+#define PIN_I2S_MIC_SCK 28     // I2S Bit Clock (BCLK)
+#define PIN_I2S_MIC_WS  29     // I2S Word Select (LRCK)
+#define PIN_I2S_MIC_SD  30     // I2S Serial Data (DIN)
 
 #endif // PIN_CONFIG_H
 

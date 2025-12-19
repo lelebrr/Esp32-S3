@@ -147,12 +147,15 @@
 
 ---
 
-## Infrared
+## Infrared (YS-IRTM Module)
 
-| Function | ESP32-S3 GPIO |
-|----------|---------------:|
-| TX (LED) | GPIO 3 |
-| RX | -1 (não usado) |
+> [!TIP]
+> Documentação completa: [HARDWARE_YS_IRTM.md](HARDWARE_YS_IRTM.md)
+
+| Function | ESP32-S3 GPIO | Note |
+|----------|---------------:|------|
+| TX (ESP -> Module) | GPIO 3 | UART TX |
+| RX (ESP <- Module) | GPIO 27 | UART RX |
 
 ---
 
