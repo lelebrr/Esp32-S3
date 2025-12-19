@@ -4,6 +4,7 @@
 > Última atualização: 2025-12-19
 
 Documentação das funcionalidades de RF, CC1101 e NRF24 do Lele Origin.
+> **CONFIRA TAMBÉM:** [CC1101_MODULE.md](file:///c:/Users/leleb/OneDrive/Desktop/Esp32-S3/docs/CC1101_MODULE.md) para pinout detalhado e drivers.
 
 ---
 
@@ -92,17 +93,21 @@ Acesse **RF → Config** para ajustar:
 | RF Module | Tipo de módulo (CC1101/RF433) |
 | RF Frequency | Frequência de operação |
 
-**Pinagem CC1101:**
+**Pinagem CC1101 (ESP32-S3):**
 
-| CC1101 | ESP32-S3 | CYD-2USB (Legacy) |
-|--------|----------|-------------------|
-| GDO0 | GPIO 4 | GPIO 22 |
-| CSN | GPIO 5 | GPIO 27 |
-| MOSI | GPIO 35 (SPI3) | GPIO 23 |
-| SCK | GPIO 36 (SPI3) | GPIO 18 |
-| MISO | GPIO 37 (SPI3) | GPIO 19 |
-| VCC | 3.3V | 3.3V |
-| GND | GND | GND |
+| CC1101 | ESP32-S3 GPIO | Função |
+|--------|:-------------:|--------|
+| VCC | 3.3V | Alimentação |
+| GND | GND | Terra |
+| CSN | **GPIO 46** | SPI Chip Select |
+| SCK | **GPIO 40** | SPI Clock (SPI B) |
+| MOSI | **GPIO 41** | SPI Data In |
+| MISO | **GPIO 42** | SPI Data Out |
+| GDO0 | **GPIO 47** | Interrupt/Status |
+| GDO2 | NC | Não usado |
+
+> [!NOTE]
+> Power Gate via MOSFET em **GPIO 48** (HIGH = ON)
 
 ---
 
@@ -161,7 +166,7 @@ Ataque a mouses e teclados wireless vulneráveis.
 
 ### Flipper Zero (.sub)
 
-```
+```text
 Filetype: Flipper SubGhz Key File
 Version: 1
 Frequency: 433920000
@@ -173,7 +178,7 @@ Key: 00 00 00 00 00 12 34 56
 
 ### RAW (.txt)
 
-```
+```text
 RAW_Data: 500 -500 500 -500 ...
 ```
 

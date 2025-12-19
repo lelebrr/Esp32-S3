@@ -1,12 +1,20 @@
 #include "s3_driver.h"
+#include "sd_adapter.h"
 #include <SD.h>
 #include <SPI.h>
 #include <Wire.h>
+#include "gesture_sensor.h"
+#include "gps_driver.h"
+#include "rtc_driver.h"
+#include "modules/piezo_driver.h"
+
+// Global Piezo Object
+PiezoDriver Piezo(PIN_PIEZO);
 
 void MonsterDriver::init() {
-    Serial.begin(115200);
+    // Note: Serial.begin() now called in main.cpp before this
     // Wait for USB CDC to reconnect after upload/reset
-    delay(1000); 
+    delay(500); 
     
     Serial.println("\n========================================");
     Serial.println("        MONSTER S3 FIRMWARE v1.0");
@@ -23,7 +31,15 @@ void MonsterDriver::init() {
         Serial.println("[ERROR] PSRAM NOT FOUND! Performance compromised.");
     }
     
-    initSD();
+    // SD is now initialized by AggressiveSD in main.cpp
+    // initSD(); // REMOVED - handled by aggressive_boot_logic()
+    initRTC();
+    initGesture();
+    initGPS();
+    
+    // Piezo
+    Piezo.begin();
+    Piezo.playBootSound();
 }
 
 void MonsterDriver::initPowerPins() {
@@ -46,11 +62,19 @@ void MonsterDriver::initPowerPins() {
 }
 
 void MonsterDriver::initBuses() {
-    // I2C
+    // SD Card is now handled by AggressiveSD early boot
+    // if (!SDAdapter::init()) {
+    //     Serial.println("SD Init Failed! Checking connections...");
+    // } else {
+    //     Serial.println("SD Intialized!");
+    // }
+
+    // I2C for sensors (PN532, PAJ7620, DS3231)
     Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
-    // SPI for SD Card (SPI2 / HSPI)
-    SPI.begin(PIN_SD_SCK, PIN_SD_MISO, PIN_SD_MOSI, PIN_SD_CS);
-    // Note: Display SPI is usually handled by the TFT driver init, not global SPI
+    Serial.println("[BUS] I2C initialized");
+    
+    // Note: SD SPI (HSPI) is initialized by AggressiveSD
+    // Display SPI (FSPI) is handled by TFT_eSPI library
 }
 
 void MonsterDriver::initSD() {
@@ -69,4 +93,40 @@ void MonsterDriver::powerOnModules(bool wifi, bool ble, bool nfc, bool cc1101) {
     
     // Wifi/BLE are handled by internal PHY management usually, 
     // but we can track state here if needed for GUI
+}
+
+void MonsterDriver::initGesture() {
+#if PAJ7620_ENABLED
+    if (GestureSensor::init()) {
+        Serial.println("[SYSTEM] Gesture sensor ready");
+    } else {
+        Serial.println("[WARNING] Gesture sensor not available");
+    }
+#else
+    Serial.println("[GESTURE] Sensor disabled in config");
+#endif
+}
+
+void MonsterDriver::initGPS() {
+#if GPS_ENABLED
+    if (GPSDriver::init()) {
+        Serial.println("[SYSTEM] GPS module ready");
+    } else {
+        Serial.println("[WARNING] GPS module not available");
+    }
+#else
+    Serial.println("[GPS] Module disabled in config");
+#endif
+}
+
+void MonsterDriver::initRTC() {
+#if DS3231_ENABLED
+    if (RTCDriver::init()) {
+        Serial.println("[SYSTEM] RTC module ready");
+    } else {
+        Serial.println("[WARNING] RTC module not available");
+    }
+#else
+    Serial.println("[RTC] Module disabled in config");
+#endif
 }

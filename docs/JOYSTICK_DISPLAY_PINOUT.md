@@ -53,30 +53,30 @@ JOYSTICK = Analógico 2 eixos + clique central
 
 | Shield Pin | Função Arduino | ESP32-S3 GPIO | Tipo | Notas |
 |------------|----------------|---------------|------|-------|
-| VRx | A0 | GPIO4 | ADC1_CH3 | Range 0-4095, centro ~2048 |
-| VRy | A1 | GPIO5 | ADC1_CH4 | Range 0-4095, centro ~2048 |
-| SW | D8 | GPIO0 | Digital | Pull-up, LOW=pressionado |
+| VRx | A0 | **GPIO4** | ADC1_CH3 | Range 0-4095, centro ~2048 |
+| VRy | A1 | **GPIO5** | ADC1_CH4 | Range 0-4095, centro ~2048 |
+| SW | D8 | **GPIO6** | Digital | Pull-up, LOW=pressionado |
 | VCC | 5V/3.3V | 3.3V | Power | **Usar chave em 3.3V!** |
 | GND | GND | GND | Power | Comum |
 
-> [!CAUTION]
-> **GPIO0 é o pino de Boot!** Não pressione o botão SW durante upload de firmware.
+> [!TIP]
+> **SW foi movido de GPIO0 para GPIO6** para evitar conflitos com o pino de BOOT.
 
 ### Botões Direcionais (D-Pad)
 
 | Botão | Arduino Pin | ESP32-S3 GPIO | Posição | Notas |
 |-------|-------------|---------------|---------|-------|
-| A | D2 | GPIO41 | Cima | LOW quando pressionado |
-| B | D3 | GPIO42 | Direita | LOW quando pressionado |
-| C | D4 | GPIO14 | Baixo | LOW quando pressionado |
-| D | D5 | GPIO15 | Esquerda | LOW quando pressionado |
+| A | D2 | **GPIO41** | ⬆️ Cima | LOW quando pressionado |
+| B | D3 | **GPIO42** | ➡️ Direita | LOW quando pressionado |
+| C | D4 | **GPIO1** | ⬇️ Baixo | LOW quando pressionado |
+| D | D5 | **GPIO2** | ⬅️ Esquerda | LOW quando pressionado |
 
 ### Botões Auxiliares
 
 | Botão | Arduino Pin | ESP32-S3 GPIO | Posição | Notas |
 |-------|-------------|---------------|---------|-------|
-| E | D6 | GPIO16 | Centro-Esq | LOW quando pressionado |
-| F | D7 | GPIO17 | Centro-Dir | LOW quando pressionado |
+| E | D6 | **GPIO17** | Centro-Esq | LOW quando pressionado |
+| F | D7 | **GPIO18** | Centro-Dir | LOW quando pressionado |
 
 ---
 
@@ -112,28 +112,28 @@ JOYSTICK = Analógico 2 eixos + clique central
 
 ---
 
-## Display ILI9341 2.8" (SPI2)
+## Display ILI9341 240x320 (SPI)
 
 | Pino Display | ESP32-S3 GPIO | Função |
 |--------------|---------------|--------|
 | VCC | 3.3V | Alimentação |
 | GND | GND | Terra |
-| SCK | GPIO35 | SPI Clock |
-| MOSI | GPIO36 | SPI Data Out |
-| MISO | GPIO37 | SPI Data In |
-| CS | GPIO5 | Chip Select |
-| DC | GPIO6 | Data/Command |
-| RST | GPIO4 | Reset |
-| BL | GPIO3 | Backlight PWM |
+| SCK | **GPIO14** | SPI Clock |
+| MOSI | **GPIO13** | SPI Data Out |
+| MISO | -1 | Não usado |
+| CS | **GPIO10** | Chip Select |
+| DC | **GPIO12** | Data/Command |
+| RST | **GPIO11** | Reset |
+| BL | **GPIO21** | Backlight PWM |
 
 ---
 
-## Touch XPT2046 (SPI2 Compartilhado)
+## Touch XPT2046 (SPI Compartilhado)
 
 | Pino Touch | ESP32-S3 GPIO | Função |
 |------------|---------------|--------|
-| CS | GPIO38 | Chip Select |
-| IRQ | GPIO39 | Interrupt |
+| CS | **GPIO15** | Chip Select |
+| IRQ | **GPIO16** | Interrupt |
 | CLK/MOSI/MISO | Compartilhado | Mesmo barramento display |
 
 ---
@@ -159,13 +159,13 @@ JOYSTICK = Analógico 2 eixos + clique central
 │ GND              │ GND                │ ⚫ Preto                     │
 │ Joystick X (A0)  │ GPIO4              │ 🟠 Laranja                   │
 │ Joystick Y (A1)  │ GPIO5              │ 🟡 Amarelo                   │
-│ Joystick SW (D8) │ GPIO0              │ 🟤 Marrom                    │
+│ Joystick SW (D8) │ GPIO6              │ 🟤 Marrom                    │
 │ Botão A (D2)     │ GPIO41             │ 🟢 Verde                     │
 │ Botão B (D3)     │ GPIO42             │ 🔵 Azul                      │
-│ Botão C (D4)     │ GPIO14             │ 🟣 Roxo                      │
-│ Botão D (D5)     │ GPIO15             │ ⚪ Cinza                     │
-│ Botão E (D6)     │ GPIO16             │ ⬜ Branco                    │
-│ Botão F (D7)     │ GPIO17             │ 🩷 Rosa                      │
+│ Botão C (D4)     │ GPIO1              │ 🟣 Roxo                      │
+│ Botão D (D5)     │ GPIO2              │ ⚪ Cinza                     │
+│ Botão E (D6)     │ GPIO17             │ ⬜ Branco                    │
+│ Botão F (D7)     │ GPIO18             │ 🩷 Rosa                      │
 └──────────────────┴────────────────────┴──────────────────────────────┘
 ```
 
@@ -221,7 +221,7 @@ void loop() {
 | Joystick sempre 0 | VCC não conectado | Verificar 3.3V no módulo |
 | Joystick sempre 4095 | VRx/VRy invertido | Trocar conexões X/Y |
 | Botões não respondem | Falta pull-up | Usar INPUT_PULLUP no código |
-| Boot loop | GPIO0 em LOW | SW não deve estar pressionado no boot |
+| Boot loop | GPIO0 em LOW | SW foi movido para GPIO6 (resolvido) |
 | Leitura instável | Ruído | Adicionar capacitor 100nF em VCC |
 
 ---

@@ -4,6 +4,19 @@
 > Última atualização: 2025-12-19
 
 ---
+
+## 📚 Navegação Rápida
+
+| Documento | Conteúdo |
+|-----------|----------|
+| [MASTER_SYSTEM.md](file:///c:/Users/leleb/OneDrive/Desktop/Esp32-S3/docs/MASTER_SYSTEM.md) | **VISÃO GERAL** - Pinout unificado, módulos, ataques |
+| [PN532_NFC_MODULE_V3.md](file:///c:/Users/leleb/OneDrive/Desktop/Esp32-S3/docs/PN532_NFC_MODULE_V3.md) | NFC - Pinout, esquemas, código |
+| [HARDWARE.md](file:///c:/Users/leleb/OneDrive/Desktop/Esp32-S3/docs/HARDWARE.md) | Hardware ESP32-S3 |
+| [RFID.md](file:///c:/Users/leleb/OneDrive/Desktop/Esp32-S3/docs/RFID.md) | Ataques NFC/RFID |
+| [MODULOS.md](file:///c:/Users/leleb/OneDrive/Desktop/Esp32-S3/docs/MODULOS.md) | Módulos de ataque |
+
+---
+
 **🎯 ARSENAL COMPLETO DE PENTESTING:**
 
 - ✅ **6 Módulos Especializados** de pentesting avançado

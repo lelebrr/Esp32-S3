@@ -25,7 +25,7 @@ O ESP32-S3-WROOM-1 N16R8 implementa um sistema avançado de gerenciamento de ene
 
 O sensor DS18B20 monitora a temperatura do sistema a cada 10 segundos. Quando a temperatura ultrapassa limites seguros, o firmware reduz automaticamente a frequência do CPU.
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                  Thermal Throttling Flow                     │
 │                                                             │
@@ -35,7 +35,8 @@ O sensor DS18B20 monitora a temperatura do sistema a cada 10 segundos. Quando a 
 │   │Sensor│              │  (Reduced)  │                    │
 │   │      │──→ <60°C ──→ │  240 MHz    │  Normal            │
 │   └──────┘              └──────────────┘                    │
-│    GPIO 47                                                  │
+│    GPIO 19                                                  │
+│   (1-Wire)                                                  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -242,9 +243,9 @@ CONFIG_PM_POWER_DOWN_PERIPHERAL_IN_LIGHT_SLEEP=y
 
 | Componente | Função | Conexão |
 |------------|--------|---------|
-| DS18B20 | Sensor temperatura | GPIO 47 + 4.7kΩ pull-up |
-| IRF520 | MOSFET power gate | Gate = GPIO 42 |
-| PAJ7620U2 | Sensor gestos | I2C 0x73 (SDA=1, SCL=2) |
+| DS18B20 | Sensor temperatura | GPIO 19 + 4.7kΩ pull-up |
+| IRF520 | MOSFET power gate | Gate = GPIO 7 (PN532), 48 (CC1101) |
+| PAJ7620U2 | Sensor gestos | I2C 0x73 (SDA=8, SCL=9) |
 | Capacitor 100µF | Estabilidade VCC | Paralelo em cada módulo |
 | Diodo 1N5817 | Proteção polaridade | Série na bateria |
 | PTC Fuse 500mA | Proteção sobrecorrente | Série na bateria |

@@ -16,20 +16,21 @@
 #define TFT_HEIGHT 320
 
 // ========================================
-// ESP32-S3 PIN DEFINITIONS
+// ESP32-S3 PIN DEFINITIONS (SPI A - FSPI for Display)
+// Synced with pin_config.h
 // ========================================
-#define TFT_MISO  37
-#define TFT_MOSI  36
-#define TFT_SCLK  35
-#define TFT_CS     5
-#define TFT_DC     6
-#define TFT_RST    4
-#define TFT_BL     3  // Backlight
+#define TFT_MISO  -1   // Not used for ILI9341
+#define TFT_MOSI  13   // Display MOSI
+#define TFT_SCLK  14   // Display Clock
+#define TFT_CS    10   // Display Chip Select
+#define TFT_DC    12   // Data/Command
+#define TFT_RST   11   // Display Reset
+#define TFT_BL    21   // Backlight (PWM)
 
 // ========================================
 // TOUCH SCREEN PINS (XPT2046)
 // ========================================
-#define TOUCH_CS  38
+#define TOUCH_CS  15   // Touch CS (SAFE)
 // Touch uses same SPI bus as display
 
 // ========================================

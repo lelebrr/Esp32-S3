@@ -1,12 +1,13 @@
 /**
  * @file lvgl_menu.cpp
  * Monster S3 Firmware - LVGL Display with TFT_eSPI
- * ILI9341 240x320 with XPT2046 Touch (built-in TFT_eSPI support)
+ * ILI9341 240x320 with XPT2046 Touch + PAJ7620 Gesture Support
  */
 
 #include "lvgl_menu.h"
 #include "pin_config.h"
 #include "attacks_manager.h"
+#include "gesture_sensor.h"
 #include <TFT_eSPI.h>
 #include <lvgl.h>
 
@@ -17,9 +18,14 @@ TFT_eSPI tft = TFT_eSPI();
 #define SCR_W TFT_WIDTH   // 240
 #define SCR_H TFT_HEIGHT  // 320
 
-// LVGL Buffer
+// LVGL Buffers
 static lv_disp_draw_buf_t draw_buf;
 static lv_color_t *buf;
+
+// LVGL Input Device for Gestures
+static lv_indev_t *gesture_indev = NULL;
+static lv_group_t *main_group = NULL;
+static volatile uint32_t last_gesture_key = 0;
 
 // Touch calibration for MSP2402
 #define TOUCH_X_MIN 200
@@ -59,6 +65,44 @@ void my_touch_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data) {
 }
 
 // ========================================
+// LVGL Gesture Keypad Read Callback
+// ========================================
+void gesture_keypad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data) {
+    if (last_gesture_key != 0) {
+        data->key = last_gesture_key;
+        data->state = LV_INDEV_STATE_PR;
+        last_gesture_key = 0;  // Clear after reading
+    } else {
+        data->state = LV_INDEV_STATE_REL;
+    }
+}
+
+/**
+ * @brief Send a gesture event to LVGL
+ * Called from the gesture task when a gesture is detected
+ */
+void lvgl_send_gesture_key(uint32_t key) {
+    last_gesture_key = key;
+}
+
+/**
+ * @brief Convert GestureAction to LVGL key
+ */
+uint32_t gesture_action_to_lvgl_key(GestureAction action) {
+    switch (action) {
+        case ACTION_MENU_UP:    return LV_KEY_UP;
+        case ACTION_MENU_DOWN:  return LV_KEY_DOWN;
+        case ACTION_MENU_LEFT:  return LV_KEY_LEFT;
+        case ACTION_MENU_RIGHT: return LV_KEY_RIGHT;
+        case ACTION_SELECT:     return LV_KEY_ENTER;
+        case ACTION_BACK:       return LV_KEY_ESC;
+        case ACTION_SPECIAL_1:  return LV_KEY_NEXT;
+        case ACTION_SPECIAL_2:  return LV_KEY_PREV;
+        default:                return 0;
+    }
+}
+
+// ========================================
 // UI Event Handler
 // ========================================
 static void btn_event_cb(lv_event_t *e) {
@@ -77,8 +121,8 @@ static void btn_event_cb(lv_event_t *e) {
     } else if(strcmp(txt, "IR Brute") == 0) {
         attacks_start(ATTACK_IR_BRUTE);
     } else if(strcmp(txt, "SubGHz") == 0) {
-        attacks_start(ATTACK_SUBGHZ_REPLAY);
-    } else if(strcmp(txt, "STOP") == 0) {
+        attacks_start(ATTACK_RF_GHOST_REPLAY);
+    } else if(strcmp(txt, "STOP ALL") == 0) {
         attacks_stop();
     }
 }
@@ -94,9 +138,18 @@ lv_obj_t* create_btn(lv_obj_t *parent, const char *text, lv_coord_t x, lv_coord_
     lv_obj_set_style_radius(btn, 8, 0);
     lv_obj_add_event_cb(btn, btn_event_cb, LV_EVENT_CLICKED, NULL);
     
+    // Add focus style for gesture navigation
+    lv_obj_set_style_outline_width(btn, 3, LV_STATE_FOCUSED);
+    lv_obj_set_style_outline_color(btn, lv_color_hex(0x00ff00), LV_STATE_FOCUSED);
+    
     lv_obj_t *label = lv_label_create(btn);
     lv_label_set_text(label, text);
     lv_obj_center(label);
+    
+    // Add to focus group for gesture navigation
+    if (main_group) {
+        lv_group_add_obj(main_group, btn);
+    }
     
     return btn;
 }
@@ -115,9 +168,13 @@ void create_menu_ui() {
     lv_obj_set_style_text_font(title, &lv_font_montserrat_20, 0);
     lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 10);
     
-    // Subtitle
+    // Subtitle with gesture status
     lv_obj_t *sub = lv_label_create(scr);
-    lv_label_set_text(sub, "Pentest Toolkit v1.0");
+    if (GestureSensor::isAvailable()) {
+        lv_label_set_text(sub, "Pentest v1.0 | Gesture: ON");
+    } else {
+        lv_label_set_text(sub, "Pentest Toolkit v1.0");
+    }
     lv_obj_set_style_text_color(sub, lv_color_hex(0x888888), 0);
     lv_obj_align(sub, LV_ALIGN_TOP_MID, 0, 35);
     
@@ -130,11 +187,20 @@ void create_menu_ui() {
     create_btn(scr, "NFC Fault",   15, 125, 100, 45, btn_blue);
     create_btn(scr, "IR Brute",   125, 125, 100, 45, btn_blue);
     create_btn(scr, "SubGHz",      15, 180, 100, 45, btn_blue);
+    create_btn(scr, "RF Jammer",  125, 180, 100, 45, btn_blue);
+    create_btn(scr, "Wardriving",  70, 235, 100, 45, btn_blue);
     
     // Stop Button (full width, red)
-    create_btn(scr, "STOP ALL", 15, 250, 210, 50, btn_red);
+    create_btn(scr, "STOP ALL", 15, 290, 210, 50, btn_red);
     
-    Serial.println("[UI] Menu created");
+    // Gesture hint
+    lv_obj_t *hint = lv_label_create(scr);
+    lv_label_set_text(hint, "Swipe to navigate, Push to select");
+    lv_obj_set_style_text_color(hint, lv_color_hex(0x555555), 0);
+    lv_obj_set_style_text_font(hint, &lv_font_montserrat_16, 0);
+    lv_obj_align(hint, LV_ALIGN_BOTTOM_MID, 0, -5);
+    
+    Serial.println("[UI] Menu created with gesture support");
 }
 
 // ========================================
@@ -162,6 +228,10 @@ void setup_lvgl_menu() {
     // Initialize LVGL
     lv_init();
     
+    // Create default focus group for gesture navigation
+    main_group = lv_group_create();
+    lv_group_set_default(main_group);
+    
     // Allocate buffer in PSRAM (40 lines)
     size_t buf_size = SCR_W * 40;
     buf = (lv_color_t*) ps_malloc(buf_size * sizeof(lv_color_t));
@@ -188,12 +258,30 @@ void setup_lvgl_menu() {
     indev_drv.read_cb = my_touch_read;
     lv_indev_drv_register(&indev_drv);
     
+    // Register gesture keypad driver
+    static lv_indev_drv_t gesture_drv;
+    lv_indev_drv_init(&gesture_drv);
+    gesture_drv.type = LV_INDEV_TYPE_KEYPAD;
+    gesture_drv.read_cb = gesture_keypad_read;
+    gesture_indev = lv_indev_drv_register(&gesture_drv);
+    
+    // Assign gesture input to the focus group
+    lv_indev_set_group(gesture_indev, main_group);
+    Serial.println("[GESTURE] LVGL keypad input registered");
+    
     // Create UI
     create_menu_ui();
     
-    Serial.println("[LVGL] System ready!");
+    Serial.println("[LVGL] System ready with gesture navigation!");
 }
 
 void lvgl_loop() {
     lv_task_handler();
+}
+
+// ========================================
+// Get Focus Group (for external access)
+// ========================================
+lv_group_t* lvgl_get_main_group() {
+    return main_group;
 }

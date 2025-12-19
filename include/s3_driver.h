@@ -1,6 +1,9 @@
 #pragma once
 
 #include <Arduino.h>
+#include "modules/piezo_driver.h"
+// External Objects for global access
+extern PiezoDriver Piezo;
 #include <SPI.h>
 #include <Wire.h>
 #include "pin_config.h"
@@ -13,10 +16,14 @@ public:
     static void deepSleep(uint64_t time_ms);
     static bool isPsramReady();
     static float getBatteryVoltage();
-    static float getTemperature(); // DS18B20 or Internal
+    static float getTemperature(); // DS3231 or Internal
 
 private:
     static void initPowerPins();
     static void initBuses();
     static void initSD();
+    static void initGesture();
+    static void initGPS();
+    static void initRTC();
 };
+

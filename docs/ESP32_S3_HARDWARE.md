@@ -22,48 +22,45 @@
 
 ## 📌 Tabela de Pinagem Completa
 
-```
+> [!IMPORTANT]
+> Sincronizado com `pin_config.h` - 2025-12-19
+
+```text
 ╔═══════════════════════════════════════════════════════════════════════════════╗
-║                        ESP32-S3-WROOM-1 N16R8 PINOUT                          ║
+║                        ESP32-S3-WROOM-1 N8R8 PINOUT                           ║
 ╠═══════╦══════════════════════╦════════════════════════════════════════════════╣
 ║ GPIO  ║ Função               ║ Módulo / Notas                                 ║
 ╠═══════╬══════════════════════╬════════════════════════════════════════════════╣
-║   0   ║ Boot Button          ║ Joystick SW, Wake Source                       ║
-║   1   ║ I2C SDA              ║ PN532, DS3231, PAJ7620U2 (4.7K pull-up)        ║
-║   2   ║ I2C SCL              ║ PN532, DS3231, PAJ7620U2 (4.7K pull-up)        ║
-║   3   ║ Touch CS             ║ XPT2046                                        ║
-║   4   ║ Joystick X / CC1101   ║ ADC1_CH3 + GDO0 SubGHz                         ║
-║   5   ║ Joystick Y / CC1101   ║ ADC1_CH4 + CC1101 SS                           ║
-║   6   ║ NRF24 CE             ║ 2.4GHz Radio                                   ║
-║   7   ║ NRF24 SS             ║ 2.4GHz Radio                                   ║
-║   8   ║ Touch IRQ            ║ XPT2046                                        ║
-║   9   ║ TFT RST              ║ ILI9488                                        ║
-║  10   ║ TFT CS               ║ ILI9488                                        ║
-║  11   ║ SPI2 MOSI            ║ TFT + Touch (compartilhado)                    ║
-║  12   ║ SPI2 SCK             ║ TFT + Touch (compartilhado)                    ║
-║  13   ║ SPI2 MISO            ║ TFT + Touch (compartilhado)                    ║
-║  14   ║ Joystick BTN C       ║ Botão Baixo (Joystick Shield)                  ║
-║  15   ║ Joystick BTN D       ║ Botão Esquerda (Joystick Shield) + GPS RX      ║
-║  16   ║ Joystick BTN E       ║ Botão E Auxiliar + GPS TX (UART1)              ║
-║  17   ║ Joystick BTN F       ║ Botão F Auxiliar + YS-IRTM TX (UART2)          ║
-║  18   ║ YS-IRTM RX           ║ IR Module (UART2, Level Shifter!)              ║
-║  19   ║ 1-Wire               ║ DS18B20 x2 (4.7K pull-up)                      ║
-║  20   ║ PAM8403 EN / IR Z4   ║ Amp Enable + TSOP38238 #5                      ║
-║  21   ║ IR RX Zone1          ║ TSOP38238 #2                                   ║
-║  35   ║ SD MOSI              ║ SD Card (SPI3)                                 ║
-║  36   ║ SD SCK               ║ SD Card (SPI3)                                 ║
-║  37   ║ SD MISO              ║ SD Card (SPI3)                                 ║
-║  38   ║ SD CS                ║ SD Card (SPI3)                                 ║
-║  39   ║ I2S LRCK             ║ PCM5102A Word Select                           ║
-║  40   ║ I2S BCLK             ║ PCM5102A Bit Clock                             ║
-║  41   ║ Joystick BTN A       ║ Botão Cima (Joystick Shield) + I2S DOUT        ║
-║  42   ║ Joystick BTN B       ║ Botão Direita (Joystick Shield) + MOSFET       ║
+║   1   ║ Button C (Baixo)     ║ Joystick Shield                                ║
+║   2   ║ Button D (Esquerda)  ║ Joystick Shield                                ║
+║   3   ║ IR TX                ║ LED Transmissor                                ║
+║   4   ║ Joystick X           ║ ADC1_CH3                                       ║
+║   5   ║ Joystick Y           ║ ADC1_CH4                                       ║
+║   6   ║ Joystick SW          ║ Click Button                                   ║
+║   7   ║ PN532 Enable         ║ MOSFET Power Gate NFC                          ║
+║   8   ║ I2C SDA              ║ PN532, DS3231, PAJ7620U2 (4.7K pull-up)        ║
+║   9   ║ I2C SCL              ║ PN532, DS3231, PAJ7620U2 (4.7K pull-up)        ║
+║  10   ║ TFT CS               ║ ILI9341 Display                                ║
+║  11   ║ TFT RST / SD MOSI    ║ Display Reset + SD Card                        ║
+║  12   ║ TFT DC / SD SCK      ║ Display D/C + SD Card                          ║
+║  13   ║ TFT MOSI / SD MISO   ║ Display Data + SD Card                         ║
+║  14   ║ SD CS / TFT SCLK     ║ SD Card Chip Select                            ║
+║  15   ║ Touch CS             ║ XPT2046                                        ║
+║  16   ║ Touch IRQ            ║ XPT2046                                        ║
+║  17   ║ Button E             ║ Joystick Shield Auxiliar                       ║
+║  18   ║ Button F             ║ Joystick Shield Auxiliar                       ║
+║  19   ║ 1-Wire / GPS RX      ║ DS18B20 + NEO-6M (UART1)                       ║
+║  20   ║ GPS TX               ║ NEO-6M (UART1)                                 ║
+║  21   ║ TFT Backlight        ║ PWM LED                                        ║
+║  39   ║ I2S WS               ║ PCM5102A Word Select                           ║
+║  40   ║ I2S BCK              ║ PCM5102A Bit Clock                             ║
+║  41   ║ Button A / I2S DOUT  ║ Joystick Cima + Audio Data                     ║
+║  42   ║ Button B             ║ Joystick Direita                               ║
 ║  43   ║ USB TX               ║ CDC Serial                                     ║
 ║  44   ║ USB RX               ║ CDC Serial                                     ║
-║  45   ║ IR RX Zone3 / Buzzer ║ TSOP38238 #4 + PWM Beep                        ║
-║  46   ║ TFT DC               ║ ILI9488 Data/Command                           ║
-║  47   ║ IR TX                ║ LED IR Transmitter                             ║
-║  48   ║ TFT BL / WS2812B     ║ Backlight PWM + RGB LEDs (10)                  ║
+║  46   ║ CC1101 CS            ║ SubGHz SPI                                     ║
+║  47   ║ CC1101 GDO0          ║ SubGHz Interrupt                               ║
+║  48   ║ CC1101 EN / WS2812B  ║ MOSFET Power + RGB LEDs                        ║
 ╚═══════╩══════════════════════╩════════════════════════════════════════════════╝
 ```
 

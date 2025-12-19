@@ -9,25 +9,22 @@ Documentação das funcionalidades de infravermelho do Lele Origin.
 
 ## 🔧 Hardware
 
-### ESP32-S3 Multi-Zone IR (Principal)
+### ESP32-S3 (Configuração Atual)
 
-O ESP32-S3 suporta até **5 zonas de recepção IR** + 1 transmissor:
+> [!IMPORTANT]
+> Pinout sincronizado com `pin_config.h`
 
 | Função | GPIO | Notas |
-|--------|------|-----------|
-| **IR TX** | 47 | LED transmissor |
-| **IR RX Main** | 14 | Receptor principal |
-| **IR RX Zone 1** | 21 | Receptor auxiliar |
-| **IR RX Zone 2** | 42 | Compartilhado com MOSFET |
-| **IR RX Zone 3** | 45 | Compartilhado com buzzer |
-| **IR RX Zone 4** | 0 | Compartilhado com boot button |
+|--------|:----:|-------|
+| **IR TX** | 3 | LED transmissor |
+| **IR RX** | -1 | Não usado nesta config |
 
-### YS-IRTM (UART2)
+### YS-IRTM (Opcional - UART)
 
-Módulo IR integrado com microcontrolador:
+Módulo IR integrado com microcontrolador (opcional):
 
 | YS-IRTM | ESP32-S3 | Notas |
-|---------|----------|-------|
+|---------|:--------:|-------|
 | TX | GPIO 17 | Requer level shifter 3.3V↔5V |
 | RX | GPIO 18 | Requer level shifter 3.3V↔5V |
 | VCC | 5V | Via MOSFET power gating |
@@ -36,7 +33,7 @@ Módulo IR integrado com microcontrolador:
 ### CYD-2USB (Legacy)
 
 | Função | GPIO |
-|--------|------|
+|--------|:----:|
 | TX | GPIO 22 ou 27 |
 | RX | GPIO 35 |
 

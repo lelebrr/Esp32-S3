@@ -1,5 +1,8 @@
 # Monster S3 - Hardware Documentation
 
+> **Documentação sincronizada com `pin_config.h`**
+> Para visão completa do sistema: [MASTER_SYSTEM.md](file:///c:/Users/leleb/OneDrive/Desktop/Esp32-S3/docs/MASTER_SYSTEM.md)
+
 ## Hardware Specifications
 
 | Component | Specification |
@@ -19,34 +22,39 @@
 |---------|----------|---------------|
 | VCC | Power | 3.3V |
 | GND | Ground | GND |
-| CS | Display Chip Select | GPIO 5 |
-| RESET | Display Reset | GPIO 4 |
-| DC | Data/Command | GPIO 6 |
-| SDI/MOSI | SPI Data In | GPIO 36 |
-| SCK | SPI Clock | GPIO 35 |
-| LED | Backlight | GPIO 3 |
-| SDO/MISO | SPI Data Out | GPIO 37 |
+| CS | Display Chip Select | GPIO 10 |
+| RESET | Display Reset | GPIO 11 |
+| DC | Data/Command | GPIO 12 |
+| SDI/MOSI | SPI Data In | GPIO 13 |
+| SCK | SPI Clock | GPIO 14 |
+| LED | Backlight | GPIO 21 |
+| SDO/MISO | SPI Data Out | -1 (não usado) |
 
 ### Touch Pins (XPT2046)
 
 | LCD Pin | Function | ESP32-S3 GPIO |
 |---------|----------|---------------|
-| T_CLK | Touch Clock | GPIO 35 (shared) |
-| T_CS | Touch Chip Select | GPIO 38 |
-| T_DIN | Touch Data In | GPIO 36 (shared) |
-| T_DO | Touch Data Out | GPIO 37 (shared) |
-| T_IRQ | Touch Interrupt | GPIO 39 |
+| T_CLK | Touch Clock | GPIO 14 (shared) |
+| T_CS | Touch Chip Select | GPIO 15 |
+| T_DIN | Touch Data In | GPIO 13 (shared) |
+| T_DO | Touch Data Out | GPIO 13 (shared) |
+| T_IRQ | Touch Interrupt | GPIO 16 |
 
 ---
 
-## SD Card Connection
+## SD Card Connection (SPI B - HSPI)
 
-| SD Pin | ESP32-S3 GPIO |
-|--------|---------------|
-| CS | GPIO 10 |
-| MOSI | GPIO 11 |
-| SCK | GPIO 12 |
-| MISO | GPIO 13 |
+> [!TIP]
+> Documentação completa e vetores de ataque: [MICROSD_ADAPTER.md](MICROSD_ADAPTER.md)
+
+| SD Pin | Function | ESP32-S3 GPIO |
+|--------|----------|:-------------:|
+| CS | Chip Select | GPIO 39 |
+| SCK | Clock | GPIO 40 |
+| MOSI | Data Out | GPIO 41 |
+| MISO | Data In | GPIO 42 |
+| VCC | Power | 3.3V / 5V |
+| GND | Ground | GND |
 
 ---
 
@@ -61,39 +69,90 @@
 
 ## RF Modules
 
-### NFC (PN532 - I2C)
+### NFC (PN532 V3 - I2C)
+
+> Documentação completa: [PN532_NFC_MODULE_V3.md](file:///c:/Users/leleb/OneDrive/Desktop/Esp32-S3/docs/PN532_NFC_MODULE_V3.md)
 
 | Function | ESP32-S3 GPIO |
 |----------|---------------|
-| Power Enable | GPIO 7 |
-| IRQ | GPIO 15 |
+| SDA | GPIO 8 (shared) |
+| SCL | GPIO 9 (shared) |
+| Power Enable | GPIO 7 (MOSFET) |
+| I2C Address | 0x24 |
 
 ### SubGHz (CC1101 - SPI)
 
 | Function | ESP32-S3 GPIO |
 |----------|---------------|
-| CS | GPIO 1 |
-| GDO0 | GPIO 2 |
-| Power Enable | GPIO 14 |
+| CS | GPIO 46 |
+| GDO0 | GPIO 47 |
+| Power Enable | GPIO 48 |
+| MOSI/MISO/SCK | SD Card bus (shared) |
 
----
-
-## Audio (I2S)
+### Piezo Buzzer
 
 | Function | ESP32-S3 GPIO |
 |----------|---------------|
-| BCK | GPIO 16 |
-| WS/LRCK | GPIO 17 |
-| DOUT | GPIO 18 |
+| Buzzer | GPIO 20 |
+
+---
+
+## Gesture Sensor (PAJ7620U2)
+
+> [!TIP]
+> Documentação completa: [PAJ7620_GESTURE_SENSOR.md](PAJ7620_GESTURE_SENSOR.md)
+
+| Function | ESP32-S3 GPIO |
+|----------|---------------|
+| SDA | GPIO 8 (I2C compartilhado) |
+| SCL | GPIO 9 (I2C compartilhado) |
+| INT | -1 (modo polling) |
+
+**Características:**
+
+- Interface I2C (400kHz max), Endereço: 0x73
+- 9 gestos reconhecidos (Up/Down/Left/Right/Forward/Backward/CW/CCW/Wave)
+- Distância de detecção: 5-15cm
+- Usado para wake from deep sleep e controle touch-free
+
+---
+
+## Audio (I2S - PCM5102A DAC)
+
+| Function | ESP32-S3 GPIO |
+|----------|---------------:|
+| BCK | GPIO 43 |
+| WS/LRCK | GPIO 44 |
+| DOUT | GPIO 38 |
+
+---
+
+## GPS (GY-NEO6MV2 - UART2)
+
+> [!TIP]
+> Documentação completa: [GPS_NEO6MV2.md](GPS_NEO6MV2.md)
+
+| Function | ESP32-S3 GPIO |
+|----------|---------------|
+| RX (ESP ← GPS TX) | GPIO 17 |
+| TX (ESP → GPS RX) | GPIO 18 |
+| Baud Rate | 9600 |
+
+**Características:**
+
+- Chip u-blox NEO-6M, protocolo NMEA 0183
+- TTFF: Cold 27s, Warm 1s
+- Precisão: 2.5m CEP
+- Usado para wardriving (WiFi/BLE/RF com coordenadas GPS)
 
 ---
 
 ## Infrared
 
 | Function | ESP32-S3 GPIO |
-|----------|---------------|
-| TX | GPIO 21 |
-| RX | GPIO 47 |
+|----------|---------------:|
+| TX (LED) | GPIO 3 |
+| RX | -1 (não usado) |
 
 ---
 
@@ -108,26 +167,23 @@
 |----------|---------------|------|
 | Eixo X (VRx) | GPIO 4 | ADC1_CH3 |
 | Eixo Y (VRy) | GPIO 5 | ADC1_CH4 |
-| Click (SW) | GPIO 0 | Digital |
-
-> [!CAUTION]
-> GPIO0 é o pino de Boot! Não pressionar durante upload.
+| Click (SW) | GPIO 6 | Digital |
 
 ### Botões Direcionais
 
 | Button | ESP32-S3 GPIO | Position |
 |--------|---------------|----------|
-| A | GPIO 41 | Cima |
-| B | GPIO 42 | Direita |
-| C | GPIO 14 | Baixo |
-| D | GPIO 15 | Esquerda |
+| A | GPIO 35 | Cima ↑ |
+| B | GPIO 36 | Direita → |
+| C | GPIO 1 | Baixo ↓ |
+| D | GPIO 2 | Esquerda ← |
 
 ### Botões Auxiliares
 
 | Button | ESP32-S3 GPIO | Position |
 |--------|---------------|----------|
-| E | GPIO 16 | Centro-Esq |
-| F | GPIO 17 | Centro-Dir |
+| E | GPIO 19 | Centro-Esq |
+| F | GPIO 20 | Centro-Dir |
 
 ### Conectores Externos
 
@@ -158,6 +214,22 @@
 
 ---
 
+## RTC (DS3231 - I2C)
+
+> [!TIP]
+> Real-Time Clock de alta precisão com bateria de backup e sensor de temperatura.
+> Documentação completa: [DS3231_RTC.md](DS3231_RTC.md)
+
+| Function | ESP32-S3 GPIO |
+|----------|---------------|
+| SDA | GPIO 8 (shared) |
+| SCL | GPIO 9 (shared) |
+| SQW/INT | -1 (não usado) |
+| I2C Address | 0x68 |
+| EEPROM Addr | 0x57 (AT24C32) |
+
+---
+
 ## Libraries Used
 
 | Library | Version | Purpose |
@@ -171,6 +243,7 @@
 | Adafruit PN532 | 1.3.4 | NFC |
 | TinyGPSPlus | 1.1.0 | GPS |
 | ArduinoJson | 7.4.2 | JSON |
+| RevEng_PAJ7620 | 1.5.1 | Gesture Sensor |
 
 ---
 
@@ -184,4 +257,4 @@
 
 ---
 
-*Updated: 2025-12-19*
+**Last Updated:** 2025-12-19

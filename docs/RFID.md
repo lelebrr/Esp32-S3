@@ -6,11 +6,14 @@ Documentação das funcionalidades RFID e NFC do Lele Origin.
 
 ## 🔧 Módulos Suportados
 
-| Módulo | Frequência | Protocolo |
-|--------|-----------|-----------|
-| PN532 | 13.56 MHz | NFC (MIFARE, NTAG, etc.) |
-| PN532 Killer | 13.56 MHz | NFC + Magic cards |
-| MFRC522 | 13.56 MHz> **NFC, 125kHz e 13.56MHz.**
+| Módulo | Frequência | Protocolo | Documentação |
+|--------|-----------|-----------|--------------|
+| **PN532 V3** | 13.56 MHz | NFC (MIFARE, NTAG, FeliCa) | [PN532_NFC_MODULE_V3.md](file:///c:/Users/leleb/OneDrive/Desktop/Esp32-S3/docs/PN532_NFC_MODULE_V3.md) |
+| PN532 Killer | 13.56 MHz | NFC + Magic cards | --- |
+| MFRC522 | 13.56 MHz | MIFARE, NTAG | --- |
+
+> **NFC, 125kHz e 13.56MHz.**
+> Para documentação completa do PN532 NFC Module V3 (pinout, esquemas, ligações), consulte [PN532_NFC_MODULE_V3.md](file:///c:/Users/leleb/OneDrive/Desktop/Esp32-S3/docs/PN532_NFC_MODULE_V3.md)
 
 > Última atualização: 2025-12-19
 
@@ -140,20 +143,36 @@ Emulação de Amiibos para Nintendo Switch/3DS.
 Acesse **RFID → Config** para ajustar:
 
 | Opção | Descrição |
-|-------|-----------|
+|-------|-----------
 | RFID Module | Tipo de módulo conectado |
 
-**Pinagem PN532 (I2C):**
+### Pinagem PN532 V3 (I2C) - ESP32-S3
 
-| PN532 | ESP32-S3 | CYD-2USB (Legacy) |
-|-------|----------|-------------------|
-| SDA | GPIO 1 | GPIO 27 |
-| SCL | GPIO 2 | GPIO 22 |
-| VCC | 3.3V | 3.3V |
-| GND | GND | GND |
+| PN532 Pino | ESP32-S3 GPIO | Função | Notas |
+|------------|:-------------:|--------|-------|
+| VCC | 3.3V | Alimentação | Via MOSFET GPIO 42 |
+| GND | GND | Terra | Conectar ambos GND |
+| SDA | GPIO 1 | I2C Data | Pull-up 4.7K |
+| SCL | GPIO 2 | I2C Clock | Pull-up 4.7K |
+
+### Configuração DIP Switch (Modo I2C)
+
+```
+SW1 = ON  (posição superior)
+SW2 = OFF (posição inferior)
+```
+
+### Alternativas de Comunicação
+
+| Modo | Pinos | Velocidade | DIP Switch |
+|------|-------|------------|------------|
+| **I2C** | SDA, SCL | 400 kHz | SW1=ON, SW2=OFF |
+| SPI | MOSI, MISO, SCK, SS | 10 MHz | SW1=OFF, SW2=ON |
+| UART (HSU) | TX, RX | 115200 bps | SW1=OFF, SW2=OFF |
 
 > [!TIP]
 > No ESP32-S3, o barramento I2C é compartilhado com DS3231 (RTC) e PAJ7620U2 (gestos).
+> Para documentação técnica completa, veja [PN532_NFC_MODULE_V3.md](file:///c:/Users/leleb/OneDrive/Desktop/Esp32-S3/docs/PN532_NFC_MODULE_V3.md)
 
 ---
 

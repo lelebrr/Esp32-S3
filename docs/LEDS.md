@@ -2,28 +2,32 @@
 
 O **Lele Origin 1.0** suporta nativamente uma fita ou painel de LEDs endereçáveis **WS2812B** (RGB) ou SK6812 (RGBW). Este recurso adiciona estilo visual e feedback útil através de notificações.
 
-> **Atualização 2024-12-13:** O driver foi reescrito para usar o **RMT (Remote Control) nativo do ESP32**, eliminando a dependência do FastLED e melhorando a estabilidade.
+> **Atualização 2025-12-19:** Pinout atualizado para ESP32-S3. Driver RMT nativo elimina dependência do FastLED.
 
 ---
 
 ## 🛠️ Instalação do Hardware
 
 ### Componentes Necessários
+
 - 4x LEDs WS2812B (pode usar pedaço de fita LED ou módulos individuais)
 - 1x Resistor 220Ω - 470Ω (para linha de dados)
 - 1x Capacitor 100µF - 1000µF (recomendado para estabilidade)
 
-### Esquema de Ligação
-O firmware é pré-configurado para comunicar através do **GPIO 16**.
+### Esquema de Ligação ESP32-S3
 
-| Pino LED | Conexão ESP32 | Notas |
-|----------|---------------|-------|
-| 5V / VCC | 5V (VUSB) | Use alimentação externa se tiver > 8 LEDs |
-| GND | GND | Terra comum é essencial |
-| DIN | GPIO 16 | Use resistor em série |
-| DOUT | N/C | Para conectar mais LEDs em cascata |
+> [!IMPORTANT]
+> O ESP32-S3 possui **RGB_BUILTIN** interno. WS2812B externo usa **GPIO 48** (compartilhado TFT BL).
 
-> **NOTA:** Se usar o suporte de baterias 18650, conecte o VCC dos LEDs na saída de 5V do shield ou na saída 3V3 se forem poucos LEDs (mas brilho será menor).
+| Pino LED | Conexão ESP32-S3 | Notas |
+|----------|:----------------:|-------|
+| 5V / VCC | 5V (VUSB) | Externa se >8 LEDs |
+| GND | GND | Terra comum |
+| DIN | GPIO 48 | Resistor 220Ω em série |
+| DOUT | N/C | Para cascata |
+
+> [!NOTE]
+> O LED RGB interno (`RGB_BUILTIN`) está disponível no ESP32-S3 para status básico sem hardware adicional.
 
 ---
 
@@ -32,13 +36,16 @@ O firmware é pré-configurado para comunicar através do **GPIO 16**.
 Acesse em: `Menu Principal` → `Iluminação`
 
 ### 1. Controle Básico
+
 - **Ligar/Desligar:** Interruptor mestre para todos os efeitos.
 - **Cor:** Selecione uma das 9 cores sólidas predefinidas.
 - **Selecionar LED:** Escolha controlar TODOS os LEDs juntos ou UM LED específico (LED 1 a 4).
 - **Brilho:** Ajuste a intensidade (10%, 25%, 50%, 75%, 100%).
 
 ### 2. Notificações Visuais
+
 O sistema usa os LEDs para informar status sem precisar olhar para a tela:
+
 - 🔴 **Erro (Pisca Vermelho):** Falha em operação, WiFi desconectado, erro SD.
 - 🟢 **Sucesso (Pisca Verde):** Conexão estabelecida, arquivo salvo, ataque concluído.
 - 🟡 **Aviso (Pisca Amarelo):** Bateria fraca, temperatura alta.
@@ -52,6 +59,7 @@ O sistema usa os LEDs para informar status sem precisar olhar para a tela:
 O sistema possui **16 efeitos** divididos em categorias:
 
 ### Básicos
+
 | Efeito | Descrição |
 |--------|-----------|
 | **Estático** | Cor sólida sem movimento. |
@@ -64,6 +72,7 @@ O sistema possui **16 efeitos** divididos em categorias:
 | **Perseguir** | Uma cor "persegue" a outra em loop. |
 
 ### Avançados (Novos!)
+
 | Efeito | Descrição |
 |--------|-----------|
 | **Pulso Indep.** | Cada LED pulsa em sua própria cor (definida individualmente) e velocidade. |
@@ -80,12 +89,14 @@ O sistema possui **16 efeitos** divididos em categorias:
 ## 🎨 Controle Individual de Cores
 
 Uma das funcionalidades mais poderosas é o controle individual. Você pode configurar, por exemplo:
+
 - LED 1: Vermelho
 - LED 2: Verde
 - LED 3: Azul
 - LED 4: Branco
 
 **Como configurar:**
+
 1. Vá em `Selecionar LED` e escolha `LED 1`.
 2. Vá em `Cor` e escolha `Vermelho`.
 3. Volte e selecione `LED 2`.
@@ -98,6 +109,7 @@ Uma das funcionalidades mais poderosas é o controle individual. Você pode conf
 ## ⚡ Velocidade dos Efeitos
 
 Você pode ajustar a velocidade das animações em `Efeitos` → `Velocidade`:
+
 - **Lento:** Para iluminação ambiente relaxante.
 - **Normal:** Padrão balanceado.
 - **Rápido:** Para maior dinamismo.
@@ -108,16 +120,19 @@ Você pode ajustar a velocidade das animações em `Efeitos` → `Velocidade`:
 ## 🔧 Solução de Problemas
 
 **LEDs não acendem:**
+
 - Verifique se a opção `Ligar/Desligar` está ativa.
 - Confirme se o pino DIN está no GPIO 16.
 - Verifique a alimentação (VCC e GND).
 - No monitor serial, procure por `[WS2812B] RMT inicializado` para confirmar inicialização.
 
 **Cores erradas (ex: Vermelho aparece Verde):**
+
 - O chip WS2812B usa ordem GRB. O código já trata isso automaticamente.
 - Alguns clones usam ordem RGB. Se acontecer, edite `ws2812b_control.cpp` e inverta `ledColors[i].g` e `ledColors[i].r`.
 
 **LEDs piscando aleatoriamente (glitch):**
+
 - Adicione um capacitor de 1000µF entre VCC e GND próximo aos LEDs.
 - Certifique-se de que o GND do ESP32 e dos LEDs (se usar fonte externa) estão conectados.
 - O driver RMT nativo é mais estável que bit-banging, mas ruído elétrico ainda pode afetar.

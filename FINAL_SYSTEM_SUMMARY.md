@@ -180,6 +180,7 @@ src/
 │   └── WIFI.md                       ✅ MITM attacks
 ├── IMPLEMENTATION_STATUS.md          ✅ Status de implementação
 ├── DOCUMENTATION_COMPLETE.md         ✅ Documentação técnica
+├── MICRO_SD.md                       ✅ SD Card Pinout & Attacks
 ├── OPTIMIZATIONS_IMPLEMENTED.md      ✅ Otimizações completas
 └── WPS_ATTACKS_IMPLEMENTATION.md     ✅ WPS detalhado
 ```

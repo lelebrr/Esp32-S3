@@ -413,6 +413,11 @@ SW2 = OFF (para baixo)
 - [ ] SDA → **CN01 (IO27)**
 - [ ] SCL → **CN01 (IO22)**
 
+> [!NOTE]
+> **Para ESP32-S3**: Use GPIO 1 (SDA) e GPIO 2 (SCL) com pull-ups 4.7K.
+> Power gating via MOSFET GPIO 42 para economia de energia.
+> Documentação completa: [PN532_NFC_MODULE_V3.md](file:///c:/Users/leleb/OneDrive/Desktop/Esp32-S3/docs/PN532_NFC_MODULE_V3.md)
+
 ---
 
 # 📻 MÓDULOS 4 e 5: CC1101 e NRF24L01 (Rádios)
@@ -457,6 +462,7 @@ Os rádios usam o **barramento SPI** que é compartilhado com o **Slot SD Card**
 ## ⚠️ IMPORTANTE: Compartilhamento de Pinos
 
 Os dois módulos compartilham o mesmo barramento SPI. Isso significa:
+
 - **MOSI, MISO, SCK** são os mesmos para ambos (pinos do SD Card)
 - **CSN é diferente** para cada um (IO16 para CC1101, IO17 para NRF)
 - **GDO0/CE compartilham GPIO 0** (botão BOOT)
@@ -514,6 +520,7 @@ Você pode soldar nos pinos que saem atrás do slot:
 ## ✅ Checklist dos Módulos 4-5
 
 ### CC1101
+
 - [ ] CSN → **RGB LED pino B (IO16)**
 - [ ] GDO0 → **Botão BOOT (IO0)**
 - [ ] MOSI → SD Card CMD **(IO23)**
@@ -523,6 +530,7 @@ Você pode soldar nos pinos que saem atrás do slot:
 - [ ] GND → **CN01 (GND)**
 
 ### NRF24
+
 - [ ] CSN → **RGB LED pino R (IO17)**
 - [ ] CE → **Botão BOOT (IO0)**
 - [ ] MOSI → SD Card CMD **(IO23)**
@@ -567,6 +575,7 @@ Você pode soldar nos pinos que saem atrás do slot:
 ### Passo 6.1: LED IR (Transmissor)
 
 O LED IR tem 2 pernas:
+
 - **Perna MAIOR = Anodo (+)** → vai no GPIO 26 (com resistor)
 - **Perna MENOR = Catodo (-)** → vai no GND
 
@@ -710,18 +719,21 @@ CN01 (3.3V)
 # ✅ CHECKLIST FINAL DE MONTAGEM
 
 ## LEDs WS2812B
+
 - [ ] DIN via resistor 330Ω → **RGB LED pino G (IO4)**
 - [ ] VCC → **P1 (VIN)**
 - [ ] GND → **P1 (GND)**
 - [ ] Capacitor 100µF entre VIN e GND
 
 ## GPS Neo-6M
+
 - [ ] VCC → **CN01 (3.3V)**
 - [ ] TX → **P1 (RX)**
 - [ ] RX → **P1 (TX)**
 - [ ] GND → **P1 (GND)**
 
 ## NFC PN532
+
 - [ ] DIP Switch: SW1=ON, SW2=OFF
 - [ ] SDA → **CN01 (IO27)**
 - [ ] SCL → **CN01 (IO22)**
@@ -729,6 +741,7 @@ CN01 (3.3V)
 - [ ] GND → **CN01 (GND)**
 
 ## CC1101 (433MHz)
+
 - [ ] CSN → **RGB LED pino B (IO16)**
 - [ ] GDO0 → **Botão BOOT (IO0)**
 - [ ] MOSI/MISO/SCK → **Slot SD Card**
@@ -736,6 +749,7 @@ CN01 (3.3V)
 - [ ] GND → **CN01 (GND)**
 
 ## NRF24L01 (2.4GHz)
+
 - [ ] CSN → **RGB LED pino R (IO17)**
 - [ ] CE → **Botão BOOT (IO0)**
 - [ ] MOSI/MISO/SCK → **Slot SD Card**
@@ -743,12 +757,14 @@ CN01 (3.3V)
 - [ ] GND → **CN01 (GND)**
 
 ## Infravermelho
+
 - [ ] LED IR → Resistor 330Ω → **P4/GPIO 26**
 - [ ] TSOP OUT → **P3 (IO35)**
 - [ ] TSOP VCC → **CN01 (3.3V)**
 - [ ] TSOP GND → **P3 (GND)**
 
 ## DS18B20 Temperatura
+
 - [ ] GND → **CN01 (GND)**
 - [ ] DQ → **GPIO 2 (chip ESP32)**
 - [ ] VCC → **CN01 (3.3V)**
@@ -759,6 +775,7 @@ CN01 (3.3V)
 # �️ PROTEÇÃO E OTIMIZAÇÃO AVANÇADA
 
 Esta seção é **OPCIONAL mas ALTAMENTE RECOMENDADA** para:
+
 - ✅ Aumentar a vida útil dos componentes
 - ✅ Melhorar alcance dos rádios (RF e IR)
 - ✅ Evitar danos por curto-circuito ou inversão de polaridade
@@ -833,6 +850,7 @@ CN01 (3.3V) ───[FB]───► VCC do NRF24
 ### 2.2 Como Identificar
 
 Ferrite beads parecem resistores pequenos mas são **pretos com números**. Valores comuns:
+
 - **100Ω @ 100MHz** (ideal)
 - **600Ω @ 100MHz** (bom)
 
@@ -968,6 +986,7 @@ R2 = 10Ω 1W (permite ~100mA pelo LED)
 ### 7.1 Antena do CC1101
 
 O CC1101 geralmente vem com uma **antena de mola**. Para melhor alcance:
+
 - Mantenha a antena **vertical**
 - Afaste de partes metálicas
 - Use antena externa SMA se disponível
@@ -977,6 +996,7 @@ O CC1101 geralmente vem com uma **antena de mola**. Para melhor alcance:
 Se usar a versão com amplificador (PA+LNA), ele puxa **até 115mA** durante transmissão!
 
 **Obrigatório:**
+
 - Capacitor **100µF** no VCC
 - Use fonte 3.3V com **pelo menos 200mA** disponível
 
@@ -1051,35 +1071,41 @@ GPIO 26 ─────[1kΩ]─────────►│ 2N2222 │
 ## ✅ Checklist de Proteção
 
 ### Proteção Geral
+
 - [ ] Diodo Schottky 1N5817 na entrada de bateria
 - [ ] Fusível PTC 500mA após o diodo
 - [ ] Capacitor 1000µF na entrada VIN
 - [ ] TVS 5V na entrada de alimentação
 
 ### CC1101
+
 - [ ] Ferrite bead no VCC
 - [ ] Capacitor 100nF junto ao VCC
 - [ ] Capacitor 10µF junto ao VCC
 - [ ] PTC 200mA (opcional)
 
 ### NRF24L01
+
 - [ ] Ferrite bead no VCC
 - [ ] Capacitor 100nF junto ao VCC
 - [ ] Capacitor 100µF junto ao VCC
 - [ ] PTC 200mA (opcional)
 
 ### PN532 NFC
+
 - [ ] Capacitor 100nF no VCC
 - [ ] Capacitor 10µF no VCC
 - [ ] TVS 3.3V na linha SDA
 - [ ] TVS 3.3V na linha SCL
 
 ### IR Transmissor
+
 - [ ] Transistor 2N2222 driver
 - [ ] Resistor 1kΩ na base
 - [ ] Resistor 10Ω no LED
 
 ### WS2812B
+
 - [ ] Resistor 330Ω na linha de dados
 - [ ] Capacitor 100nF no VCC
 - [ ] Capacitor 100µF no VCC
@@ -1161,6 +1187,7 @@ O ESP32 WROOM-32 da placa CYD usa uma **antena PCB interna** que oferece alcance
 ## 🔬 Entendendo o Circuito de Antena
 
 O ESP32 WROOM-32 tem **dois pads de antena**:
+
 1. **Antena PCB** (interna) - Geralmente selecionada de fábrica
 2. **Antena IPEX/U.FL** (externa) - Precisa ser ativada
 
@@ -1284,12 +1311,14 @@ Vista aproximada (use lupa!):
 ### Passo 8.3: Remova o Resistor de Seleção
 
 **Método 1 - Mover o resistor (recomendado):**
+
 1. Aplique fluxo nos dois lados do resistor
 2. Aqueça **ambos os lados simultaneamente** com o ferro
 3. Com pinça, deslize o resistor para o pad do IPEX
 4. Limpe o fluxo residual
 
 **Método 2 - Soldar jumper de fio:**
+
 1. Remova o resistor existente (pode descartar)
 2. Solde um fio fino (30AWG) entre o ponto central e o pad IPEX
 3. Este método é mais fácil para iniciantes
@@ -1393,18 +1422,22 @@ Montagem Final:
 
 ## ⚠️ Cuidados Importantes
 
-### 1. Não Transmita Sem Antena!
+### 1. Não Transmita Sem Antena
+>
 > **NUNCA** ligue o ESP32 com o mod ativo sem uma antena conectada. A energia refletida pode danificar o chip de rádio!
 
 ### 2. Impedância
+
 - Use sempre cabos e conectores de **50Ω**
 - Cabos baratos podem ter perdas significativas
 
 ### 3. Regulamentações
+
 - Respeite os limites de potência do seu país
 - Antenas de alto ganho podem ultrapassar limites legais
 
 ### 4. Backup
+
 - Guarde o resistor 0Ω removido
 - Se algo der errado, você pode reverter a modificação
 
@@ -1415,6 +1448,7 @@ Montagem Final:
 ### Teste 1: Verificar Continuidade
 
 Com multímetro, verifique:
+
 - Continuidade entre o pad central do IPEX e o novo resistor/jumper
 - **NÃO** deve haver continuidade com o pad da antena PCB
 
@@ -1437,12 +1471,14 @@ Com multímetro, verifique:
 ## ✅ Checklist do Módulo 8 (Antena Externa)
 
 ### Materiais
+
 - [ ] Conector U.FL/IPEX MHF4 fêmea
 - [ ] Pigtail U.FL para SMA (10-20cm)
 - [ ] Conector SMA fêmea para painel
 - [ ] Antena 2.4GHz (2dBi a 8dBi)
 
 ### Ferramentas
+
 - [ ] Ferro de solda ponta fina
 - [ ] Fluxo para SMD
 - [ ] Lupa ou microscópio
@@ -1450,6 +1486,7 @@ Com multímetro, verifique:
 - [ ] Multímetro
 
 ### Modificação
+
 - [ ] Fotografou a placa antes
 - [ ] Localizou o resistor de seleção de antena
 - [ ] Removeu/moveu o resistor para pad IPEX

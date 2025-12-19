@@ -80,6 +80,37 @@ Documentação dos módulos de ataque funcionais.
 
 ---
 
+## 💳 NFC/RFID
+
+> **Módulo PN532 NFC V3** - Documentação completa: [PN532_NFC_MODULE_V3.md](file:///c:/Users/leleb/OneDrive/Desktop/Esp32-S3/docs/PN532_NFC_MODULE_V3.md)
+
+### Ataques Suportados
+
+| Ataque | Descrição | Status |
+|--------|-----------|--------|
+| Clone Card | Clona UID de cartões acesso | ✅ Funcional |
+| Phishing Tag | Cria tags com URLs phishing | ✅ Funcional |
+| NDEF Write | Grava URLs/vCards em tags | ✅ Funcional |
+| Fake Apple Pay | Intercept payment tokens | ✅ Funcional |
+| Pulse Injection | Fault injection em RFID | ✅ Funcional |
+
+### Cartões Suportados
+
+| Tipo | Frequência | Ações |
+|------|------------|-------|
+| MIFARE Classic | 13.56 MHz | Ler, Clonar, Escrever |
+| MIFARE Ultralight | 13.56 MHz | Ler, Escrever |
+| NTAG 213/215/216 | 13.56 MHz | Ler, Escrever, Amiibo |
+| FeliCa | 13.56 MHz | Ler |
+
+### Hardware
+
+- **Módulo**: PN532 V3 (NXP)
+- **Interface**: I2C (GPIO 1/2) com pull-ups 4.7K
+- **Power Gating**: Via MOSFET GPIO 42
+
+---
+
 ## 🚀 Network Simulation (Performance Absoluta)
 
 > **Módulo de simulação de rede crítica de ultra-alta performance**
