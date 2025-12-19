@@ -32,8 +32,8 @@
 ║   1   ║ I2C SDA              ║ PN532, DS3231, PAJ7620U2 (4.7K pull-up)        ║
 ║   2   ║ I2C SCL              ║ PN532, DS3231, PAJ7620U2 (4.7K pull-up)        ║
 ║   3   ║ Touch CS             ║ XPT2046                                        ║
-║   4   ║ Joystick VRX         ║ ADC Canal 1                                    ║
-║   5   ║ CC1101 SS / Joy VRY  ║ SubGHz SPI + ADC                               ║
+║   4   ║ Joystick X / CC1101   ║ ADC1_CH3 + GDO0 SubGHz                         ║
+║   5   ║ Joystick Y / CC1101   ║ ADC1_CH4 + CC1101 SS                           ║
 ║   6   ║ NRF24 CE             ║ 2.4GHz Radio                                   ║
 ║   7   ║ NRF24 SS             ║ 2.4GHz Radio                                   ║
 ║   8   ║ Touch IRQ            ║ XPT2046                                        ║
@@ -42,10 +42,10 @@
 ║  11   ║ SPI2 MOSI            ║ TFT + Touch (compartilhado)                    ║
 ║  12   ║ SPI2 SCK             ║ TFT + Touch (compartilhado)                    ║
 ║  13   ║ SPI2 MISO            ║ TFT + Touch (compartilhado)                    ║
-║  14   ║ IR RX Main / VBAT    ║ TSOP38238 #1 + Battery ADC                     ║
-║  15   ║ GPS RX               ║ NEO-6M TX → ESP RX (UART1)                     ║
-║  16   ║ GPS TX               ║ NEO-6M RX ← ESP TX (UART1)                     ║
-║  17   ║ YS-IRTM TX           ║ IR Module (UART2, Level Shifter!)              ║
+║  14   ║ Joystick BTN C       ║ Botão Baixo (Joystick Shield)                  ║
+║  15   ║ Joystick BTN D       ║ Botão Esquerda (Joystick Shield) + GPS RX      ║
+║  16   ║ Joystick BTN E       ║ Botão E Auxiliar + GPS TX (UART1)              ║
+║  17   ║ Joystick BTN F       ║ Botão F Auxiliar + YS-IRTM TX (UART2)          ║
 ║  18   ║ YS-IRTM RX           ║ IR Module (UART2, Level Shifter!)              ║
 ║  19   ║ 1-Wire               ║ DS18B20 x2 (4.7K pull-up)                      ║
 ║  20   ║ PAM8403 EN / IR Z4   ║ Amp Enable + TSOP38238 #5                      ║
@@ -56,8 +56,8 @@
 ║  38   ║ SD CS                ║ SD Card (SPI3)                                 ║
 ║  39   ║ I2S LRCK             ║ PCM5102A Word Select                           ║
 ║  40   ║ I2S BCLK             ║ PCM5102A Bit Clock                             ║
-║  41   ║ I2S DOUT             ║ PCM5102A Data                                  ║
-║  42   ║ IR RX Zone2 / MOSFET ║ TSOP38238 #3 + IRF520 Gate                     ║
+║  41   ║ Joystick BTN A       ║ Botão Cima (Joystick Shield) + I2S DOUT        ║
+║  42   ║ Joystick BTN B       ║ Botão Direita (Joystick Shield) + MOSFET       ║
 ║  43   ║ USB TX               ║ CDC Serial                                     ║
 ║  44   ║ USB RX               ║ CDC Serial                                     ║
 ║  45   ║ IR RX Zone3 / Buzzer ║ TSOP38238 #4 + PWM Beep                        ║

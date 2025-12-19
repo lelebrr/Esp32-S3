@@ -5,10 +5,13 @@
 
 void MonsterDriver::init() {
     Serial.begin(115200);
-    // Wait for serial if needed, but for malware/stealth we usually don't wait
-    // delay(1000); 
+    // Wait for USB CDC to reconnect after upload/reset
+    delay(1000); 
     
-    Serial.println("\n[MONSTER] Booting specialized hardware...");
+    Serial.println("\n========================================");
+    Serial.println("        MONSTER S3 FIRMWARE v1.0");
+    Serial.println("========================================");
+    Serial.println("[MONSTER] Booting specialized hardware...");
 
     initPowerPins();
     initBuses();

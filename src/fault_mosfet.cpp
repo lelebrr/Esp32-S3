@@ -7,10 +7,8 @@ void setup_fault_mosfet() {
     pinMode(PIN_FAULT_GATE, OUTPUT);
     digitalWrite(PIN_FAULT_GATE, LOW);
     
-    // Configura botões aqui se não for feito no main
+    // Configure fault trigger button
     pinMode(PIN_BTN_FAULT, INPUT_PULLUP);
-    pinMode(PIN_BTN_YES, INPUT_PULLUP);
-    pinMode(PIN_BTN_NO, INPUT_PULLUP);
 }
 
 void fault_pulse_trigger() {

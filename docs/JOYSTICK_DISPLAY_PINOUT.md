@@ -1,152 +1,216 @@
-# Joystick Analógico + Display TFT 3.5" ILI9488 - Pinagem e Montagem
+# Joystick Shield V1.A + Display TFT ILI9341 - Pinagem ESP32-S3
 
 **Última atualização:** 2025-12-19
+
+---
 
 ## Resumo de Hardware
 
 | Componente | Modelo | Interface | Tensão |
 |------------|--------|-----------|--------|
 | MCU | ESP32-S3-WROOM-1 N16R8 | - | 3.3V |
-| Display | ILI9488 TFT 3.5" | SPI2 | 3.3V |
+| Display | ILI9341 TFT 2.8" 320x240 | SPI2 | 3.3V |
 | Touch | XPT2046 | SPI2 (shared) | 3.3V |
 | SD Card | MicroSD Slot | SPI3 | 3.3V |
-| Joystick | Módulo Analógico 2-eixos | ADC | 3.3V |
+| Joystick Shield | Funduino V1.A | ADC + Digital | 3.3V |
 
 ---
 
-## Diagrama de Conexão ASCII
+## Joystick Shield V1.A - Componentes
 
-```
-                    ┌─────────────────────────────────────┐
-                    │        ESP32-S3-WROOM-1 N16R8       │
-                    │                                      │
-     ┌──────────────┼────────────────┬────────────────────┤
-     │              │                │                    │
-  ┌──┴──┐       ┌───┴───┐       ┌────┴────┐          ┌────┴────┐
-  │JOYST│       │DISPLAY│       │  TOUCH  │          │ SD CARD │
-  │ICKM│       │ILI9488│       │ XPT2046 │          │  SLOT   │
-  └──┬──┘       └───┬───┘       └────┬────┘          └────┬────┘
-     │              │                │                    │
-     │  GPIO4 ◄─VRx │                │                    │
-     │  GPIO5 ◄─VRy │  GPIO11─►MOSI  │                    │
-     │  GPIO0 ◄─SW  │  GPIO12─►SCK   │  GPIO3─►CS         │  GPIO38─►CS
-     │  3.3V ──►VCC │  GPIO13◄─MISO  │  (shared SPI)      │  GPIO36─►SCK
-     │  GND ───►GND │  GPIO10─►CS    │                    │  GPIO35─►MOSI
-     │              │  GPIO46─►DC    │  GPIO8◄─IRQ        │  GPIO37◄─MISO
-     │              │  GPIO9 ─►RST   │                    │
-     │              │  GPIO48─►BL    │                    │
-     └──────────────┴────────────────┴────────────────────┘
+```text
+┌─────────────────────────────────────────────────────────────────────┐
+│                    JOYSTICK SHIELD V1.A (Funduino)                   │
+│  ┌─────────────────────────────────────────────────────────────────┐ │
+│  │  [NOKIA 5110]                              [SERIAL BLUETOOTH]   │ │
+│  │   D8-D12/3V/GND                            RX TX GND VCC        │ │
+│  │                                                                 │ │
+│  │  ┌─────────────────────────────────────────┐                    │ │
+│  │  │    [A]  ╭──────╮               ╭───╮    │                    │ │
+│  │  │         │      │               │ ● │    │    [nRF24L01]      │ │
+│  │  │ [D]     │JOYST │     [E] [F]   │JOY│    │     Connector      │ │
+│  │  │         │ ICK  │               │STK│    │                    │ │
+│  │  │    [C]  │      │               ╰───╯    │                    │ │
+│  │  │         ╰──────╯                        │                    │ │
+│  │  │    [B]                                  │                    │ │
+│  │  └─────────────────────────────────────────┘                    │ │
+│  │  [3.3V/5V]────────────────────────────────────[I2C Connector]   │ │
+│  │   SWITCH                                      SCL SDA GND +5V   │ │
+│  └─────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────┘
+
+LEGENDA:
+[A][B][C][D] = Botões direcionais (D-pad style)
+[E][F] = Botões auxiliares pequenos
+JOYSTICK = Analógico 2 eixos + clique central
 ```
 
 ---
 
-## Tabela de Pinagem Detalhada
+## Tabela de Pinagem - Joystick Shield para ESP32-S3
 
 ### Joystick Analógico
 
-| Pino Joystick | ESP32-S3 GPIO | Função | Notas |
-|---------------|---------------|--------|-------|
-| VCC | 3.3V | Alimentação | Cap 100µF recomendado |
-| GND | GND | Terra | Comum com ESP32 |
-| VRx | GPIO4 | ADC1_CH3 | Range 0-4095, centro ~2048 |
-| VRy | GPIO5 | ADC1_CH4 | Range 0-4095, centro ~2048 |
-| SW | GPIO0 | Digital Input | Pull-up 10KΩ, LOW ativo |
+| Shield Pin | Função Arduino | ESP32-S3 GPIO | Tipo | Notas |
+|------------|----------------|---------------|------|-------|
+| VRx | A0 | GPIO4 | ADC1_CH3 | Range 0-4095, centro ~2048 |
+| VRy | A1 | GPIO5 | ADC1_CH4 | Range 0-4095, centro ~2048 |
+| SW | D8 | GPIO0 | Digital | Pull-up, LOW=pressionado |
+| VCC | 5V/3.3V | 3.3V | Power | **Usar chave em 3.3V!** |
+| GND | GND | GND | Power | Comum |
+
+> [!CAUTION]
+> **GPIO0 é o pino de Boot!** Não pressione o botão SW durante upload de firmware.
+
+### Botões Direcionais (D-Pad)
+
+| Botão | Arduino Pin | ESP32-S3 GPIO | Posição | Notas |
+|-------|-------------|---------------|---------|-------|
+| A | D2 | GPIO41 | Cima | LOW quando pressionado |
+| B | D3 | GPIO42 | Direita | LOW quando pressionado |
+| C | D4 | GPIO14 | Baixo | LOW quando pressionado |
+| D | D5 | GPIO15 | Esquerda | LOW quando pressionado |
+
+### Botões Auxiliares
+
+| Botão | Arduino Pin | ESP32-S3 GPIO | Posição | Notas |
+|-------|-------------|---------------|---------|-------|
+| E | D6 | GPIO16 | Centro-Esq | LOW quando pressionado |
+| F | D7 | GPIO17 | Centro-Dir | LOW quando pressionado |
+
+---
+
+## Conectores Externos do Shield
+
+### Conector Serial (Bluetooth)
+
+| Shield | ESP32-S3 | Uso |
+|--------|----------|-----|
+| RX | GPIO44 | USB CDC RX |
+| TX | GPIO43 | USB CDC TX |
+| GND | GND | Comum |
+| VCC | 3.3V | Ou via chave 5V |
+
+### Conector I2C
+
+| Shield | ESP32-S3 | Dispositivos |
+|--------|----------|--------------|
+| SCL | GPIO9 | PN532, DS3231, PAJ7620U2 |
+| SDA | GPIO8 | Barramento compartilhado |
+| GND | GND | Comum |
+| +5V | 3.3V | **Usar 3.3V para ESP32!** |
+
+### Conector nRF24L01
 
 > [!NOTE]
-> O ESP32-S3 **não possui** GPIO34/35. Usamos GPIO4/5 que são ADC1 válidos.
+> O nRF24L01 já está configurado separadamente no projeto (CC1101/NRF24 section).
 
-### Display ILI9488 3.5" (SPI2)
+### Conector Nokia 5110
 
-| Pino Display | ESP32-S3 GPIO | Função | Notas |
-|--------------|---------------|--------|-------|
-| VCC | 3.3V | Alimentação | Display 3.3V nativo |
-| GND | GND | Terra | |
-| SCK | GPIO12 | SPI Clock | 40MHz |
-| MOSI | GPIO11 | SPI Data Out | |
-| MISO | GPIO13 | SPI Data In | |
-| CS | GPIO10 | Chip Select | LOW ativo |
-| DC | GPIO46 | Data/Command | |
-| RST | GPIO9 | Reset | |
-| BL | GPIO48 | Backlight PWM | 0-255 |
-
-### Touch XPT2046 (SPI2 Compartilhado)
-
-| Pino Touch | ESP32-S3 GPIO | Função | Notas |
-|------------|---------------|--------|-------|
-| CS | GPIO3 | Chip Select | LOW ativo |
-| IRQ | GPIO8 | Interrupt | Touch detected |
-| CLK/MOSI/MISO | Compartilhado | SPI2 | Mesmo barramento do display |
-
-### SD Card (SPI3)
-
-| Pino SD | ESP32-S3 GPIO | Função | Notas |
-|---------|---------------|--------|-------|
-| CS | GPIO38 | Chip Select | |
-| SCK | GPIO36 | SPI Clock | |
-| MOSI | GPIO35 | Data Out | |
-| MISO | GPIO37 | Data In | |
+> [!WARNING]
+> **Não suportado** - Conflita com o display TFT ILI9341 principal.
 
 ---
 
-## Instruções de Montagem
+## Display ILI9341 2.8" (SPI2)
 
-### 1. Verificação Pré-montagem
-
-**Com multímetro, verifique:**
-
-- [ ] 3.3V no pino VCC (após ligar ESP32)
-- [ ] Resistência do joystick VRx: ~5KΩ no centro
-- [ ] Resistência do joystick VRy: ~5KΩ no centro
-- [ ] Continuidade GND entre todos os componentes
-
-### 2. Esquema de Soldagem
-
-```
-Ordem recomendada:
-1. GND (todos os componentes primeiro)
-2. VCC (3.3V para todos)
-3. SPI2 Display (SCK, MOSI, MISO)
-4. Display CS, DC, RST, BL
-5. Touch CS, IRQ
-6. SPI3 SD Card
-7. Joystick ADC (VRx, VRy)
-8. Joystick SW
-```
-
-### 3. Capacitores Recomendados
-
-| Componente | Capacitor | Local |
-|------------|-----------|-------|
-| Joystick VCC | 100µF eletrolítico | Entre VCC e GND |
-| Display VCC | 10µF cerâmico | Próximo ao conector |
-| ESP32-S3 VCC | 100µF + 100nF | Próximo ao módulo |
-
-### 4. Pull-up Resistor
-
-- **SW Button**: 10KΩ entre GPIO0 e 3.3V
-  - *Nota: GPIO0 já tem pull-up interno, resistor externo é opcional*
+| Pino Display | ESP32-S3 GPIO | Função |
+|--------------|---------------|--------|
+| VCC | 3.3V | Alimentação |
+| GND | GND | Terra |
+| SCK | GPIO35 | SPI Clock |
+| MOSI | GPIO36 | SPI Data Out |
+| MISO | GPIO37 | SPI Data In |
+| CS | GPIO5 | Chip Select |
+| DC | GPIO6 | Data/Command |
+| RST | GPIO4 | Reset |
+| BL | GPIO3 | Backlight PWM |
 
 ---
 
-## Consumo de Energia Estimado
+## Touch XPT2046 (SPI2 Compartilhado)
 
-| Modo | Consumo | Notas |
-|------|---------|-------|
-| Ativo (240MHz, backlight 100%) | ~150mA | CPU + Display + Periféricos |
-| Idle (160MHz, backlight 50%) | ~50mA | Target atingido |
-| Light Sleep | ~1mA | CPU pausado |
-| Deep Sleep | <5µA | Apenas RTC ativo |
+| Pino Touch | ESP32-S3 GPIO | Função |
+|------------|---------------|--------|
+| CS | GPIO38 | Chip Select |
+| IRQ | GPIO39 | Interrupt |
+| CLK/MOSI/MISO | Compartilhado | Mesmo barramento display |
 
-### Breakdown por Componente
+---
 
-| Componente | Ativo | Idle |
-|------------|-------|------|
-| ESP32-S3 @ 240MHz | 100mA | 20mA |
-| ILI9488 Display | 25mA | 25mA |
-| Backlight 50% | 15mA | 0mA |
-| Joystick Module | 2mA | 2mA |
-| XPT2046 Touch | 1mA | 0.1mA |
-| SD Card (idle) | 5mA | 0.5mA |
+## SD Card (SPI3)
+
+| Pino SD | ESP32-S3 GPIO | Função |
+|---------|---------------|--------|
+| CS | GPIO10 | Chip Select |
+| SCK | GPIO12 | SPI Clock |
+| MOSI | GPIO11 | Data Out |
+| MISO | GPIO13 | Data In |
+
+---
+
+## Esquema de Ligação Física
+
+```
+┌──────────────────┬────────────────────┬──────────────────────────────┐
+│ Shield Pin       │ ESP32-S3 GPIO      │ Cor do Fio Sugerida          │
+├──────────────────┼────────────────────┼──────────────────────────────┤
+│ VCC (3.3V)       │ 3.3V               │ 🔴 Vermelho                  │
+│ GND              │ GND                │ ⚫ Preto                     │
+│ Joystick X (A0)  │ GPIO4              │ 🟠 Laranja                   │
+│ Joystick Y (A1)  │ GPIO5              │ 🟡 Amarelo                   │
+│ Joystick SW (D8) │ GPIO0              │ 🟤 Marrom                    │
+│ Botão A (D2)     │ GPIO41             │ 🟢 Verde                     │
+│ Botão B (D3)     │ GPIO42             │ 🔵 Azul                      │
+│ Botão C (D4)     │ GPIO14             │ 🟣 Roxo                      │
+│ Botão D (D5)     │ GPIO15             │ ⚪ Cinza                     │
+│ Botão E (D6)     │ GPIO16             │ ⬜ Branco                    │
+│ Botão F (D7)     │ GPIO17             │ 🩷 Rosa                      │
+└──────────────────┴────────────────────┴──────────────────────────────┘
+```
+
+---
+
+## Código de Teste Rápido
+
+```cpp
+#include "pin_config.h"
+
+void setup() {
+    Serial.begin(115200);
+    
+    // Configurar pinos do joystick
+    pinMode(PIN_JOY_SW, INPUT_PULLUP);
+    
+    // Configurar botões com pull-up
+    pinMode(PIN_BTN_A, INPUT_PULLUP);
+    pinMode(PIN_BTN_B, INPUT_PULLUP);
+    pinMode(PIN_BTN_C, INPUT_PULLUP);
+    pinMode(PIN_BTN_D, INPUT_PULLUP);
+    pinMode(PIN_BTN_E, INPUT_PULLUP);
+    pinMode(PIN_BTN_F, INPUT_PULLUP);
+}
+
+void loop() {
+    // Leitura do joystick analógico
+    int joyX = analogRead(PIN_JOY_X);
+    int joyY = analogRead(PIN_JOY_Y);
+    bool joySW = digitalRead(PIN_JOY_SW) == LOW;
+    
+    // Leitura dos botões
+    bool btnA = digitalRead(PIN_BTN_A) == LOW;
+    bool btnB = digitalRead(PIN_BTN_B) == LOW;
+    bool btnC = digitalRead(PIN_BTN_C) == LOW;
+    bool btnD = digitalRead(PIN_BTN_D) == LOW;
+    bool btnE = digitalRead(PIN_BTN_E) == LOW;
+    bool btnF = digitalRead(PIN_BTN_F) == LOW;
+    
+    Serial.printf("X=%4d Y=%4d SW=%d | A=%d B=%d C=%d D=%d E=%d F=%d\n",
+                  joyX, joyY, joySW, btnA, btnB, btnC, btnD, btnE, btnF);
+    
+    delay(100);
+}
+```
 
 ---
 
@@ -154,32 +218,16 @@ Ordem recomendada:
 
 | Problema | Causa Provável | Solução |
 |----------|----------------|---------|
-| Display branco | CS ou DC incorreto | Verificar GPIO10/46 |
-| Touch não responde | CS touch conflito | Verificar GPIO3 está HIGH quando não usado |
-| Joystick lê 0 | VCC não conectado | Verificar 3.3V no módulo |
-| Joystick lê 4095 | VRx/VRy invertido | Trocar conexões |
-| SD não monta | SPI3 conflito | Verificar CS=HIGH quando idle |
-| Boot loop | GPIO0 em LOW | SW button não deve estar pressionado no boot |
-
----
-
-## Código de Teste Rápido
-
-```cpp
-// Teste de leitura do joystick
-void testJoystick() {
-    int x = analogRead(4);  // VRx
-    int y = analogRead(5);  // VRy
-    bool btn = digitalRead(0) == LOW;
-    
-    Serial.printf("X=%4d Y=%4d BTN=%d\n", x, y, btn);
-}
-```
+| Joystick sempre 0 | VCC não conectado | Verificar 3.3V no módulo |
+| Joystick sempre 4095 | VRx/VRy invertido | Trocar conexões X/Y |
+| Botões não respondem | Falta pull-up | Usar INPUT_PULLUP no código |
+| Boot loop | GPIO0 em LOW | SW não deve estar pressionado no boot |
+| Leitura instável | Ruído | Adicionar capacitor 100nF em VCC |
 
 ---
 
 ## Referências
 
+- [Funduino Joystick Shield Review](https://embarcados.com.br/review-hardware-joystick-shield-funduino/)
+- [UsinaInfo - Joystick Shield V1.A](https://www.usinainfo.com.br/shields-para-arduino/joystick-shield-para-arduino-v1a-3531.html)
 - [ESP32-S3 Technical Reference Manual](https://www.espressif.com/sites/default/files/documentation/esp32-s3_technical_reference_manual_en.pdf)
-- [ILI9488 Datasheet](https://www.newhavendisplay.com/resources_dataFiles/datasheets/LCDs/ILI9488.pdf)
-- [XPT2046 Touch Controller](https://www.ti.com/lit/ds/symlink/xpt2046.pdf)
