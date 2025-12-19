@@ -43,9 +43,10 @@ static void execute_nfc_fault() {
 
     log_w("[NFC_FAULT] Executing manual fault injection #%lu", fault_count);
 
-    // Pulso no MOSFET: HIGH por 5ms corta VCC do PN532
+    // Pulso no MOSFET: HIGH por 5ms (5000us) corta VCC do PN532
+    // IMPORTANTE: ets_delay_us bloqueia a CPU, garantindo precisão absoluta
     gpio_set_level(MOSFET_CONTROL_PIN, HIGH);
-    vTaskDelay(pdMS_TO_TICKS(FAULT_PULSE_DURATION_MS));
+    ets_delay_us(5000); // 5ms precise delay
     gpio_set_level(MOSFET_CONTROL_PIN, LOW);
 
     // Feedback LED (usando LED_ATTACK_RED_HIGH)
@@ -54,7 +55,7 @@ static void execute_nfc_fault() {
 
     // TTS feedback
     extern void think_and_speak(const char* text);
-    think_and_speak("Porta aberta. Falha injetada no NFC.");
+    think_and_speak("Falha injetada.");
 
     // Mantém LED aceso por tempo definido
     vTaskDelay(pdMS_TO_TICKS(FAULT_LED_DURATION_MS));

@@ -9,9 +9,9 @@
 #include <globals.h>
 
 // Configurações otimizadas para deauth DMA
-#define WIFI_DEAUTH_INTERVAL_US 666  // ~1500pps (666us entre pacotes)
-#define WIFI_DEAUTH_BURST_SIZE 10    // Burst de 10 pacotes
-#define WIFI_DEAUTH_MAX_TX_POWER 84  // Potência máxima
+#define WIFI_DEAUTH_INTERVAL_US 500  // ~2000pps (500us entre pacotes)
+#define WIFI_DEAUTH_BURST_SIZE 50    // Burst agressivo de 50 pacotes
+#define WIFI_DEAUTH_MAX_TX_POWER 84  // Potência máxima (20dBm)
 
 // Buffer DMA otimizado para deauth frames
 static uint8_t deauth_frame_buffer[26] __attribute__((aligned(4))) = {

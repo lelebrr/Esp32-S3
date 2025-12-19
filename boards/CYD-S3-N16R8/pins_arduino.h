@@ -55,10 +55,10 @@ static const uint8_t TFT_SCK = 12;
 static const uint8_t TFT_CS = 10;
 #endif
 #ifndef TFT_DC
-static const uint8_t TFT_DC = 46;
+static const uint8_t TFT_DC = 9;  // Changed from 46 to 9
 #endif
 #ifndef TFT_RST
-static const uint8_t TFT_RST = 9;
+static const uint8_t TFT_RST = -1; // Reset via RC or unused
 #endif
 #ifndef TFT_BL
 static const uint8_t TFT_BL = 48;
@@ -66,40 +66,40 @@ static const uint8_t TFT_BL = 48;
 
 // Touch XPT2046 (shared SPI2)
 #ifndef TOUCH_CS
-static const uint8_t TOUCH_CS = 3;
+static const uint8_t TOUCH_CS = 15; // Changed from 3 to 15
 #endif
 #ifndef TOUCH_IRQ
 static const uint8_t TOUCH_IRQ = 8;
 #endif
 
 // ==============================================================================
-// SPI3 - SD Card + RF Modules
+// SPI3 - SD Card + RF Modules (Shared Bus)
 // ==============================================================================
 #ifndef SS
-static const uint8_t SS = 38;
+static const uint8_t SS = 14;
 #endif
 #ifndef MOSI
-static const uint8_t MOSI = 35;
+static const uint8_t MOSI = 11;
 #endif
 #ifndef MISO
-static const uint8_t MISO = 37;
+static const uint8_t MISO = 13;
 #endif
 #ifndef SCK
-static const uint8_t SCK = 36;
+static const uint8_t SCK = 12;
 #endif
 
 // SD Card Aliases
 #ifndef SDCARD_CS
-static const uint8_t SDCARD_CS = 38;
+static const uint8_t SDCARD_CS = 14;
 #endif
 #ifndef SDCARD_MOSI
-static const uint8_t SDCARD_MOSI = 35;
+static const uint8_t SDCARD_MOSI = 11;
 #endif
 #ifndef SDCARD_MISO
-static const uint8_t SDCARD_MISO = 37;
+static const uint8_t SDCARD_MISO = 13;
 #endif
 #ifndef SDCARD_SCK
-static const uint8_t SDCARD_SCK = 36;
+static const uint8_t SDCARD_SCK = 12;
 #endif
 
 // ==============================================================================

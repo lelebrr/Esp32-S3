@@ -27,36 +27,44 @@ Firmware standalone para ESP32-S3-WROOM-1 (16MB Flash + 8MB PSRAM) com capacidad
 - **GPIO33**: Push button (fault injection manual)
 - **GPIO42**: MOSFET IRF520 controle (VCC PN532)
 
-### Áudio/TTS
-
-- **I2S BCK**: GPIO9 (PCM5102A)
-- **I2S WS**: GPIO10
-- **I2S DATA**: GPIO11
-
-### SD Card
+### SD Card (SPI3 Otimizado)
 
 - **SPI MOSI**: GPIO11
 - **SPI MISO**: GPIO13
 - **SPI SCK**: GPIO12
-- **SD CS**: GPIO10
+- **SD CS**: GPIO14 (Safe Pin)
+
+### Áudio/TTS (I2S)
+
+- **I2S BCK**: GPIO40
+- **I2S WS**: GPIO39
+- **I2S DATA**: GPIO41
 
 ### Interfaces I2C
 
-- **SDA**: GPIO8
-- **SCL**: GPIO9
+- **SDA**: GPIO1
+- **SCL**: GPIO2
 - Conecta: RTC DS3231, gestos PAJ7620U2, NFC PN532 (I2C mode)
+
+### Display SPI (SPI2)
+
+- **MOSI**: GPIO11
+- **MISO**: GPIO13
+- **SCK**: GPIO12
+- **CS**: GPIO10
+- **DC**: GPIO9
+- **Touch CS**: GPIO15
 
 ## Ataques Implementados
 
 | Ataque | Hardware | GPIO | Velocidade | Status |
 |--------|----------|------|------------|--------|
-| BLE Spam BR | BLE interno | - | 800-1000pps | ✅ Funcional |
-| WiFi Deauth | WiFi interno | DMA | 1500pps | ✅ Funcional |
+| BLE Spam BR | BLE interno | - | ~1000pps (Raw GAP) | ✅ Monster |
+| WiFi Deauth | WiFi interno | DMA | ~2000pps (Burst 50) | ✅ Monster |
 | PMKID Capture | WiFi interno | PSRAM | 64KB buffer | ✅ Funcional |
-| Evil Twin | WiFi interno | - | Dinâmico | ✅ Funcional |
-| NFC Fault Injection | PN532 + MOSFET | GPIO42/GPIO33 | 5ms pulso | ✅ Funcional |
+| NFC Fault Injection | PN532 + MOSFET | GPIO42/33 | 5ms (Precisão uS) | ✅ Monster |
 | IA Q-Learning | PSRAM + SD | - | 2048 estados | ✅ Funcional |
-| TTS Dinâmico | PCM5102A | I2S 9/10/11 | eSpeak-NG PT-BR | ✅ Funcional |
+| TTS Real | PCM5102A | I2S 39/40/41 | SAM (Software Mouth) | ✅ Funcional |
 
 ## Fluxo de Operação IA
 
@@ -127,24 +135,24 @@ PUSH_BUTTON -> GPIO33
 MOSFET_IRF520_GATE -> GPIO42
 MOSFET_IRF520_DRAIN -> PN532_VCC
 
-# Audio DAC
-PCM5102A_BCK -> GPIO9
-PCM5102A_WS -> GPIO10
-PCM5102A_DATA -> GPIO11
+# Audio DAC (PCM5102A)
+PCM5102A_BCK -> GPIO40
+PCM5102A_WS -> GPIO39
+PCM5102A_DATA -> GPIO41
 
 # SD Card
 SD_MOSI -> GPIO11
 SD_MISO -> GPIO13
 SD_SCK -> GPIO12
-SD_CS -> GPIO10
+SD_CS -> GPIO14
 
 # I2C Bus
-RTC_DS3231_SDA -> GPIO8
-RTC_DS3231_SCL -> GPIO9
-PAJ7620U2_SDA -> GPIO8
-PAJ7620U2_SCL -> GPIO9
-PN532_SDA -> GPIO8
-PN532_SCL -> GPIO9
+RTC_DS3231_SDA -> GPIO1
+RTC_DS3231_SCL -> GPIO2
+PAJ7620U2_SDA -> GPIO1
+PAJ7620U2_SCL -> GPIO2
+PN532_SDA -> GPIO1
+PN532_SCL -> GPIO2
 
 # Proteções
 DIODO_1N5817 -> VCC_BATERIA
@@ -334,10 +342,9 @@ if (!psramFound()) {
 
 ```cpp
 // Verificar I2S
-i2s_driver_install(I2S_NUM_0, &i2s_cfg, 0, NULL);
-i2s_set_pin(I2S_NUM_0, &pin_cfg);
-// Verificar eSpeak-NG
-init_tts_system();
+audio.setPinout(40, 39, 41);
+// Verificar SAM
+speak_text_sam("Teste");
 ```
 
 ## Performance Benchmarks
