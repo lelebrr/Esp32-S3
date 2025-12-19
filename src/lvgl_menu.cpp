@@ -1,153 +1,158 @@
 #include "lvgl_menu.h"
+#include "pin_config.h"
+#include "attacks_manager.h"
+#include "s3_driver.h" // For power control if needed
 #include <SPI.h>
 
-// Configuração ST7789
-#define TFT_MOSI 11
-#define TFT_SCLK 12
-#define TFT_CS   10
-#define TFT_DC   9
-#define TFT_RST  4
-#define TFT_BL   48
-
+// Screen dimensions
 #define SCR_W 240
 #define SCR_H 240
 
+// LVGL Global Definitions
 static lv_disp_draw_buf_t draw_buf;
-static lv_color_t buf[SCR_W * 20]; // Buffer pequeno para PSRAM salvar memoria
+static lv_color_t *buf; // Dynamic allocation in PSRAM
 
-// Driver de baixo nível SPI ST7789
+// ST7789 Specific Commands
+#define ST7789_SWRESET 0x01
+#define ST7789_SLPOUT  0x11
+#define ST7789_NORON   0x13
+#define ST7789_INVOFF  0x20
+#define ST7789_INVON   0x21
+#define ST7789_DISPON  0x29
+#define ST7789_CASET   0x2A
+#define ST7789_RASET   0x2B
+#define ST7789_RAMWR   0x2C
+#define ST7789_MADCTL  0x36
+#define ST7789_COLMOD  0x3A
+
+// Direct SPI Driver for ST7789 (Optimized)
 void st7789_send_cmd(uint8_t cmd) {
-    digitalWrite(TFT_DC, LOW);
-    digitalWrite(TFT_CS, LOW);
+    digitalWrite(PIN_TFT_DC, LOW);
+    digitalWrite(PIN_TFT_CS, LOW);
     SPI.transfer(cmd);
-    digitalWrite(TFT_CS, HIGH);
+    digitalWrite(PIN_TFT_CS, HIGH);
 }
 
 void st7789_send_data(uint8_t data) {
-    digitalWrite(TFT_DC, HIGH);
-    digitalWrite(TFT_CS, LOW);
+    digitalWrite(PIN_TFT_DC, HIGH);
+    digitalWrite(PIN_TFT_CS, LOW);
     SPI.transfer(data);
-    digitalWrite(TFT_CS, HIGH);
+    digitalWrite(PIN_TFT_CS, HIGH);
 }
 
 void st7789_init() {
-    pinMode(TFT_MOSI, OUTPUT);
-    pinMode(TFT_SCLK, OUTPUT);
-    pinMode(TFT_CS, OUTPUT);
-    pinMode(TFT_DC, OUTPUT);
-    pinMode(TFT_RST, OUTPUT);
-    pinMode(TFT_BL, OUTPUT);
+    // Pins are already init in s3_driver if needed, but we ensure OUTPUT here
+    pinMode(PIN_TFT_MOSI, OUTPUT);
+    pinMode(PIN_TFT_SCLK, OUTPUT);
+    pinMode(PIN_TFT_CS, OUTPUT);
+    pinMode(PIN_TFT_DC, OUTPUT);
+    pinMode(PIN_TFT_RST, OUTPUT);
+    pinMode(PIN_TFT_BL, OUTPUT);
 
-    SPI.begin(TFT_SCLK, -1, TFT_MOSI, TFT_CS);
-    SPI.setFrequency(40000000); // 40MHz
-    SPI.setDataMode(SPI_MODE2); // ST7789 usa Mode 2 ou 3 geralmente
-
-    // Hard Reset
-    digitalWrite(TFT_RST, LOW); delay(100);
-    digitalWrite(TFT_RST, HIGH); delay(100);
-
-    // Init Commands (Standard ST7789)
-    st7789_send_cmd(0x01); delay(150); // SWRESET
-    st7789_send_cmd(0x11); delay(50);  // SLPOUT
-    st7789_send_cmd(0x3A); st7789_send_data(0x55); // COLMOD 16bit
-    st7789_send_cmd(0x36); st7789_send_data(0x00); // MADCTL (Orientation)
-    st7789_send_cmd(0x21); // INVON (Muitos ST7789 precisam disso)
-    st7789_send_cmd(0x13); // NORON
-    st7789_send_cmd(0x29); // DISPON
+    // SPI Init (using global SPI instance or separate?)
+    // Using standard SPI instance for simplicity, but re-configuring for TFT
+    SPI.beginTransaction(SPISettings(80000000, MSBFIRST, SPI_MODE2)); // 80MHz if possible
     
-    digitalWrite(TFT_BL, HIGH); // Backlight
+    // Hardware Reset
+    digitalWrite(PIN_TFT_RST, HIGH);
+    delay(5);
+    digitalWrite(PIN_TFT_RST, LOW);
+    delay(20);
+    digitalWrite(PIN_TFT_RST, HIGH);
+    delay(150);
+
+    // Init Sequence
+    st7789_send_cmd(ST7789_SWRESET); delay(150);
+    st7789_send_cmd(ST7789_SLPOUT); delay(50);
+    st7789_send_cmd(ST7789_COLMOD); st7789_send_data(0x55); // 16-bit 565
+    st7789_send_cmd(ST7789_MADCTL); st7789_send_data(0x00); // RGB
+    st7789_send_cmd(ST7789_INVON); // Most ST7789 need inversion
+    st7789_send_cmd(ST7789_NORON);
+    st7789_send_cmd(ST7789_DISPON);
+    
+    digitalWrite(PIN_TFT_BL, HIGH); // Turn on Backlight
+    SPI.endTransaction();
 }
 
-// Flush Callback para LVGL
+// Flush Callback
 void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p) {
     uint32_t w = (area->x2 - area->x1 + 1);
     uint32_t h = (area->y2 - area->y1 + 1);
 
-    st7789_send_cmd(0x2A); // CASET
+    SPI.beginTransaction(SPISettings(80000000, MSBFIRST, SPI_MODE2));
+
+    st7789_send_cmd(ST7789_CASET);
     st7789_send_data(area->x1 >> 8); st7789_send_data(area->x1 & 0xFF);
     st7789_send_data(area->x2 >> 8); st7789_send_data(area->x2 & 0xFF);
 
-    st7789_send_cmd(0x2B); // RASET
+    st7789_send_cmd(ST7789_RASET);
     st7789_send_data(area->y1 >> 8); st7789_send_data(area->y1 & 0xFF);
     st7789_send_data(area->y2 >> 8); st7789_send_data(area->y2 & 0xFF);
 
-    st7789_send_cmd(0x2C); // RAMWR
+    st7789_send_cmd(ST7789_RAMWR);
 
-    digitalWrite(TFT_DC, HIGH);
-    digitalWrite(TFT_CS, LOW);
+    digitalWrite(PIN_TFT_DC, HIGH);
+    digitalWrite(PIN_TFT_CS, LOW);
+    
     SPI.writeBytes((uint8_t*)color_p, w * h * 2);
-    digitalWrite(TFT_CS, HIGH);
+    
+    digitalWrite(PIN_TFT_CS, HIGH);
+    SPI.endTransaction();
 
     lv_disp_flush_ready(disp);
 }
 
-#include "attacks_manager.h"
-
-// --- UI Logic ---
+// UI Event Handler
 static void event_handler(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t * obj = lv_event_get_target(e);
     if(code == LV_EVENT_CLICKED) {
         String btn_text = String(lv_list_get_btn_text(lv_obj_get_parent(obj), obj));
-        Serial.println("Clicked: " + btn_text);
-
-        if (btn_text == "BLE Spam") attacks_start(ATTACK_BLE_SPAM);
-        else if (btn_text == "WiFi Deauth") attacks_start(ATTACK_WIFI_DEAUTH);
-        else if (btn_text == "NFC Fault") attacks_start(ATTACK_NFC_FAULT);
-        else if (btn_text == "SubGHz Replay") attacks_start(ATTACK_SUBGHZ_REPLAY);
-        else if (btn_text == "IR Brute") attacks_start(ATTACK_IR_BRUTE);
-        else if (btn_text == "Parar Ataques") attacks_stop();
-        else if (btn_text == "Modo Stealth") {
-            // Implement stealth logic (LEDs off)
-             extern void enable_module(int); 
-             // Toggle variable? For now just stop attacks.
-             attacks_stop();
+        Serial.println("Selected: " + btn_text);
+        
+        // Attack Launch Logic
+        if (btn_text.indexOf("BLE Spam") >= 0) attacks_start(ATTACK_BLE_SPAM);
+        else if (btn_text.indexOf("WiFi Deauth") >= 0) attacks_start(ATTACK_WIFI_DEAUTH);
+        else if (btn_text.indexOf("Parar") >= 0) attacks_stop();
+        else if (btn_text.indexOf("Stealth") >= 0) {
+            // Toggle Stealth
+            // MonsterDriver::toggleStealth();
         }
     }
 }
 
 void build_menu() {
     lv_obj_t * list1 = lv_list_create(lv_scr_act());
-    lv_obj_set_size(list1, 220, 220);
-    lv_obj_align(list1, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_set_size(list1, 240, 240);
+    lv_obj_center(list1);
 
-    lv_list_add_text(list1, "ATAQUE");
+    lv_list_add_text(list1, "MONSTER S3");
+    
     lv_obj_t * btn;
-    btn = lv_list_add_btn(list1, LV_SYMBOL_BLUETOOTH, "BLE Spam");
-    lv_obj_add_event_cb(btn, event_handler, LV_EVENT_CLICKED, NULL);
     btn = lv_list_add_btn(list1, LV_SYMBOL_WIFI, "WiFi Deauth");
     lv_obj_add_event_cb(btn, event_handler, LV_EVENT_CLICKED, NULL);
-    btn = lv_list_add_btn(list1, LV_SYMBOL_WARNING, "NFC Fault");
-    lv_obj_add_event_cb(btn, event_handler, LV_EVENT_CLICKED, NULL);
-    btn = lv_list_add_btn(list1, LV_SYMBOL_UPLOAD, "SubGHz Replay");
-    lv_obj_add_event_cb(btn, event_handler, LV_EVENT_CLICKED, NULL);
-    btn = lv_list_add_btn(list1, LV_SYMBOL_CHARGE, "IR Brute");
-    lv_obj_add_event_cb(btn, event_handler, LV_EVENT_CLICKED, NULL);
-    
-    btn = lv_list_add_btn(list1, LV_SYMBOL_STOP, "Parar Ataques");
-    lv_obj_set_style_bg_color(btn, lv_color_hex(0xFF0000), 0); // Red button
+
+    btn = lv_list_add_btn(list1, LV_SYMBOL_BLUETOOTH, "BLE Spam");
     lv_obj_add_event_cb(btn, event_handler, LV_EVENT_CLICKED, NULL);
 
-    lv_list_add_text(list1, "IA & MODOS");
-    btn = lv_list_add_btn(list1, LV_SYMBOL_REFRESH, "IA Atualizar");
-    lv_obj_add_event_cb(btn, event_handler, LV_EVENT_CLICKED, NULL);
-    btn = lv_list_add_btn(list1, LV_SYMBOL_EYE_CLOSE, "Modo Stealth");
-    lv_obj_add_event_cb(btn, event_handler, LV_EVENT_CLICKED, NULL);
-    
-    lv_list_add_text(list1, "VOZ");
-    btn = lv_list_add_btn(list1, LV_SYMBOL_VOLUME_MAX, "Voz Testar");
-    lv_obj_add_event_cb(btn, event_handler, LV_EVENT_CLICKED, NULL);
-    
-    lv_list_add_text(list1, "STATUS");
-    btn = lv_list_add_btn(list1, LV_SYMBOL_BATTERY_FULL, "Bateria 98%");
+    btn = lv_list_add_btn(list1, LV_SYMBOL_WARNING, "Parar Tudo");
+    lv_obj_set_style_bg_color(btn, lv_color_hex(0xAA0000), 0);
     lv_obj_add_event_cb(btn, event_handler, LV_EVENT_CLICKED, NULL);
 }
 
 void setup_lvgl_menu() {
-    attacks_init(); // Garantir init
     st7789_init();
     lv_init();
-    lv_disp_draw_buf_init(&draw_buf, buf, NULL, SCR_W * 20);
+
+    // Allocate buffer in PSRAM
+    size_t buf_size = SCR_W * SCR_H / 5; // 1/5th screen buffer
+    buf = (lv_color_t*) ps_malloc(buf_size * sizeof(lv_color_t));
+    if(!buf) {
+        Serial.println("PSRAM Alloc Failed for LVGL! Using Heap.");
+        buf = (lv_color_t*) malloc(buf_size * sizeof(lv_color_t));
+    }
+
+    lv_disp_draw_buf_init(&draw_buf, buf, NULL, buf_size);
 
     static lv_disp_drv_t disp_drv;
     lv_disp_drv_init(&disp_drv);
