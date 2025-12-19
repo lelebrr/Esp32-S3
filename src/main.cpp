@@ -14,6 +14,13 @@
 #include <functional>
 #include <string>
 #include <vector>
+
+// Novos mÃ³dulos otimizados
+#include "modules/ble/ble_spam_br.h"
+#include "modules/wifi/wifi_deauth_pmkid.h"
+#include "nfc_fault_mosfet.h"
+#include "q_learn_ia.h"
+
 io_expander ioExpander;
 LeleConfig leleConfig;
 LeleConfigPins leleConfigPins;
@@ -66,7 +73,7 @@ void __attribute__((weak)) taskInputHandler(void *parameter) {
         // Sometimes this task run 2 or more times before looptask,
         // and navigation gets stuck, the idea here is run the input detection
         // if AnyKeyPress is false, or rerun if it was not renewed within 75ms (arbitrary)
-        // because AnyKeyPress will be true if didn´t passed through a check(bool var)
+        // because AnyKeyPress will be true if didnÂ´t passed through a check(bool var)
         if (!AnyKeyPress || millis() - timer > 75) {
             NextPress = false;
             PrevPress = false;
@@ -99,6 +106,22 @@ void __attribute__((weak)) taskInputHandler(void *parameter) {
             longSel = false;
         }
 
+        // Verificar switches e atualizar estados
+        read_switches();
+        update_leds();
+        check_fault_injection();
+
+        // IA toma decisÃµes periodicamente
+        static unsigned long last_ai_check = 0;
+        if (millis() - last_ai_check > 5000) {  // A cada 5 segundos
+            ai_attack_decision();
+            save_q_table_to_sd();  // Salvar progresso
+            last_ai_check = millis();
+        }
+
+        // Deep sleep condicional
+        conditional_deep_sleep();
+
         vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
@@ -109,6 +132,33 @@ String cachedPassword = "";
 bool interpreter_start = false;
 bool sdcardMounted = false;
 bool gpsConnected = false;
+
+// Novos pinos para LEDs, switches e fault injection
+#define LED_ATTACK_RED_HIGH 4      // GPIO4: LED alto brilho vermelho (ataque/falha)
+#define LED_ATTACK_RED_LOW 0       // GPIO0: LED baixo brilho vermelho (pronto)
+#define LED_AI_BLUE 6              // GPIO6: LED alto brilho azul (IA/dormindo)
+#define LED_SLEEP_BLUE 7           // GPIO7: LED alto brilho azul (IA/dormindo)
+#define SWITCH_STEALTH_UART2 15    // GPIO15: interruptor preto (desliga UART2)
+#define SWITCH_STEALTH_UART1 16    // GPIO16: interruptor preto (desliga UART1)
+#define SWITCH_ATTACK_CC1101 14    // GPIO14: interruptor vermelho (liga CC1101)
+#define SWITCH_ATTACK_PN532 17     // GPIO17: interruptor vermelho (liga PN532)
+#define SWITCH_AI_PAJ7620 18       // GPIO18: interruptor verde (liga PAJ7620U2)
+#define SWITCH_AI_DS3231 19        // GPIO19: interruptor verde (liga DS3231)
+#define FAULT_INJECT_BUTTON 33     // GPIO33: push button curto (fault injection)
+#define POWER_SWITCH 99            // VCC bateria â†’ BMS (nÃ£o GPIO, controle de energia)
+
+// Estados dos switches e LEDs
+bool stealth_mode = false;
+bool attack_mode = false;
+bool ai_mode = false;
+bool fault_injection_active = false;
+bool ready_led_state = false;
+bool attack_led_state = false;
+bool ai_led_state = false;
+
+// Q-table para IA local (armazenada em PSRAM)
+float* q_table = nullptr;
+const int Q_TABLE_SIZE = 2048;  // 2KB Q-table
 
 // wifi globals - organizados em namespace para melhor encapsulamento
 // wifi globals
@@ -295,7 +345,7 @@ void setup_gpio() {
         initCC1101once(&sdcardSPI); // (ARDUINO_M5STACK_CARDPUTER) and (ESP32S3DEVKITC1) and devices that
                                     // share CC1101 pin with only SDCard
     else initCC1101once(NULL);
-    // (ARDUINO_M5STICK_C_PLUS) || (ARDUINO_M5STICK_C_PLUS2) and others that doesn´t share SPI with
+    // (ARDUINO_M5STICK_C_PLUS) || (ARDUINO_M5STICK_C_PLUS2) and others that doesnÂ´t share SPI with
     // other devices (need to change it when Lele board comes to shore)
 }
 
@@ -489,6 +539,110 @@ void startup_sound() {
 #include "core/ai_attack_learner.h"
 #endif
 
+// FunÃ§Ãµes para novos componentes de hardware
+void init_new_hardware_pins() {
+    // Configurar LEDs como saÃ­da
+    pinMode(LED_ATTACK_RED_HIGH, OUTPUT);
+    pinMode(LED_ATTACK_RED_LOW, OUTPUT);
+    pinMode(LED_AI_BLUE, OUTPUT);
+    pinMode(LED_SLEEP_BLUE, OUTPUT);
+
+    // Configurar switches como entrada com pull-up
+    pinMode(SWITCH_STEALTH_UART2, INPUT_PULLUP);
+    pinMode(SWITCH_STEALTH_UART1, INPUT_PULLUP);
+    pinMode(SWITCH_ATTACK_CC1101, INPUT_PULLUP);
+    pinMode(SWITCH_ATTACK_PN532, INPUT_PULLUP);
+    pinMode(SWITCH_AI_PAJ7620, INPUT_PULLUP);
+    pinMode(SWITCH_AI_DS3231, INPUT_PULLUP);
+
+    // Configurar push button como entrada com pull-up
+    pinMode(FAULT_INJECT_BUTTON, INPUT_PULLUP);
+
+    // Inicializar LEDs apagados
+    digitalWrite(LED_ATTACK_RED_HIGH, LOW);
+    digitalWrite(LED_ATTACK_RED_LOW, LOW);
+    digitalWrite(LED_AI_BLUE, LOW);
+    digitalWrite(LED_SLEEP_BLUE, LOW);
+
+    log_i("[HW] Novos pinos de hardware inicializados");
+}
+
+void read_switches() {
+    // Ler estado dos switches (LOW = ligado)
+    stealth_mode = (digitalRead(SWITCH_STEALTH_UART2) == LOW) || (digitalRead(SWITCH_STEALTH_UART1) == LOW);
+    attack_mode = (digitalRead(SWITCH_ATTACK_CC1101) == LOW) || (digitalRead(SWITCH_ATTACK_PN532) == LOW);
+    ai_mode = (digitalRead(SWITCH_AI_PAJ7620) == LOW) || (digitalRead(SWITCH_AI_DS3231) == LOW);
+}
+
+void update_leds() {
+    // LED vermelho baixo brilho: sempre ligado quando pronto
+    ready_led_state = !isSleeping && !fault_injection_active;
+    digitalWrite(LED_ATTACK_RED_LOW, ready_led_state ? HIGH : LOW);
+
+    // LEDs vermelhos alto brilho: piscam durante ataque
+    attack_led_state = attack_running || fault_injection_active;
+    digitalWrite(LED_ATTACK_RED_HIGH, attack_led_state ? HIGH : LOW);
+
+    // LEDs azuis: IA ativa ou dormindo
+    ai_led_state = ai_mode && !attack_running;
+    digitalWrite(LED_AI_BLUE, ai_led_state ? HIGH : LOW);
+    digitalWrite(LED_SLEEP_BLUE, isSleeping ? HIGH : LOW);
+}
+
+void check_fault_injection() {
+    static unsigned long last_fault_time = 0;
+    if (digitalRead(FAULT_INJECT_BUTTON) == LOW && millis() - last_fault_time > 1000) {
+        last_fault_time = millis();
+        fault_injection_active = true;
+
+        // Pulso de 5ms no MOSFET IRF520 para PN532
+        digitalWrite(42, HIGH);  // GPIO42 controla MOSFET
+        delay(5);
+        digitalWrite(42, LOW);
+
+        log_w("[FAULT] InjeÃ§Ã£o de falha manual ativada");
+        delay(100);
+        fault_injection_active = false;
+    }
+}
+
+    // FunÃ§Ãµes Q-table movidas para q_learn_ia.cpp
+
+void ai_attack_decision() {
+    // Usar nova implementaÃ§Ã£o Q-learning otimizada
+    if (!is_q_learning_active()) {
+        start_q_learning();
+    }
+}
+
+void conditional_deep_sleep() {
+    if (!attack_running && !speech_pending && millis() - last_speech_time > 500) {
+        log_i("[SLEEP] Entrando em deep sleep por 500ms");
+        esp_sleep_enable_timer_wakeup(500 * 1000);  // 500ms
+        esp_deep_sleep_start();
+    }
+}
+
+void tts_async_task(void *parameter) {
+    while (true) {
+        if (speech_pending) {
+            // TTS usa buffer em PSRAM
+            speak_buffered_text();
+            speech_pending = false;
+            last_speech_time = millis();
+        }
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+}
+
+void think_and_speak(const char* text) {
+    if (speech_pending) return;  // JÃ¡ hÃ¡ fala pendente
+
+    // Bufferizar texto em PSRAM para TTS assÃ­ncrono
+    speech_pending = true;
+    log_i("[TTS] Fala agendada: %s", text);
+}
+
 /*********************************************************************
  **  Function: setup
  **  Where the devices are started and variables set
@@ -609,7 +763,25 @@ void setup() {
     log_i("[S3] Power gating initialized for %d modules", MODULE_COUNT);
 #endif
 
-    // Initialize TTS system`n    init_tts_main();`n`n    // Initialize AI Attack Learner
+    // Initialize novos componentes de hardware
+    init_new_hardware_pins();
+    init_q_table();
+    load_q_table_from_sd();
+
+    // Inicializar TTS assÃ­ncrono
+    xTaskCreate(
+        tts_async_task,    // Task function
+        "TTS_Async",       // Task Name
+        4096,              // Stack size
+        NULL,              // Task parameters
+        1,                 // Task priority
+        NULL               // Task handle
+    );
+
+    // Initialize TTS system
+    init_tts_main();
+
+    // Initialize AI Attack Learner
     if (!aiLearner.init()) {
         log_w("[AI] Failed to initialize attack learner");
     } else {
@@ -691,11 +863,11 @@ void loop() {
     tft.setLogging();
     Serial.println(
         "\n"
-        "¦¦¦¦¦¦  ¦¦¦¦¦¦  ¦¦    ¦¦  ¦¦¦¦¦¦ ¦¦¦¦¦¦¦ \n"
-        "¦¦   ¦¦ ¦¦   ¦¦ ¦¦    ¦¦ ¦¦      ¦¦      \n"
-        "¦¦¦¦¦¦  ¦¦¦¦¦¦  ¦¦    ¦¦ ¦¦      ¦¦¦¦¦   \n"
-        "¦¦   ¦¦ ¦¦   ¦¦ ¦¦    ¦¦ ¦¦      ¦¦      \n"
-        "¦¦¦¦¦¦  ¦¦   ¦¦  ¦¦¦¦¦¦   ¦¦¦¦¦¦ ¦¦¦¦¦¦¦ \n"
+        "Â¦Â¦Â¦Â¦Â¦Â¦  Â¦Â¦Â¦Â¦Â¦Â¦  Â¦Â¦    Â¦Â¦  Â¦Â¦Â¦Â¦Â¦Â¦ Â¦Â¦Â¦Â¦Â¦Â¦Â¦ \n"
+        "Â¦Â¦   Â¦Â¦ Â¦Â¦   Â¦Â¦ Â¦Â¦    Â¦Â¦ Â¦Â¦      Â¦Â¦      \n"
+        "Â¦Â¦Â¦Â¦Â¦Â¦  Â¦Â¦Â¦Â¦Â¦Â¦  Â¦Â¦    Â¦Â¦ Â¦Â¦      Â¦Â¦Â¦Â¦Â¦   \n"
+        "Â¦Â¦   Â¦Â¦ Â¦Â¦   Â¦Â¦ Â¦Â¦    Â¦Â¦ Â¦Â¦      Â¦Â¦      \n"
+        "Â¦Â¦Â¦Â¦Â¦Â¦  Â¦Â¦   Â¦Â¦  Â¦Â¦Â¦Â¦Â¦Â¦   Â¦Â¦Â¦Â¦Â¦Â¦ Â¦Â¦Â¦Â¦Â¦Â¦Â¦ \n"
         "                                         \n"
         "         PREDATORY FIRMWARE\n\n"
         "Tips: Connect to the WebUI for better experience\n"
@@ -710,6 +882,3 @@ void loop() {
 }
 #endif
 `n// TTS and Deep Sleep variables`nbool speech_pending = false;`nunsigned long last_speech_time = 0;`nbool attack_running = false;`n`n// Initialize TTS system`nvoid init_tts_main() {`n    if (!init_tts_system()) {`n        log_w("[TTS] Failed to initialize TTS system");`n    } else {`n        log_i("[TTS] TTS system initialized successfully");`n        think_and_speak("Sistema pronto. Iniciando monitoramento.");`n    }`n}
-
-
-
