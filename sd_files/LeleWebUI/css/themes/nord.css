@@ -1,0 +1,67 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   WAVEPWN - Nord Theme
+   Arctic, north-bluish color palette
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="nord"] {
+    /* Polar Night */
+    --bg-primary: #2e3440;
+    --bg-secondary: #3b4252;
+    --bg-tertiary: #434c5e;
+    --bg-card: rgba(59, 66, 82, 0.9);
+    --bg-card-hover: rgba(67, 76, 94, 0.95);
+
+    /* Frost - Primary Blue */
+    --primary: #88c0d0;
+    --primary-dim: rgba(136, 192, 208, 0.3);
+    --primary-glow: 0 0 20px rgba(136, 192, 208, 0.5);
+
+    /* Secondary - Light Blue */
+    --secondary: #81a1c1;
+    --secondary-dim: rgba(129, 161, 193, 0.3);
+    --secondary-glow: 0 0 20px rgba(129, 161, 193, 0.5);
+
+    /* Accent - Teal */
+    --accent: #8fbcbb;
+    --accent-dim: rgba(143, 188, 187, 0.3);
+
+    /* Aurora - State Colors */
+    --success: #a3be8c;
+    --warning: #ebcb8b;
+    --danger: #bf616a;
+    --info: #5e81ac;
+
+    /* Snow Storm - Text */
+    --text-primary: #eceff4;
+    --text-secondary: #d8dee9;
+    --text-muted: #4c566a;
+
+    /* Borders */
+    --border-color: rgba(136, 192, 208, 0.3);
+    --border-glow: rgba(136, 192, 208, 0.5);
+
+    /* Glass */
+    --glass-bg: rgba(46, 52, 64, 0.8);
+    --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="nord"] .brand h2 {
+    background: linear-gradient(90deg, #88c0d0, #81a1c1);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+[data-theme="nord"] .nav-links a.active {
+    border-left-color: #88c0d0;
+    box-shadow: 0 0 15px rgba(136, 192, 208, 0.3);
+}
+
+[data-theme="nord"] .btn-primary {
+    background: linear-gradient(135deg, #88c0d0, #5e81ac);
+}
+
+[data-theme="nord"] .stat-card .value {
+    color: #88c0d0;
+    text-shadow: 0 0 15px rgba(136, 192, 208, 0.5);
+}

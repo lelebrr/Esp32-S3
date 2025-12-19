@@ -1,0 +1,506 @@
+ï»¿<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lele Theme Editor 2025</title>
+  <style>
+    :root {
+      --primary: #00ff88;
+      --primary-glow: 0 0 30px #00ff88;
+      --danger: #ff0044;
+      --warning: #ffaa00;
+      --bg: #000814;
+      --card: rgba(10, 20, 40, 0.9);
+      --text: #00ffcc;
+      --text-dim: #008866;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background: linear-gradient(135deg, #000814 0%, #001122 50%, #0a0a1a 100%);
+      color:root { --primary: #00ff88; }
+      color: var(--text);
+      font-family: 'Orbitron', 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 3rem;
+      margin: 30px 0;
+      background: linear-gradient(90deg, #00ffff, #ff00ff, #ffff00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 40px rgba(0,255,255,0.5);
+      animation: glow 4s infinite alternate;
+    }
+
+    @keyframes glow { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }
+
+    .dragon-header {
+      text-align: center;
+      font-size: 120px;
+      margin: 20px 0;
+      animation: float 6s infinite;
+      text-shadow: var(--primary-glow);
+    }
+
+    .preview {
+      background: #000;
+      border-radius: 25px;
+      padding: 30px;
+      margin: 30px 0;
+      border: 3px solid var(--primary);
+      box-shadow: 0 0 60px var(--primary-glow), inset 0 0 30px rgba(0,255,136,0.2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .preview::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,255,136,0.03) 10px, rgba(0,255,136,0.03) 20px);
+      pointer-events: none;
+    }
+
+    .preview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      z-index: 2;
+      position: relative;
+    }
+
+    .preview-title {
+      font-size: 1.8rem;
+      color: var(--primary);
+      text-shadow: var(--primary-glow);
+    }
+
+    .preview-mascot {
+      font-size: 80px;
+      text-align: center;
+      padding: 30px;
+      color: var(--primary);
+      text-shadow: var(--primary-glow);
+      animation: pulse 3s infinite;
+      transition: all 0.5s;
+    }
+
+    .preview-buttons {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 30px 0;
+    }
+
+    .preview-btn {
+      padding: 15px 30px;
+      border-radius: var(--radius, 12px);
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 1.1rem;
+      transition: all 0.3s;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    }
+
+    .preview-btn:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+    }
+
+    .btn-primary { background: var(--primary, #00ff88); color: #000; }
+    .btn-secondary { background: var(--secondary, #0088ff); color: #fff; }
+    .btn-danger { background: var(--danger, #ff0044); color: #fff; }
+    .btn-success { background: var(--success, #44ff88); color: #000; }
+    .btn-warning { background: var(--warning, #ffaa00); color: #000; }
+
+    .editor {
+      background: rgba(15, 30, 60, 0.7);
+      border-radius: 20px;
+      padding: 30px;
+      border: 2px solid var(--primary);
+      box-shadow: 0 0 40px rgba(0,255,136,0.2);
+    }
+
+    .editor h2 {
+      margin: 30px 0 20px;
+      font-size: 1.8rem;
+      color: var(--primary);
+      text-shadow: 0 0 10px var(--primary);
+    }
+
+    .theme-presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 25px 0;
+      justify-content: center;
+    }
+
+    .preset-btn {
+      padding: 12px 24px;
+      border-radius: 30px;
+      border: 2px solid #333;
+      background: rgba(30,30,60,0.8);
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.4s;
+      font-weight: bold;
+      min-width: 140px;
+    }
+
+    .preset-btn:hover {
+      border-color: var(--primary);
+      box-shadow: 0 0 20px var(--primary-glow);
+      transform: scale(1.05);
+    }
+
+    .preset-btn.active {
+      background: var(--primary);
+      color: #000;
+      box-shadow: 0 0 30px var(--primary-glow);
+      transform: scale(1.1);
+    }
+
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin: 30px 0;
+    }
+
+    .color-item {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      background: rgba(0,0,0,0.4);
+      padding: 15px;
+      border-radius: 12px;
+      border: 1px solid #333;
+    }
+
+    .color-item label {
+      flex: 1;
+      font-size: 1.1rem;
+      color: #aaa;
+    }
+
+    .color-item input[type="color"] {
+      width: 80px;
+      height: 50px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    }
+
+    .slider-item {
+      margin: 40px 0;
+    }
+
+    .slider-item label {
+      display: block;
+      margin-bottom: 15px;
+      font-size: 1.3rem;
+      color: var(--primary);
+    }
+
+    .slider-item input[type="range"] {
+      width: 100%;
+      height: 12px;
+      border-radius: 6px;
+      background: #333;
+      outline: none;
+      accent-color: var(--primary);
+    }
+
+    .actions {
+      display: flex;
+      gap: 20px;
+      margin-top: 50px;
+      justify-content: center;
+    }
+
+    .actions button {
+      flex: 1;
+      padding: 20px;
+      border-radius: 20px;
+      border: none;
+      font-size: 1.4rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.4s;
+      max-width: 300px;
+    }
+
+    .actions button:hover {
+      transform: scale(1.08);
+    }
+
+    .save-btn {
+      background: linear-gradient(45deg, #00ff88, #00ffff);
+      color: #000;
+      box-shadow: 0 0 40px rgba(0,255,136,0.6);
+    }
+
+    .reset-btn {
+      background: linear-gradient(45deg, #ff0044, #ff8800);
+      color: #fff;
+    }
+
+    #status {
+      text-align: center;
+      padding: 20px;
+      margin-top: 30px;
+      border-radius: 15px;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    .status.success { background: #004400; color: #0f0; box-shadow: 0 0 30px #0f0; }
+    .status.error { background: #440000; color: #f00; box-shadow: 0 0 30px #f00; }
+
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-30px); } }
+    @keyframes pulse { 0%,100% { transform: scale(1); }50% { transform: scale(1.1); } }
+
+    .particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="particles" id="particles"></div>
+
+  <div class="container">
+    <div class="dragon-header">DRAGÃÆO</div>
+    <h1>Lele THEME EDITOR 2025</h1>
+
+    <div class="preview">
+      <div class="preview-header">
+        <div class="preview-title">PRÃâ°-VISUALIZAÃâ¡ÃÆO AO VIVO</div>
+        <div class="preview-mascot" id="mascot">DRAGÃÆO</div>
+      </div>
+
+      <div class="preview-buttons">
+        <button class="preview-btn btn-primary">ATAQUE</button>
+        <button class="preview-btn btn-secondary">CONFIG</button>
+        <button class="preview-btn btn-danger">NUKE</button>
+        <button class="preview-btn btn-success">CAPTURADO</button>
+        <button class="preview-btn btn-warning">ALERTA</button>
+      </div>
+    </div>
+
+    <div class="editor">
+      <h2>Preset Brasileiros 2025</h2>
+      <div class="theme-presets">
+        <button class="preset-btn active" onclick="loadPreset('dark_dragon')">Dark Dragon</button>
+        <button class="preset-btn" onclick="loadPreset('cyber_purple')">Cyber Purple</button>
+        <button class="preset-btn" onclick="loadPreset('matrix_green')">Matrix Green</button>
+        <button class="preset-btn" onclick="loadPreset('blood_red')">Blood Red</button>
+        <button class="preset-btn" onclick="loadPreset('ice_blue')">Ice Blue</button>
+        <button class="preset-btn" onclick="loadPreset('retro_miami')">Retro Miami</button>
+        <button class="preset-btn" onclick="loadPreset('gold_dragon')">Gold Dragon</button>
+        <button class="preset-btn" onclick="loadPreset('neon_pink')">Neon Pink</button>
+        <button class="preset-btn" onclick="loadPreset('toxic_green')">Toxic Green</button>
+        <button class="preset-btn" onclick="loadPreset('stealth_black')">Stealth Black</button>
+        <button class="preset-btn" onclick="loadPreset('ocean_cyan')">Ocean Cyan</button>
+        <button class="preset-btn" onclick="loadPreset('sunset_orange')">Sunset Orange</button>
+      </div>
+
+      <h2>Editor Manual AvanÃÂ§ado</h2>
+      <div class="color-grid">
+        <div class="color-item">
+          <label>Cor Principal (Glow)</label>
+          <input type="color" id="primary" value="#00ff88" onchange="updateTheme()">
+        </div>
+        <div class="color-item">
+          <label>SecundÃÂ¡ria</label>
+          <input type="color" id="secondary" value="#0088ff" onchange="updateTheme()">
+        </div>
+        <div class="color-item">
+          <label>Acento</label>
+          <input type="color" id="accent" value="#00ffff" onchange="updateTheme()">
+        </div>
+        <div class="color-item">
+          <label>Perigo</label>
+          <input type="color" id="danger" value="#ff0044" onchange="updateTheme()">
+        </div>
+        <div class="color-item">
+          <label>Sucesso</label>
+          <input type="color" id="success" value="#44ff88" onchange="updateTheme()">
+        </div>
+        <div class="color-item">
+          <label>Aviso</label>
+          <input type="color" id="warning" value="#ffaa00" onchange="updateTheme()">
+        </div>
+        <div class="color-item">
+          <label>Texto</label>
+          <input type="color" id="text" value="#ffffff" onchange="updateTheme()">
+        </div>
+        <div class="color-item">
+          <label>Texto SecundÃÂ¡rio</label>
+          <input type="color" id="textDim" value="#88ffcc" onchange="updateTheme()">
+        </div>
+      </div>
+
+      <div class="slider-item">
+        <label>Raio das Bordas: <span id="radiusValue">12</span>px</label>
+        <input type="range" id="radius" min="0" max="30" value="12" onchange="updateTheme()">
+      </div>
+
+      <div class="actions">
+        <button onclick="resetTheme()" class="reset-btn">RESET TOTAL</button>
+        <button onclick="saveTheme()" class="save-btn">SALVAR TEMA NO Lele</button>
+      </div>
+
+      <div id="status" class="status"></div>
+    </div>
+  </div>
+
+  <script>
+    const presets = {
+      dark_dragon: { primary: '#00ff88', secondary: '#0088ff', accent: '#00ffff', danger: '#ff0044', success: '#44ff88', warning: '#ffaa00', text: '#ffffff', textDim: '#88ffcc', radius: 12 },
+      cyber_purple: { primary: '#cc00ff', secondary: '#8800aa', accent: '#ff00ff', danger: '#ff4488', success: '#aa44ff', warning: '#ff88ff', text: '#ffccff', textDim: '#aa44aa', radius: 16 },
+      matrix_green: { primary: '#00ff00', secondary: '#008800', accent: '#00cc00', danger: '#ff0000', success: '#00aa00', warning: '#aaaa00', text: '#00ff00', textDim: '#008800', radius: 0 },
+      blood_red: { primary: '#ff0044', secondary: '#aa0000', accent: '#ff5555', danger: '#ff0000', success: '#ff4444', warning: '#ff8800', text: '#ff8888', textDim: '#aa0000', radius: 8 },
+      ice_blue: { primary: '#00ccff', secondary: '#0088cc', accent: '#88ffff', danger: '#ff4488', success: '#44ccff', warning: '#ffdd88', text: '#ccffff', textDim: '#88aacc', radius: 10 },
+      retro_miami: { primary: '#ff00aa', secondary: '#00ffff', accent: '#ffaa00', danger: '#ff4488', success: '#44ffaa', warning: '#ffdd00', text: '#ffffff', textDim: '#ff88cc', radius: 20 },
+      gold_dragon: { primary: '#ffdd00', secondary: '#ffaa00', accent: '#ffff88', danger: '#ff4400', success: '#ffaa44', warning: '#ff8800', text: '#ffffcc', textDim: '#aa8800', radius: 15 },
+      neon_pink: { primary: '#ff3399', secondary: '#ff66aa', accent: '#ff99cc', danger: '#ff0055', success: '#ff66cc', warning: '#ff99ff', text: '#ffccff', textDim: '#ff6699', radius: 18 },
+      toxic_green: { primary: '#00ff44', secondary: '#00cc33', accent: '#88ff88', danger: '#ff0000', success: '#00ff88', warning: '#ffff00', text: '#88ffcc', textDim: '#00aa44', radius: 8 },
+      stealth_black: { primary: '#0088ff', secondary: '#004488', accent: '#0088ff', danger: '#880000', success: '#004400', warning: '#884400', text: '#ffffff', textDim: '#444444', radius: 4 },
+      ocean_cyan: { primary: '#00ffff', secondary: '#0088aa', accent: '#88ffff', danger: '#ff5555', success: '#00ffaa', warning: '#aaffff', text: '#ccffff', textDim: '#88cccc', radius: 14 },
+      sunset_orange: { primary: '#ff6600', secondary: '#ff8800', accent: '#ffaa44', danger: '#ff0000', success: '#ff8844', warning: '#ffaa88', text: '#ffffcc', textDim: '#aa6600', radius: 16 }
+    };
+
+    function updateTheme() {
+      const root = document.documentElement;
+      const fields = ['primary','secondary','accent','danger','success','warning','text','textDim'];
+      fields.forEach(field => {
+        const val = document.getElementById(field).value;
+        root.style.setProperty('--'+field, val);
+      });
+
+      const radius = document.getElementById('radius').value;
+      root.style.setProperty('--radius', radius + 'px');
+      document.getElementById('radiusValue').textContent = radius;
+
+      document.getElementById('mascot').style.color = document.getElementById('primary').value;
+    }
+
+    function loadPreset(name) {
+      const preset = presets[name];
+      if (!preset) return;
+
+      Object.keys(preset).forEach(key => {
+        document.getElementById(key).value = preset[key];
+      });
+
+      document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      updateTheme();
+    }
+
+    function resetTheme() {
+      loadPreset('dark_dragon');
+    }
+
+    async function saveTheme() {
+      const theme = {
+        primary: document.getElementById('primary').value,
+        secondary: document.getElementById('secondary').value,
+        accent: document.getElementById('accent').value,
+        danger: document.getElementById('danger').value,
+        success: document.getElementById('success').value,
+        warning: document.getElementById('warning').value,
+        text: document.getElementById('text').value,
+        textDim: document.getElementById('textDim').value,
+        radius: parseInt(document.getElementById('radius').value)
+      };
+
+      try {
+        const response = await fetch('/api/theme/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(theme)
+        });
+
+        const status = document.getElementById('status');
+        if (response.ok) {
+          status.className = 'status success';
+          status.textContent = 'âÅâ TEMA SALVO COM SUCESSO NO Lele!';
+        } else {
+          status.className = 'status error';
+          status.textContent = 'âÅâ ERRO AO SALVAR TEMA';
+        }
+        setTimeout(() => { status.className = 'status'; status.textContent = ''; }, 4000);
+      } catch (err) {
+        document.getElementById('status').className = 'status error';
+        document.getElementById('status').textContent = 'âÅâ SEM CONEXÃÆO COM O DRAGÃÆO';
+      }
+    }
+
+    // PartÃÂ­culas neon de fundo
+    const canvas = document.createElement('canvas');
+    canvas.style.position = 'fixed';
+    canvas.style.inset = '0';
+    canvas.style.zIndex = '-1';
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let particles = [];
+    for(let i = 0; i < 200; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        size: Math.random() * 3 + 1,
+        speedX: Math.random() * 3 - 1.5,
+        speedY: Math.random() * 3 - 1.5,
+        color: ['#00ff88','#00ffff','#ff00ff','#ffff00'][Math.floor(Math.random()*4)]
+      });
+    }
+
+    function animateParticles() {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      particles.forEach(p => {
+        ctx.fillStyle = p.color + '40';
+        ctx.fillRect(p.x, p.y, p.size, p.size);
+
+        p.x += p.speedX;
+        p.y += p.speedY;
+
+        if(p.x < 0 || p.x > canvas.width) p.speedX *= -1;
+        if(p.y < 0 || p.y > canvas.height) p.speedY *= -1;
+      });
+      requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+
+    // Init
+    updateTheme();
+    loadPreset('dark_dragon');
+  </script>
+</body>
+</html>

@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lele - Acesso Remoto</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #00fff5;
+            --secondary: #ff00ff;
+            --bg: #0a0a0f;
+            --watch-bezel: #1a1a1f;
+            --watch-frame: #0d0d12;
+            --glow-color: rgba(0, 255, 245, 0.4);
+        }
+
+        body,
+        html {
+            background: var(--bg);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Animated Background */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                linear-gradient(rgba(0, 255, 245, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 245, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes gridMove {
+            0% {
+                transform: translate(0, 0);
+            }
+
+            100% {
+                transform: translate(50px, 50px);
+            }
+        }
+
+        /* Main Container */
+        #container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1;
+        }
+
+        /* Header Info */
+        .header {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            color: var(--primary);
+            text-shadow: 0 0 20px var(--glow-color);
+            z-index: 10;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: 4px;
+            margin-bottom: 5px;
+        }
+
+        .header .status {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.9rem;
+            color: #00ff9d;
+            animation: blink 1s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* Watch Frame Container */
+        .watch-container {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Outer Watch Bezel (Black Frame) */
+        .watch-bezel {
+            position: relative;
+            background: linear-gradient(145deg, #2a2a30, #0d0d12);
+            border-radius: 60px;
+            padding: 20px;
+            box-shadow:
+                0 0 0 4px #333,
+                0 0 60px rgba(0, 255, 245, 0.2),
+                inset 0 0 30px rgba(0, 0, 0, 0.8),
+                0 20px 60px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Watch Crown/Button (Side) */
+        .watch-crown {
+            position: absolute;
+            right: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 45px;
+            background: linear-gradient(90deg, #444, #222);
+            border-radius: 0 6px 6px 0;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .watch-crown::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 4px;
+            height: 25px;
+            background: linear-gradient(180deg, #666, #333);
+            border-radius: 2px;
+        }
+
+        /* Inner Screen Area */
+        .watch-screen {
+            position: relative;
+            width: 460px;
+            /* Larger than 368 original */
+            height: 560px;
+            /* Larger than 448 original */
+            background: #000;
+            border-radius: 40px;
+            overflow: hidden;
+            box-shadow:
+                inset 0 0 50px rgba(0, 0, 0, 0.9),
+                0 0 30px var(--glow-color);
+        }
+
+        /* The actual screen stream */
+        #screen {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 40px;
+        }
+
+        /* Touch Overlay */
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 40px;
+        }
+
+        /* Touch Feedback Animation */
+        .touch-ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(0, 255, 245, 0.4);
+            animation: ripple 0.6s ease-out forwards;
+            pointer-events: none;
+        }
+
+        @keyframes ripple {
+            0% {
+                width: 0;
+                height: 0;
+                opacity: 1;
+            }
+
+            100% {
+                width: 100px;
+                height: 100px;
+                opacity: 0;
+                margin-left: -50px;
+                margin-top: -50px;
+            }
+        }
+
+        /* Footer Info */
+        .footer {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8rem;
+            color: #666;
+            z-index: 10;
+        }
+
+        .footer span {
+            color: var(--primary);
+        }
+
+        /* Connection Status Indicator */
+        .connection-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: #00ff9d;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s ease-in-out infinite;
+            box-shadow: 0 0 10px #00ff9d;
+        }
+
+        .connection-dot.disconnected {
+            background: #ff4444;
+            box-shadow: 0 0 10px #ff4444;
+            animation: none;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.2);
+                opacity: 0.7;
+            }
+        }
+
+        /* Back Button */
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 255, 245, 0.1);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            z-index: 10;
+        }
+
+        .back-btn:hover {
+            background: var(--primary);
+            color: #000;
+            box-shadow: 0 0 20px var(--glow-color);
+        }
+
+        /* Responsive - Mobile */
+        @media (max-width: 600px) {
+            .watch-bezel {
+                padding: 15px;
+                border-radius: 45px;
+            }
+
+            .watch-screen {
+                width: 340px;
+                height: 415px;
+                border-radius: 30px;
+            }
+
+            #screen,
+            #overlay {
+                border-radius: 30px;
+            }
+
+            .header h1 {
+                font-size: 1.2rem;
+            }
+
+            .watch-crown {
+                width: 10px;
+                height: 35px;
+                right: -12px;
+            }
+        }
+
+        /* Larger screens - even bigger */
+        @media (min-width: 1200px) {
+            .watch-bezel {
+                padding: 25px;
+                border-radius: 70px;
+            }
+
+            .watch-screen {
+                width: 550px;
+                height: 670px;
+                border-radius: 50px;
+            }
+
+            #screen,
+            #overlay {
+                border-radius: 50px;
+            }
+
+            .watch-crown {
+                width: 15px;
+                height: 55px;
+                right: -18px;
+            }
+        }
+
+        /* Loading State */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--primary);
+            font-size: 1.2rem;
+            text-align: center;
+        }
+
+        .loading::after {
+            content: '';
+            display: block;
+            width: 40px;
+            height: 40px;
+            margin: 20px auto;
+            border: 3px solid #333;
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-grid"></div>
+
+    <a href="/" class="back-btn">⬅️ VOLTAR</a>
+
+    <div id="container">
+        <div class="header">
+            <h1>🖱️ ACESSO REMOTO</h1>
+            <div class="status">
+                <span class="connection-dot" id="conn-dot"></span>
+                <span id="status-text">CONECTANDO...</span>
+            </div>
+        </div>
+
+        <div class="watch-container">
+            <div class="watch-bezel">
+                <div class="watch-crown"></div>
+                <div class="watch-screen">
+                    <div class="loading" id="loading">
+                        Carregando stream...
+                    </div>
+                    <img id="screen" src="/stream" alt="Lele Screen" style="display:none;">
+                    <canvas id="overlay"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <span>📡</span> Toque na tela para controlar o Lele |
+            <span id="fps">-- FPS</span> |
+            <span id="latency">-- ms</span>
+        </div>
+    </div>
+
+    <script>
+        const img = document.getElementById('screen');
+        const canvas = document.getElementById('overlay');
+        const ctx = canvas.getContext('2d');
+        const loading = document.getElementById('loading');
+        const statusText = document.getElementById('status-text');
+        const connDot = document.getElementById('conn-dot');
+        const fpsDisplay = document.getElementById('fps');
+        const latencyDisplay = document.getElementById('latency');
+
+        // Original Lele screen dimensions
+        const WATCH_WIDTH = 368;
+        const WATCH_HEIGHT = 448;
+
+        let scaleX = 1, scaleY = 1;
+        let isConnected = false;
+        let frameCount = 0;
+        let lastFpsTime = Date.now();
+        let touchStart = 0;
+
+        // Resize overlay to match screen
+        function resize() {
+            const rect = document.querySelector('.watch-screen').getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            scaleX = WATCH_WIDTH / rect.width;
+            scaleY = WATCH_HEIGHT / rect.height;
+        }
+
+        // Stream loaded
+        img.onload = function () {
+            loading.style.display = 'none';
+            img.style.display = 'block';
+            isConnected = true;
+            statusText.textContent = 'CONECTADO — TEMPO REAL';
+            connDot.classList.remove('disconnected');
+            resize();
+            frameCount++;
+
+            // Update FPS every second
+            const now = Date.now();
+            if (now - lastFpsTime >= 1000) {
+                fpsDisplay.textContent = frameCount + ' FPS';
+                frameCount = 0;
+                lastFpsTime = now;
+            }
+
+            // Auto-refresh: carregar próximo frame após 200ms
+            setTimeout(refreshFrame, 200);
+        };
+
+        // Função para atualizar o frame
+        function refreshFrame() {
+            img.src = '/stream?' + Date.now();
+        }
+
+        // Backoff para reconexão
+        let retryDelay = 500;
+        const MAX_RETRY_DELAY = 5000;
+
+        // Stream error - reconnect com backoff exponencial
+        img.onerror = function () {
+            isConnected = false;
+            statusText.textContent = 'RECONECTANDO...';
+            connDot.classList.add('disconnected');
+            loading.style.display = 'block';
+            img.style.display = 'none';
+
+            console.warn(`[STREAM] Erro, tentando novamente em ${retryDelay}ms`);
+
+            // Tentar reconectar com backoff exponencial
+            setTimeout(() => {
+                img.src = '/stream?' + Date.now();
+            }, retryDelay);
+
+            // Aumentar delay (backoff) atÃÂ© o mÃÂ¡ximo
+            retryDelay = Math.min(retryDelay * 1.5, MAX_RETRY_DELAY);
+        };
+
+        // Reset backoff no onload (sucesso)
+        const originalOnload = img.onload;
+        img.onload = function () {
+            retryDelay = 500; // Reset backoff
+            if (originalOnload) originalOnload.call(this);
+        };
+
+        // Handle touch/click
+        function handleTouch(e) {
+            e.preventDefault();
+
+            const rect = canvas.getBoundingClientRect();
+            let clientX, clientY;
+
+            if (e.touches) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            // Calculate position relative to canvas
+            const canvasX = clientX - rect.left;
+            const canvasY = clientY - rect.top;
+
+            // Convert to Lele coordinates
+            const x = Math.floor(canvasX * scaleX);
+            const y = Math.floor(canvasY * scaleY);
+
+            // Clamp to valid range
+            if (x < 0 || x >= WATCH_WIDTH || y < 0 || y >= WATCH_HEIGHT) return;
+
+            // Visual feedback - ripple effect
+            createRipple(canvasX, canvasY);
+
+            // Measure latency
+            touchStart = Date.now();
+
+            // Send touch to ESP32
+            fetch(`/touch?x=${x}&y=${y}`)
+                .then(response => {
+                    const latency = Date.now() - touchStart;
+                    latencyDisplay.textContent = latency + ' ms';
+                    console.log(`Toque enviado: X=${x}, Y=${y} (${latency}ms)`);
+                })
+                .catch(err => {
+                    console.error('Erro ao enviar toque:', err);
+                    latencyDisplay.textContent = 'ERR';
+                });
+        }
+
+        // Create visual ripple effect
+        function createRipple(x, y) {
+            const ripple = document.createElement('div');
+            ripple.className = 'touch-ripple';
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+            document.querySelector('.watch-screen').appendChild(ripple);
+
+            setTimeout(() => ripple.remove(), 600);
+        }
+
+        // Event listeners
+        canvas.addEventListener('click', handleTouch);
+        canvas.addEventListener('touchstart', handleTouch, { passive: false });
+        window.addEventListener('resize', resize);
+
+        // Initial resize
+        resize();
+
+        // Iniciar refresh automático
+        refreshFrame();
+
+        // Periodic connection check
+        setInterval(() => {
+            if (!isConnected) {
+                statusText.textContent = 'DESCONECTADO';
+                connDot.classList.add('disconnected');
+            }
+        }, 5000);
+    </script>
+</body>
+
+</html>

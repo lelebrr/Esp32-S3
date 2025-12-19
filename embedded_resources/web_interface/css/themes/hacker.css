@@ -1,0 +1,136 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   WAVEPWN - Hacker Vision Theme
+   Monochrome green terminal style
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="hacker"] {
+    /* Background Colors - Pure Black */
+    --bg-primary: #000000;
+    --bg-secondary: #0a0a0a;
+    --bg-tertiary: #111111;
+    --bg-card: rgba(10, 10, 10, 0.9);
+    --bg-card-hover: rgba(17, 17, 17, 0.95);
+
+    /* Primary - Classic Terminal Green */
+    --primary: #00ff00;
+    --primary-dim: rgba(0, 255, 0, 0.3);
+    --primary-glow: 0 0 20px rgba(0, 255, 0, 0.5);
+
+    /* Secondary - Also Green */
+    --secondary: #00cc00;
+    --secondary-dim: rgba(0, 204, 0, 0.3);
+    --secondary-glow: 0 0 20px rgba(0, 204, 0, 0.5);
+
+    /* Accent - Bright Green */
+    --accent: #00ff00;
+    --accent-dim: rgba(0, 255, 0, 0.3);
+
+    /* State Colors - All Green Variants */
+    --success: #00ff00;
+    --warning: #99ff00;
+    --danger: #ff0000;
+    --info: #00ff88;
+
+    /* Text - Green */
+    --text-primary: #00ff00;
+    --text-secondary: #00cc00;
+    --text-muted: #009900;
+
+    /* Borders */
+    --border-color: rgba(0, 255, 0, 0.3);
+    --border-glow: rgba(0, 255, 0, 0.5);
+
+    /* Glass - Dark with green tint */
+    --glass-bg: rgba(0, 20, 0, 0.9);
+    --glass-border: rgba(0, 255, 0, 0.1);
+}
+
+[data-theme="hacker"] body {
+    font-family: 'Share Tech Mono', 'Courier New', monospace !important;
+}
+
+[data-theme="hacker"] * {
+    border-radius: 0 !important;
+}
+
+[data-theme="hacker"] h1,
+[data-theme="hacker"] h2,
+[data-theme="hacker"] h3,
+[data-theme="hacker"] h4,
+[data-theme="hacker"] h5,
+[data-theme="hacker"] h6 {
+    font-family: 'Share Tech Mono', 'Courier New', monospace !important;
+    background: none !important;
+    -webkit-text-fill-color: #00ff00 !important;
+    color: #00ff00 !important;
+    text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+}
+
+[data-theme="hacker"] .brand h2 {
+    background: none !important;
+    -webkit-text-fill-color: #00ff00 !important;
+}
+
+[data-theme="hacker"] .nav-links a.active {
+    border-left: 3px solid #00ff00;
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+}
+
+[data-theme="hacker"] .btn-primary {
+    background: #00ff00;
+    color: #000000;
+}
+
+[data-theme="hacker"] .btn-primary:hover {
+    background: #00cc00;
+    box-shadow: 0 0 30px rgba(0, 255, 0, 0.5);
+}
+
+[data-theme="hacker"] .card {
+    border: 1px solid #00ff00;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+}
+
+[data-theme="hacker"] .card::before {
+    background: #00ff00;
+}
+
+[data-theme="hacker"] .stat-card .value {
+    color: #00ff00;
+    text-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+}
+
+/* Scanlines for authentic CRT look */
+[data-theme="hacker"] .scanlines-overlay::before {
+    background: repeating-linear-gradient(0deg,
+            transparent,
+            transparent 1px,
+            rgba(0, 40, 0, 0.5) 1px,
+            rgba(0, 40, 0, 0.5) 2px);
+    background-size: 100% 2px;
+}
+
+/* CRT curvature effect */
+[data-theme="hacker"] #app {
+    box-shadow:
+        inset 0 0 100px rgba(0, 0, 0, 0.5),
+        inset 0 0 50px rgba(0, 0, 0, 0.5);
+}
+
+/* Blinking cursor for terminal feel */
+[data-theme="hacker"] .terminal-body::after {
+    content: '█';
+    animation: terminal-blink 1s step-end infinite;
+}
+
+@keyframes terminal-blink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
+}

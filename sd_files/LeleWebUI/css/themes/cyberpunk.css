@@ -1,0 +1,68 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   WAVEPWN - Cyberpunk 2077 Theme
+   Dark mode with neon cyan and magenta accents
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root,
+[data-theme="cyberpunk"] {
+    /* Background Colors */
+    --bg-primary: #0a0a0f;
+    --bg-secondary: #12121a;
+    --bg-tertiary: #1a1a24;
+    --bg-card: rgba(18, 18, 26, 0.85);
+    --bg-card-hover: rgba(26, 26, 36, 0.95);
+
+    /* Primary - Neon Cyan */
+    --primary: #00fff5;
+    --primary-dim: rgba(0, 255, 245, 0.3);
+    --primary-glow: 0 0 20px rgba(0, 255, 245, 0.5);
+
+    /* Secondary - Neon Magenta */
+    --secondary: #ff00ff;
+    --secondary-dim: rgba(255, 0, 255, 0.3);
+    --secondary-glow: 0 0 20px rgba(255, 0, 255, 0.5);
+
+    /* Accent - Purple */
+    --accent: #bd00ff;
+    --accent-dim: rgba(189, 0, 255, 0.3);
+
+    /* State Colors */
+    --success: #00ff9d;
+    --warning: #ffcc00;
+    --danger: #ff0055;
+    --info: #00a8ff;
+
+    /* Text */
+    --text-primary: #ffffff;
+    --text-secondary: #a0a0b0;
+    --text-muted: #606070;
+
+    /* Borders */
+    --border-color: rgba(0, 255, 245, 0.2);
+    --border-glow: rgba(0, 255, 245, 0.4);
+
+    /* Glass */
+    --glass-bg: rgba(18, 18, 26, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+/* Theme-specific overrides */
+[data-theme="cyberpunk"] .brand h2 {
+    background: linear-gradient(90deg, #00fff5, #ff00ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+[data-theme="cyberpunk"] .nav-links a.active {
+    border-left-color: #00fff5;
+    box-shadow: 0 0 20px rgba(0, 255, 245, 0.3);
+}
+
+[data-theme="cyberpunk"] .btn-primary {
+    background: linear-gradient(135deg, #00fff5, #00a8ff);
+}
+
+[data-theme="cyberpunk"] .stat-card .value {
+    color: #00fff5;
+    text-shadow: 0 0 20px rgba(0, 255, 245, 0.5);
+}

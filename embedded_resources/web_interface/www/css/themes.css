@@ -1,0 +1,14 @@
+/* Main CSS handles core variables, this can be used for extra theme specific overrides */
+[data-theme="cyberpunk"] .card {
+    border-color: var(--accent);
+    box-shadow: 0 0 10px rgba(0, 255, 245, 0.2);
+}
+
+[data-theme="matrix"] * {
+    text-shadow: 0 0 5px #0f0;
+}
+
+[data-theme="matrix"] .card {
+    border: 1px solid #0f0;
+    background: rgba(0, 0, 0, 0.9);
+}

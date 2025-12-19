@@ -1,0 +1,33 @@
+/* WAVEPWN - Solarized Dark Theme */
+[data-theme="solarized"] {
+    --bg-primary: #002b36;
+    --bg-secondary: #073642;
+    --bg-tertiary: #094855;
+    --bg-card: rgba(7, 54, 66, 0.9);
+    --primary: #2aa198;
+    --primary-dim: rgba(42, 161, 152, 0.3);
+    --primary-glow: 0 0 20px rgba(42, 161, 152, 0.5);
+    --secondary: #d33682;
+    --secondary-dim: rgba(211, 54, 130, 0.3);
+    --accent: #b58900;
+    --success: #859900;
+    --warning: #b58900;
+    --danger: #dc322f;
+    --info: #268bd2;
+    --text-primary: #93a1a1;
+    --text-secondary: #839496;
+    --text-muted: #586e75;
+    --border-color: rgba(42, 161, 152, 0.3);
+    --glass-bg: rgba(0, 43, 54, 0.8);
+}
+
+[data-theme="solarized"] .brand h2 {
+    background: linear-gradient(90deg, #2aa198, #268bd2);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+[data-theme="solarized"] .btn-primary {
+    background: linear-gradient(135deg, #2aa198, #268bd2);
+}

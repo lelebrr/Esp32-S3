@@ -1,0 +1,33 @@
+/* WAVEPWN - Tokyo Night Theme */
+[data-theme="tokyo-night"] {
+    --bg-primary: #1a1b26;
+    --bg-secondary: #24283b;
+    --bg-tertiary: #414868;
+    --bg-card: rgba(36, 40, 59, 0.9);
+    --primary: #7aa2f7;
+    --primary-dim: rgba(122, 162, 247, 0.3);
+    --primary-glow: 0 0 20px rgba(122, 162, 247, 0.5);
+    --secondary: #bb9af7;
+    --secondary-dim: rgba(187, 154, 247, 0.3);
+    --accent: #7dcfff;
+    --success: #9ece6a;
+    --warning: #e0af68;
+    --danger: #f7768e;
+    --info: #7dcfff;
+    --text-primary: #c0caf5;
+    --text-secondary: #a9b1d6;
+    --text-muted: #565f89;
+    --border-color: rgba(122, 162, 247, 0.3);
+    --glass-bg: rgba(26, 27, 38, 0.8);
+}
+
+[data-theme="tokyo-night"] .brand h2 {
+    background: linear-gradient(90deg, #7aa2f7, #bb9af7);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+[data-theme="tokyo-night"] .btn-primary {
+    background: linear-gradient(135deg, #7aa2f7, #bb9af7);
+}

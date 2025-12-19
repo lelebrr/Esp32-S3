@@ -1,0 +1,10 @@
+// Exemplo de Q-table serializada (binário)
+// Este é um exemplo de como a Q-table é salva
+// Estados: 64 (4x4x4x4 para lat/lon/temp/batt)
+// Ações: 8 (tipos de ataque)
+
+// Formato: float[64][8]
+// Valores normalizados entre -1.0 e 1.0
+
+// Este arquivo é apenas para referência
+// A implementação real usa aiLearner.saveModel()

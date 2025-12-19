@@ -1,0 +1,67 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   WAVEPWN - Dracula Theme
+   Classic Dracula color palette - dark with soft purples
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="dracula"] {
+    /* Background Colors */
+    --bg-primary: #282a36;
+    --bg-secondary: #21222c;
+    --bg-tertiary: #44475a;
+    --bg-card: rgba(40, 42, 54, 0.9);
+    --bg-card-hover: rgba(68, 71, 90, 0.95);
+
+    /* Primary - Purple */
+    --primary: #bd93f9;
+    --primary-dim: rgba(189, 147, 249, 0.3);
+    --primary-glow: 0 0 20px rgba(189, 147, 249, 0.5);
+
+    /* Secondary - Pink */
+    --secondary: #ff79c6;
+    --secondary-dim: rgba(255, 121, 198, 0.3);
+    --secondary-glow: 0 0 20px rgba(255, 121, 198, 0.5);
+
+    /* Accent - Cyan */
+    --accent: #8be9fd;
+    --accent-dim: rgba(139, 233, 253, 0.3);
+
+    /* State Colors */
+    --success: #50fa7b;
+    --warning: #f1fa8c;
+    --danger: #ff5555;
+    --info: #8be9fd;
+
+    /* Text */
+    --text-primary: #f8f8f2;
+    --text-secondary: #6272a4;
+    --text-muted: #44475a;
+
+    /* Borders */
+    --border-color: rgba(189, 147, 249, 0.3);
+    --border-glow: rgba(189, 147, 249, 0.5);
+
+    /* Glass */
+    --glass-bg: rgba(40, 42, 54, 0.8);
+    --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dracula"] .brand h2 {
+    background: linear-gradient(90deg, #bd93f9, #ff79c6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+[data-theme="dracula"] .nav-links a.active {
+    border-left-color: #bd93f9;
+    box-shadow: 0 0 20px rgba(189, 147, 249, 0.3);
+}
+
+[data-theme="dracula"] .btn-primary {
+    background: linear-gradient(135deg, #bd93f9, #ff79c6);
+}
+
+[data-theme="dracula"] .stat-card .value {
+    color: #bd93f9;
+    text-shadow: 0 0 20px rgba(189, 147, 249, 0.5);
+}

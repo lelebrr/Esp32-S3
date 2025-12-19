@@ -1,0 +1,19 @@
+// Exemplo de modelo TensorFlow Lite Micro
+// Modelo treinado no Edge Impulse ou similar
+// Input: 8 features (GPS lat/lon, temp, gesture, batt, nfc, subghz, ble)
+// Output: 8 probabilidades (uma por tipo de ataque)
+
+// Este é um arquivo de exemplo
+// Modelo real seria gerado pelo Edge Impulse e salvo aqui
+
+// Especificações:
+// - Input tensor: float32[1][8]
+// - Output tensor: float32[1][8]
+// - Arena size: 8KB
+// - Inferência: <20ms @240MHz
+
+// Para gerar modelo real:
+// 1. Coletar dados de ataques bem-sucedidos/falhados
+// 2. Treinar no Edge Impulse com dataset contextual
+// 3. Exportar como .tflite
+// 4. Colocar em sd_files/ai/model.tflite

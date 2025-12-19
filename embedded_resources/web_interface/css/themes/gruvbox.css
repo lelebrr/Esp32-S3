@@ -1,0 +1,34 @@
+/* WAVEPWN - Gruvbox Dark Theme */
+[data-theme="gruvbox"] {
+    --bg-primary: #282828;
+    --bg-secondary: #3c3836;
+    --bg-tertiary: #504945;
+    --bg-card: rgba(60, 56, 54, 0.9);
+    --primary: #fabd2f;
+    --primary-dim: rgba(250, 189, 47, 0.3);
+    --primary-glow: 0 0 20px rgba(250, 189, 47, 0.5);
+    --secondary: #fb4934;
+    --secondary-dim: rgba(251, 73, 52, 0.3);
+    --accent: #8ec07c;
+    --success: #b8bb26;
+    --warning: #fabd2f;
+    --danger: #fb4934;
+    --info: #83a598;
+    --text-primary: #ebdbb2;
+    --text-secondary: #d5c4a1;
+    --text-muted: #928374;
+    --border-color: rgba(250, 189, 47, 0.3);
+    --glass-bg: rgba(40, 40, 40, 0.8);
+}
+
+[data-theme="gruvbox"] .brand h2 {
+    background: linear-gradient(90deg, #fabd2f, #fe8019);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+[data-theme="gruvbox"] .btn-primary {
+    background: linear-gradient(135deg, #fabd2f, #fe8019);
+    color: #282828;
+}

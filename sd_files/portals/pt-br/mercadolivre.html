@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mercado Livre - Entrar</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Proxima Nova', sans-serif;
+        }
+
+        body {
+            background: #EDEDED;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #FFE600;
+            padding: 12px 20px;
+        }
+
+        .header-logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .container {
+            background: #fff;
+            border-radius: 6px;
+            padding: 32px;
+            width: 90%;
+            max-width: 380px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            margin-top: 60px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 8px;
+            font-weight: 400;
+        }
+
+        p {
+            color: #666;
+            text-align: center;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 6px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #3483FA;
+            box-shadow: 0 0 0 1px #3483FA;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #3483FA;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 16px;
+        }
+
+        button:hover {
+            background: #2968C8;
+        }
+
+        .link {
+            text-align: center;
+            margin-top: 16px;
+        }
+
+        .link a {
+            color: #3483FA;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .divider {
+            text-align: center;
+            margin: 20px 0;
+            color: #999;
+            font-size: 14px;
+        }
+
+        .btn-create {
+            width: 100%;
+            padding: 14px;
+            background: transparent;
+            color: #3483FA;
+            border: 1px solid #3483FA;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <span class="header-logo">Mercado Livre</span>
+    </div>
+    <div class="container">
+        <h1>Digite seu e-mail ou telefone</h1>
+        <p>para entrar na sua conta</p>
+        <form action="/post" method="post">
+            <div class="form-group">
+                <input type="text" name="user" placeholder="E-mail, telefone ou usuário" required>
+            </div>
+            <div class="form-group">
+                <input type="password" name="pass" placeholder="Senha" required>
+            </div>
+            <button type="submit">Continuar</button>
+        </form>
+        <div class="link">
+            <a href="#">Não lembro minha senha</a>
+        </div>
+        <div class="divider">— ou —</div>
+        <button class="btn-create">Criar conta</button>
+    </div>
+</body>
+
+</html>

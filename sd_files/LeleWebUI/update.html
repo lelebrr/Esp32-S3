@@ -1,0 +1,117 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lele OTA</title>
+    <style>
+        body {
+            background: #0a0b10;
+            color: #00ff9d;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .card {
+            background: #14161f;
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid #2a2d3a;
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        input[type="file"] {
+            margin: 20px 0;
+            color: #fff;
+        }
+
+        button {
+            background: #00ff9d;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .progress {
+            width: 100%;
+            background: #333;
+            height: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .bar {
+            height: 100%;
+            background: #00ff9d;
+            width: 0%;
+            transition: width 0.2s;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h1>Firmware Update</h1>
+        <form method="POST" action="/ota/firmware" enctype="multipart/form-data" id="upload_form">
+            <input type="file" name="update" required>
+            <br>
+            <button type="submit">Update Firmware</button>
+        </form>
+        <div class="progress">
+            <div class="bar" id="bar"></div>
+        </div>
+        <p id="status"></p>
+    </div>
+    <script>
+        document.querySelector('form').onsubmit = function (e) {
+            e.preventDefault();
+            var form = this;
+            var fileInput = form.querySelector('input[type="file"]');
+            var file = fileInput.files[0];
+            if (!file) return;
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', form.action, true);
+
+            xhr.upload.onprogress = function (e) {
+                if (e.lengthComputable) {
+                    var percent = (e.loaded / e.total) * 100;
+                    document.querySelector('.progress').style.display = 'block';
+                    document.getElementById('bar').style.width = percent + '%';
+                    document.getElementById('status').innerText = 'Uploading: ' + Math.round(percent) + '%';
+                }
+            };
+
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    document.getElementById('status').innerText = 'Update Success! Rebooting...';
+                    document.getElementById('bar').style.backgroundColor = '#00ff9d';
+                } else {
+                    document.getElementById('status').innerText = 'Update Failed!';
+                    document.getElementById('bar').style.backgroundColor = '#ff0055';
+                }
+            };
+
+            var formData = new FormData();
+            formData.append('update', file);
+            xhr.send(formData);
+        };
+    </script>
+</body>
+
+</html>

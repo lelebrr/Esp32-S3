@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LELE // OMNI-DASHBOARD 3D</title>
+    <meta name="theme-color" content="#000000">
+    <meta name="description" content="ESP32 Cyberpunk Control Interface">
+
+    <!-- Three.js from CDN (fallback for local preview) -->
+    <script src="js/three.min.js" onerror="
+        console.warn('Local three.min.js not found, loading from CDN...');
+        var s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.min.js';
+        document.head.appendChild(s);
+    "></script>
+
+    <style>
+        /* ========== RESET & BASE ========== */
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-magenta: #ff00ff;
+            --neon-green: #00ff41;
+            --neon-red: #ff003c;
+            --neon-yellow: #ffff00;
+            --bg-dark: #050510;
+            --glass-bg: rgba(10, 15, 25, 0.75);
+            --glass-border: 1px solid rgba(0, 243, 255, 0.3);
+            --glass-shadow: 0 0 30px rgba(0, 243, 255, 0.15);
+            --font-head: 'Orbitron', sans-serif;
+            --font-mono: 'Share Tech Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            overflow: hidden;
+            background: var(--bg-dark);
+            font-family: var(--font-mono);
+            color: var(--neon-cyan);
+            height: 100%;
+            width: 100%;
+        }
+
+        /* ========== 3D CANVAS ========== */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* CRT Effect */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0, 0, 0, 0.15) 2px,
+                    rgba(0, 0, 0, 0.15) 4px);
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0.4;
+        }
+
+        /* ========== UI LAYER ========== */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            padding: 8px;
+            pointer-events: none;
+            gap: 8px;
+        }
+
+        /* ========== GLASS PANELS ========== */
+        .panel {
+            pointer-events: auto;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            border-radius: 12px;
+            padding: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+            animation: scan 4s linear infinite;
+        }
+
+        @keyframes scan {
+            0% {
+                left: -100%;
+            }
+
+            100% {
+                left: 100%;
+            }
+        }
+
+        /* ========== HEADER ========== */
+        header.panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        h1 {
+            font-family: var(--font-head);
+            font-size: 1.4rem;
+            margin: 0;
+            text-shadow: 0 0 15px var(--neon-cyan), 0 0 30px var(--neon-cyan);
+            letter-spacing: 3px;
+            animation: flicker 3s infinite;
+        }
+
+        @keyframes flicker {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            92% {
+                opacity: 1;
+            }
+
+            93% {
+                opacity: 0.8;
+            }
+
+            94% {
+                opacity: 1;
+            }
+
+            95% {
+                opacity: 0.9;
+            }
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 15px;
+            font-size: 0.85rem;
+            flex-wrap: wrap;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--neon-green);
+            box-shadow: 0 0 10px var(--neon-green);
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-dot.offline {
+            background: var(--neon-red);
+            box-shadow: 0 0 10px var(--neon-red);
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.2);
+                opacity: 0.7;
+            }
+        }
+
+        /* ========== MAIN CONTENT ========== */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            gap: 8px;
+        }
+
+        .view-section {
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .view-section.active {
+            display: flex;
+        }
+
+        /* ========== MODULE GRID ========== */
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            padding: 10px 0;
+        }
+
+        .module-card {
+            pointer-events: auto;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            border-radius: 10px;
+            padding: 15px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .module-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, transparent 40%, rgba(0, 243, 255, 0.1) 50%, transparent 60%);
+            transform: translateX(-100%);
+            transition: transform 0.5s;
+        }
+
+        .module-card:hover::after {
+            transform: translateX(100%);
+        }
+
+        .module-card:hover {
+            background: rgba(0, 243, 255, 0.1);
+            border-color: var(--neon-cyan);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 25px rgba(0, 243, 255, 0.3);
+        }
+
+        .module-card:active {
+            transform: scale(0.95);
+        }
+
+        .module-icon {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 8px;
+            filter: drop-shadow(0 0 5px currentColor);
+        }
+
+        .module-card span:last-child {
+            font-size: 0.75rem;
+            font-family: var(--font-head);
+            letter-spacing: 1px;
+        }
+
+        /* ========== BUTTONS ========== */
+        .btn {
+            padding: 12px 20px;
+            border: 1px solid var(--neon-red);
+            background: rgba(255, 0, 60, 0.1);
+            color: var(--neon-red);
+            font-family: var(--font-head);
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            background: var(--neon-red);
+            color: #000;
+            box-shadow: 0 0 25px var(--neon-red);
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-cyan {
+            border-color: var(--neon-cyan);
+            color: var(--neon-cyan);
+            background: rgba(0, 243, 255, 0.1);
+        }
+
+        .btn-cyan:hover {
+            background: var(--neon-cyan);
+            color: #000;
+            box-shadow: 0 0 25px var(--neon-cyan);
+        }
+
+        .btn-green {
+            border-color: var(--neon-green);
+            color: var(--neon-green);
+            background: rgba(0, 255, 65, 0.1);
+        }
+
+        .btn-green:hover {
+            background: var(--neon-green);
+            color: #000;
+            box-shadow: 0 0 25px var(--neon-green);
+        }
+
+        .btn-nuke {
+            background: linear-gradient(135deg, #ff0000, #ff6600);
+            border: none;
+            color: #fff;
+            animation: nuke-pulse 1s infinite;
+        }
+
+        @keyframes nuke-pulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 10px #ff0000;
+            }
+
+            50% {
+                box-shadow: 0 0 30px #ff0000, 0 0 50px #ff6600;
+            }
+        }
+
+        .btn-block {
+            width: 100%;
+        }
+
+        /* ========== ATTACK GRID ========== */
+        .attack-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        /* ========== TABLES ========== */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+        }
+
+        .data-table th {
+            text-align: left;
+            color: var(--neon-magenta);
+            padding: 6px;
+            border-bottom: 1px solid rgba(255, 0, 255, 0.3);
+        }
+
+        .data-table td {
+            padding: 6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .data-table tr:hover {
+            background: rgba(0, 243, 255, 0.05);
+        }
+
+        /* ========== TERMINAL ========== */
+        .terminal {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 6px;
+            padding: 8px;
+            font-size: 0.7rem;
+            height: 120px;
+            overflow-y: auto;
+            border: 1px solid #222;
+        }
+
+        .log-line {
+            margin: 2px 0;
+            opacity: 0.9;
+        }
+
+        .log-line.warn {
+            color: var(--neon-yellow);
+        }
+
+        .log-line.err {
+            color: var(--neon-red);
+        }
+
+        .log-line.success {
+            color: var(--neon-green);
+        }
+
+        /* ========== RADAR ========== */
+        .radar-container {
+            position: relative;
+            width: 100%;
+            height: 180px;
+            border: 1px solid var(--neon-green);
+            border-radius: 50%;
+            overflow: hidden;
+            background: radial-gradient(circle, rgba(0, 255, 65, 0.05) 0%, transparent 70%);
+        }
+
+        .radar-sweep {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--neon-green), transparent);
+            transform-origin: 0 0;
+            animation: sweep 2s linear infinite;
+        }
+
+        @keyframes sweep {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .radar-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            background: #fff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 15px #fff;
+        }
+
+        /* ========== SLIDER ========== */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #222;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--neon-cyan);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        /* ========== BACK BUTTON ========== */
+        .back-btn {
+            background: transparent;
+            border: none;
+            color: var(--neon-cyan);
+            font-size: 0.9rem;
+            cursor: pointer;
+            padding: 10px;
+            text-align: center;
+            width: 100%;
+            margin-top: auto;
+        }
+
+        .back-btn:hover {
+            text-decoration: underline;
+        }
+
+        /* ========== SCROLLBAR ========== */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--neon-cyan);
+            border-radius: 2px;
+        }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1rem;
+            }
+
+            .modules-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .module-card {
+                padding: 10px 5px;
+            }
+
+            .module-icon {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* ========== PREVIEW MODE INDICATOR ========== */
+        .preview-mode {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: var(--neon-yellow);
+            color: #000;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            z-index: 2000;
+            display: none;
+        }
+
+        .preview-mode.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 3D WORLD -->
+    <div id="canvas-container"></div>
+    <div class="scanlines"></div>
+
+    <!-- PREVIEW MODE INDICATOR (shown when not connected) -->
+    <div id="preview-badge" class="preview-mode">⚠️ PREVIEW MODE</div>
+
+    <!-- UI LAYER -->
+    <div id="ui-layer">
+
+        <!-- HEADER -->
+        <header class="panel">
+            <h1>LELE // SYSTEM</h1>
+            <div class="status-bar">
+                <div class="status-item">
+                    <div id="conn-dot" class="status-dot offline"></div> <span id="conn-status">OFFLINE</span>
+                </div>
+                <div class="status-item">🔋 <span id="bat-val">--</span>%</div>
+                <div class="status-item">🌡️ <span id="temp-val">--</span>°C</div>
+                <div class="status-item">📡 <span id="pps-val">0</span> PPS</div>
+            </div>
+        </header>
+
+        <!-- MAIN -->
+        <main>
+            <!-- ===== DASHBOARD ===== -->
+            <section id="view-dashboard" class="view-section active">
+                <div class="panel"
+                    style="flex:1; display:flex; align-items:center; justify-content:center; background:transparent; border:none; box-shadow:none;">
+                    <div style="text-align:center; margin-top:80px;">
+                        <h2 style="font-size:1.5rem; text-shadow:0 0 30px var(--neon-cyan);">ESP32 ONLINE</h2>
+                        <p style="color:#888; font-size:0.8rem;">SISTEMA PRONTO // SELECIONE MÓDULO</p>
+                    </div>
+                </div>
+
+                <div class="panel modules-grid">
+                    <div class="module-card" onclick="app.nav('wifi')">
+                        <span class="module-icon">📡</span>
+                        <span>WIFI</span>
+                    </div>
+                    <div class="module-card" onclick="app.nav('ble')">
+                        <span class="module-icon">📶</span>
+                        <span>BLE</span>
+                    </div>
+                    <div class="module-card" onclick="app.nav('eviltwin')">
+                        <span class="module-icon">👯</span>
+                        <span>EVIL TWIN</span>
+                    </div>
+                    <div class="module-card" onclick="app.nav('keylogger')">
+                        <span class="module-icon">⌨️</span>
+                        <span>KEYLOG</span>
+                    </div>
+                    <div class="module-card" onclick="app.nav('nfc')">
+                        <span class="module-icon">💳</span>
+                        <span>NFC</span>
+                    </div>
+                    <div class="module-card" onclick="app.nav('rf')">
+                        <span class="module-icon">📻</span>
+                        <span>RF 433</span>
+                    </div>
+                    <div class="module-card" onclick="app.nav('files')">
+                        <span class="module-icon">📂</span>
+                        <span>FILES</span>
+                    </div>
+                    <div class="module-card" onclick="app.nav('settings')">
+                        <span class="module-icon">⚙️</span>
+                        <span>SYSTEM</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== WIFI ATTACKS ===== -->
+            <section id="view-wifi" class="view-section">
+                <div class="panel">
+                    <h3 style="color:var(--neon-magenta); margin-bottom:10px;">📡 SPECTRUM WARFARE</h3>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button class="btn btn-cyan" onclick="app.cmd('scan_wifi')">🔍 SCAN</button>
+                        <button class="btn" onclick="app.cmd('stop_all')">⏹️ STOP</button>
+                    </div>
+                </div>
+
+                <div class="panel" style="flex:1; overflow-y:auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>SSID</th>
+                                <th>BSSID</th>
+                                <th>PWR</th>
+                                <th>CH</th>
+                                <th>ACT</th>
+                            </tr>
+                        </thead>
+                        <tbody id="wifi-list">
+                            <tr>
+                                <td colspan="5" style="text-align:center; color:#666;">NO TARGETS - CLICK SCAN</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="panel" style="border-color:var(--neon-red);">
+                    <h4 style="color:var(--neon-red); margin-bottom:8px;">⚡ ACTIVE OFFENSIVE</h4>
+                    <div class="attack-grid">
+                        <button class="btn btn-block" onclick="app.cmd('deauth_all')">⚡ DEAUTH ALL</button>
+                        <button class="btn btn-block" onclick="app.cmd('beacon_spam')">🌊 BEACON FLOOD</button>
+                        <button class="btn btn-block" onclick="app.cmd('handshake')">🤝 CAPTURE HS</button>
+                        <button class="btn btn-nuke btn-block" onclick="app.cmd('pwn_all')">☢️ NUKE</button>
+                    </div>
+                </div>
+
+                <button class="back-btn" onclick="app.nav('dashboard')">◀ VOLTAR</button>
+            </section>
+
+            <!-- ===== BLE RADAR ===== -->
+            <section id="view-ble" class="view-section">
+                <div class="panel">
+                    <h3 style="color:var(--neon-green); margin-bottom:10px;">📶 BLE RADAR</h3>
+                    <button class="btn btn-green" onclick="app.cmd('scan_ble')">🔍 START SCAN</button>
+                </div>
+
+                <div class="panel" style="flex:1;">
+                    <div class="radar-container">
+                        <div class="radar-center"></div>
+                        <div class="radar-sweep"></div>
+                    </div>
+                    <div id="ble-devices" style="margin-top:10px; font-size:0.75rem; color:#888;">
+                        No devices found yet...
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h4 style="margin-bottom:8px;">💉 INJECTION</h4>
+                    <div class="attack-grid">
+                        <button class="btn btn-block" onclick="app.cmd('ble_spam_ios')">🍎 SPAM iOS</button>
+                        <button class="btn btn-block" onclick="app.cmd('ble_spam_win')">🪟 SPAM Windows</button>
+                        <button class="btn btn-block" onclick="app.cmd('ble_flood')">🌊 FLOOD ALL</button>
+                        <button class="btn btn-block" onclick="app.cmd('ble_stop')">⏹️ STOP</button>
+                    </div>
+                </div>
+
+                <button class="back-btn" onclick="app.nav('dashboard')">◀ VOLTAR</button>
+            </section>
+
+            <!-- ===== EVIL TWIN ===== -->
+            <section id="view-eviltwin" class="view-section">
+                <div class="panel">
+                    <h3 style="color:var(--neon-magenta);">👯 EVIL TWIN ATTACK</h3>
+                    <p style="font-size:0.75rem; color:#888;">Crie AP falso para capturar credenciais</p>
+                </div>
+                <div class="panel">
+                    <label>SSID Alvo:</label>
+                    <input type="text" id="et-ssid" placeholder="Nome da rede"
+                        style="width:100%; padding:10px; background:#111; border:1px solid #333; color:#fff; border-radius:4px; margin:8px 0;">
+                    <button class="btn btn-cyan btn-block"
+                        onclick="app.cmd('eviltwin_start', document.getElementById('et-ssid').value)">▶️ START
+                        PORTAL</button>
+                </div>
+                <div class="panel" style="flex:1;">
+                    <h4>📋 CREDENCIAIS CAPTURADAS</h4>
+                    <div id="et-creds" style="font-size:0.75rem; color:#888; margin-top:10px;">
+                        Nenhuma credencial ainda...
+                    </div>
+                </div>
+                <button class="back-btn" onclick="app.nav('dashboard')">◀ VOLTAR</button>
+            </section>
+
+            <!-- ===== KEYLOGGER ===== -->
+            <section id="view-keylogger" class="view-section">
+                <div class="panel">
+                    <h3 style="color:var(--neon-yellow);">⌨️ UART KEYLOGGER</h3>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn btn-green" onclick="app.cmd('keylog_start')">▶️ START</button>
+                        <button class="btn" onclick="app.cmd('keylog_stop')">⏹️ STOP</button>
+                    </div>
+                </div>
+                <div class="panel" style="flex:1;">
+                    <div class="terminal" id="keylog-output">
+                        [KEYLOGGER] Aguardando dados UART...
+                    </div>
+                </div>
+                <button class="back-btn" onclick="app.nav('dashboard')">◀ VOLTAR</button>
+            </section>
+
+            <!-- ===== NFC ===== -->
+            <section id="view-nfc" class="view-section">
+                <div class="panel">
+                    <h3 style="color:var(--neon-cyan);">💳 NFC / RFID</h3>
+                    <div class="attack-grid">
+                        <button class="btn btn-cyan btn-block" onclick="app.cmd('nfc_read')">📖 READ TAG</button>
+                        <button class="btn btn-block" onclick="app.cmd('nfc_clone')">📋 CLONE</button>
+                        <button class="btn btn-block" onclick="app.cmd('nfc_write')">✏️ WRITE</button>
+                        <button class="btn btn-block" onclick="app.cmd('nfc_format')">🗑️ FORMAT</button>
+                    </div>
+                </div>
+                <div class="panel" style="flex:1;">
+                    <h4>📊 TAG DATA</h4>
+                    <div id="nfc-data" style="font-size:0.75rem; color:#888; margin-top:10px; font-family:monospace;">
+                        Aproxime um cartão NFC...
+                    </div>
+                </div>
+                <button class="back-btn" onclick="app.nav('dashboard')">◀ VOLTAR</button>
+            </section>
+
+            <!-- ===== RF 433 ===== -->
+            <section id="view-rf" class="view-section">
+                <div class="panel">
+                    <h3 style="color:var(--neon-yellow);">📻 RF 433 MHz</h3>
+                    <div class="attack-grid">
+                        <button class="btn btn-cyan btn-block" onclick="app.cmd('rf_receive')">📡 RECEIVE</button>
+                        <button class="btn btn-block" onclick="app.cmd('rf_replay')">🔁 REPLAY</button>
+                        <button class="btn btn-block" onclick="app.cmd('rf_jam')">📢 JAMMER</button>
+                        <button class="btn btn-block" onclick="app.cmd('rf_stop')">⏹️ STOP</button>
+                    </div>
+                </div>
+                <div class="panel" style="flex:1;">
+                    <h4>📶 CAPTURED SIGNALS</h4>
+                    <div id="rf-signals" style="font-size:0.75rem; color:#888;">
+                        No signals captured...
+                    </div>
+                </div>
+                <button class="back-btn" onclick="app.nav('dashboard')">◀ VOLTAR</button>
+            </section>
+
+            <!-- ===== FILES ===== -->
+            <section id="view-files" class="view-section">
+                <div class="panel">
+                    <h3>📂 FILE MANAGER</h3>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn btn-cyan" onclick="app.cmd('list_sd')">📁 SD Card</button>
+                        <button class="btn" onclick="app.cmd('list_flash')">💾 Flash</button>
+                    </div>
+                </div>
+                <div class="panel" style="flex:1; overflow-y:auto;">
+                    <div id="file-list" style="font-size:0.75rem;">
+                        Click a button above to list files...
+                    </div>
+                </div>
+                <button class="back-btn" onclick="app.nav('dashboard')">◀ VOLTAR</button>
+            </section>
+
+            <!-- ===== SETTINGS ===== -->
+            <section id="view-settings" class="view-section">
+                <div class="panel">
+                    <h3>⚙️ SYSTEM SETTINGS</h3>
+                </div>
+                <div class="panel">
+                    <label>CPU CLOCK</label>
+                    <input type="range" min="80" max="240" value="240" id="cpu-slider">
+                    <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#666;">
+                        <span>80 MHz</span>
+                        <span id="cpu-val">240 MHz</span>
+                        <span>240 MHz</span>
+                    </div>
+                </div>
+                <div class="panel" style="border-color:var(--neon-red);">
+                    <h4 style="color:var(--neon-red);">⚠️ DANGER ZONE</h4>
+                    <div class="attack-grid">
+                        <button class="btn btn-block" onclick="app.cmd('reboot')">🔄 REBOOT</button>
+                        <button class="btn btn-block" onclick="app.cmd('stealth')">👁️ STEALTH</button>
+                        <button class="btn btn-block" onclick="app.cmd('format_sd')">🗑️ FORMAT SD</button>
+                        <button class="btn btn-nuke btn-block"
+                            onclick="if(confirm('SELF DESTRUCT? All data will be erased!')) app.cmd('self_destruct')">🔥
+                            SELF DESTRUCT</button>
+                    </div>
+                </div>
+                <button class="back-btn" onclick="app.nav('dashboard')">◀ VOLTAR</button>
+            </section>
+
+            <!-- ===== TERMINAL FOOTER ===== -->
+            <div class="panel" style="margin-top:auto;">
+                <div style="font-size:0.65rem; color:#555; margin-bottom:4px;">SYSTEM LOG //</div>
+                <div id="console-output" class="terminal">
+                    <div class="log-line success">[BOOT] LELE SYSTEM INITIALIZED</div>
+                    <div class="log-line">[INIT] INTERFACE v3.0 LOADED</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        /**
+         * LELE DASHBOARD 3.0 - CORE LOGIC
+         * Complete implementation with local preview support
+         */
+        const app = {
+            ws: null,
+            isPreview: false,
+            currentView: 'dashboard',
+            scene: null,
+            camera: null,
+            renderer: null,
+
+            init: function () {
+                this.log("[SYS] Initializing LELE Dashboard...", "success");
+                this.init3D();
+                this.initWS();
+                this.initSliders();
+
+                // Simulate data in preview mode
+                if (this.isPreview) {
+                    this.startPreviewSimulation();
+                }
+            },
+
+            // ========== 3D ENGINE ==========
+            init3D: function () {
+                if (typeof THREE === 'undefined') {
+                    this.log("[3D] Three.js not loaded - 3D disabled", "warn");
+                    return;
+                }
+
+                const container = document.getElementById('canvas-container');
+                this.scene = new THREE.Scene();
+                this.scene.fog = new THREE.FogExp2(0x050510, 0.0015);
+
+                this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                this.camera.position.z = 6;
+
+                this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                container.appendChild(this.renderer.domElement);
+
+                // PARTICLES
+                const starGeo = new THREE.BufferGeometry();
+                const starCount = 1500;
+                const positions = new Float32Array(starCount * 3);
+                for (let i = 0; i < starCount * 3; i++) {
+                    positions[i] = (Math.random() - 0.5) * 100;
+                }
+                starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                const starMat = new THREE.PointsMaterial({ color: 0x00f3ff, size: 0.15, transparent: true, opacity: 0.8 });
+                const stars = new THREE.Points(starGeo, starMat);
+                this.scene.add(stars);
+
+                // HOLOGRAM
+                const chipGroup = new THREE.Group();
+
+                const boardGeo = new THREE.BoxGeometry(2.5, 0.1, 3.5);
+                const boardEdge = new THREE.EdgesGeometry(boardGeo);
+                const board = new THREE.LineSegments(boardEdge, new THREE.LineBasicMaterial({ color: 0x00f3ff, transparent: true, opacity: 0.6 }));
+                chipGroup.add(board);
+
+                const shieldGeo = new THREE.BoxGeometry(1.4, 0.25, 1.4);
+                const shieldEdge = new THREE.EdgesGeometry(shieldGeo);
+                const shield = new THREE.LineSegments(shieldEdge, new THREE.LineBasicMaterial({ color: 0xff00ff, transparent: true, opacity: 0.8 }));
+                shield.position.set(0, 0.18, -0.5);
+                chipGroup.add(shield);
+
+                // Antenna
+                const antGeo = new THREE.BoxGeometry(1.2, 0.05, 0.6);
+                const ant = new THREE.Mesh(antGeo, new THREE.MeshBasicMaterial({ color: 0xffff00, wireframe: true }));
+                ant.position.z = 1.8;
+                chipGroup.add(ant);
+
+                this.scene.add(chipGroup);
+
+                // Animation
+                const animate = () => {
+                    requestAnimationFrame(animate);
+
+                    chipGroup.rotation.y += 0.004;
+                    chipGroup.rotation.x = Math.sin(Date.now() * 0.0008) * 0.08;
+
+                    const pos = stars.geometry.attributes.position.array;
+                    for (let i = 2; i < pos.length; i += 3) {
+                        pos[i] += 0.03;
+                        if (pos[i] > 15) pos[i] = -50;
+                    }
+                    stars.geometry.attributes.position.needsUpdate = true;
+
+                    this.renderer.render(this.scene, this.camera);
+                };
+                animate();
+
+                window.addEventListener('resize', () => {
+                    this.camera.aspect = window.innerWidth / window.innerHeight;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(window.innerWidth, window.innerHeight);
+                });
+
+                this.log("[3D] Engine started - 1500 particles", "success");
+            },
+
+            // ========== WEBSOCKET ==========
+            initWS: function () {
+                const host = window.location.hostname || '192.168.4.1';
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+
+                // Check if we're in local file preview mode
+                if (window.location.protocol === 'file:' || host === '' || host === 'localhost') {
+                    this.isPreview = true;
+                    document.getElementById('preview-badge').classList.add('active');
+                    this.log("[NET] PREVIEW MODE - No ESP32 connection", "warn");
+                    document.getElementById('conn-status').innerText = "PREVIEW";
+                    return;
+                }
+
+                try {
+                    this.ws = new WebSocket(`${protocol}//${host}/ws`);
+
+                    this.ws.onopen = () => {
+                        this.log("[NET] WebSocket CONNECTED", "success");
+                        document.getElementById('conn-dot').classList.remove('offline');
+                        document.getElementById('conn-status').innerText = "ONLINE";
+                    };
+
+                    this.ws.onclose = () => {
+                        this.log("[NET] Connection lost - reconnecting...", "err");
+                        document.getElementById('conn-dot').classList.add('offline');
+                        document.getElementById('conn-status').innerText = "OFFLINE";
+                        setTimeout(() => this.initWS(), 3000);
+                    };
+
+                    this.ws.onerror = (e) => {
+                        this.log("[NET] WebSocket error", "err");
+                    };
+
+                    this.ws.onmessage = (event) => {
+                        try {
+                            const data = JSON.parse(event.data);
+                            this.handleData(data);
+                        } catch (e) {
+                            console.error("Parse error:", e);
+                        }
+                    };
+                } catch (e) {
+                    this.isPreview = true;
+                    document.getElementById('preview-badge').classList.add('active');
+                    this.log("[NET] WebSocket failed - PREVIEW MODE", "warn");
+                }
+            },
+
+            handleData: function (data) {
+                if (data.type === 'status') {
+                    if (data.bat !== undefined) document.getElementById('bat-val').innerText = data.bat;
+                    if (data.temp !== undefined) document.getElementById('temp-val').innerText = data.temp;
+                    if (data.pps !== undefined) document.getElementById('pps-val').innerText = data.pps;
+                }
+                else if (data.type === 'wifi_scan') {
+                    this.renderWifiList(data.networks);
+                }
+                else if (data.type === 'ble_scan') {
+                    this.renderBleDevices(data.devices);
+                }
+                else if (data.type === 'log') {
+                    this.log(data.msg, data.level || 'info');
+                }
+            },
+
+            // ========== COMMANDS ==========
+            cmd: function (command, param = null) {
+                this.log(`> CMD: ${command} ${param || ''}`, "info");
+
+                if (this.isPreview) {
+                    this.log(`[PREVIEW] Command simulated: ${command}`, "warn");
+                    this.simulateCommand(command, param);
+                    return;
+                }
+
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify({ cmd: command, value: param }));
+                } else {
+                    this.log("[ERR] Not connected to device", "err");
+                }
+            },
+
+            // ========== NAVIGATION ==========
+            nav: function (viewId) {
+                document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+                const target = document.getElementById('view-' + viewId);
+                if (target) {
+                    target.classList.add('active');
+                    this.currentView = viewId;
+                    this.log(`[NAV] Switched to ${viewId.toUpperCase()}`);
+                }
+            },
+
+            // ========== UI HELPERS ==========
+            log: function (msg, type = 'info') {
+                const term = document.getElementById('console-output');
+                const div = document.createElement('div');
+                div.className = `log-line ${type}`;
+                div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+                term.prepend(div);
+                if (term.children.length > 100) term.lastChild.remove();
+            },
+
+            renderWifiList: function (networks) {
+                const tbody = document.getElementById('wifi-list');
+                tbody.innerHTML = '';
+
+                if (!networks || networks.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#666;">No networks found</td></tr>';
+                    return;
+                }
+
+                networks.forEach(net => {
+                    const tr = document.createElement('tr');
+                    const pwrColor = net.rssi > -50 ? 'var(--neon-green)' : net.rssi > -70 ? 'var(--neon-yellow)' : 'var(--neon-red)';
+                    tr.innerHTML = `
+                    <td style="color:var(--neon-cyan); font-weight:bold;">${net.ssid || '(Hidden)'}</td>
+                    <td style="font-family:monospace; color:#888; font-size:0.65rem;">${net.bssid}</td>
+                    <td style="color:${pwrColor};">${net.rssi}</td>
+                    <td>${net.ch}</td>
+                    <td><button class="btn" style="padding:4px 8px; font-size:0.65rem;" onclick="app.cmd('deauth','${net.bssid}')">⚡</button></td>
+                `;
+                    tbody.appendChild(tr);
+                });
+            },
+
+            renderBleDevices: function (devices) {
+                const container = document.getElementById('ble-devices');
+                if (!devices || devices.length === 0) {
+                    container.innerHTML = 'No devices found...';
+                    return;
+                }
+                container.innerHTML = devices.map(d => `<div>📱 ${d.name || 'Unknown'} [${d.rssi}dBm]</div>`).join('');
+            },
+
+            initSliders: function () {
+                const cpuSlider = document.getElementById('cpu-slider');
+                const cpuVal = document.getElementById('cpu-val');
+                if (cpuSlider) {
+                    cpuSlider.oninput = function () {
+                        cpuVal.innerText = this.value + ' MHz';
+                    };
+                    cpuSlider.onchange = () => {
+                        this.cmd('clock', cpuSlider.value);
+                    };
+                }
+            },
+
+            // ========== PREVIEW SIMULATION ==========
+            startPreviewSimulation: function () {
+                this.log("[PREVIEW] Simulation started", "warn");
+
+                // Simulate status updates
+                setInterval(() => {
+                    document.getElementById('bat-val').innerText = Math.floor(70 + Math.random() * 30);
+                    document.getElementById('temp-val').innerText = Math.floor(35 + Math.random() * 10);
+                    document.getElementById('pps-val').innerText = Math.floor(Math.random() * 500);
+                }, 2000);
+            },
+
+            simulateCommand: function (cmd, param) {
+                // Simulate responses for preview mode
+                if (cmd === 'scan_wifi') {
+                    setTimeout(() => {
+                        this.renderWifiList([
+                            { ssid: 'CafeDelMal', bssid: 'AA:BB:CC:DD:EE:01', rssi: -45, ch: 6 },
+                            { ssid: 'VirusNet_5G', bssid: 'AA:BB:CC:DD:EE:02', rssi: -62, ch: 11 },
+                            { ssid: 'FBI_Surveillance_Van', bssid: 'AA:BB:CC:DD:EE:03', rssi: -78, ch: 1 },
+                            { ssid: '', bssid: 'AA:BB:CC:DD:EE:04', rssi: -55, ch: 3 },
+                        ]);
+                        this.log("[SCAN] Found 4 networks", "success");
+                    }, 1000);
+                }
+                else if (cmd === 'scan_ble') {
+                    setTimeout(() => {
+                        this.renderBleDevices([
+                            { name: 'iPhone de João', rssi: -45 },
+                            { name: 'Galaxy Buds Pro', rssi: -62 },
+                            { name: null, rssi: -78 },
+                        ]);
+                        this.log("[BLE] Found 3 devices", "success");
+                    }, 1000);
+                }
+                else if (cmd === 'deauth' || cmd === 'deauth_all') {
+                    this.log("[ATTACK] Deauth packets sent!", "success");
+                }
+            }
+        };
+
+        // START
+        window.onload = () => app.init();
+    </script>
+</body>
+
+</html>

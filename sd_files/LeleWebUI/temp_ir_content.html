@@ -1,0 +1,555 @@
+<!-- IR REMOTE VIEW - DYNAMIC CONTROLLER -->
+<section id="ir-remote" class="view">
+    <div class="grid grid-2 gap-3" style="max-width:1200px;margin:0 auto;">
+        <div class="card">
+            <div class="card-header">
+                <h3>🎮 Controle Remoto Universal</h3>
+            </div>
+            <!-- Device & Brand Selectors -->
+            <div class="ir-selectors"
+                style="padding:15px;background:var(--bg-tertiary);border-radius:8px;margin-bottom:15px;">
+                <div class="form-group" style="margin-bottom:10px;">
+                    <label style="font-size:0.85rem;color:var(--accent-cyan);">📱 DISPOSITIVO</label>
+                    <select id="ir-device-type" onchange="changeDeviceType(this.value)"
+                        style="width:100%;padding:10px;border-radius:8px;background:var(--bg-secondary);border:1px solid var(--accent-cyan);color:var(--text-primary);">
+                        <option value="tv">📺 TV</option>
+                        <option value="ac">❄️ Ar Condicionado</option>
+                        <option value="led">💡 Fita de LED</option>
+                        <option value="fan">🌀 Ventilador</option>
+                        <option value="soundbar">🔊 Soundbar/Som</option>
+                        <option value="projector">🎬 Projetor</option>
+                        <option value="receiver">📡 Receptor/Set-Top Box</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label style="font-size:0.85rem;color:var(--accent-magenta);">🏷️ MARCA</label>
+                    <select id="ir-brand" onchange="changeBrand(this.value)"
+                        style="width:100%;padding:10px;border-radius:8px;background:var(--bg-secondary);border:1px solid var(--accent-magenta);color:var(--text-primary);">
+                        <!-- Will be populated dynamically -->
+                    </select>
+                </div>
+            </div>
+
+            <!-- Dynamic Remote Container -->
+            <div id="ir-remote-wrapper" class="ir-remote-container"
+                style="transition:all 0.4s ease-in-out;transform-origin:center;">
+                <div class="ir-screen" id="ir-screen-display">
+                    <div class="brand" id="ir-brand-display">Samsung Smart TV</div>
+                    <div class="status" id="ir-status-display">Conectado</div>
+                </div>
+
+                <!-- TV Remote (Default) -->
+                <div id="remote-tv" class="ir-controls remote-layout active">
+                    <div class="ir-row">
+                        <button class="ir-btn ir-power" onclick="sendIR('Samsung Power')"><span
+                                class="icon">⚡</span></button>
+                        <button class="ir-btn ir-source" onclick="sendIR('Samsung Source')">INPUT</button>
+                    </div>
+                    <div class="ir-row three-col">
+                        <button class="ir-btn" onclick="sendIR('menu')">MENU</button>
+                        <button class="ir-btn" onclick="sendIR('home')">HOME</button>
+                        <button class="ir-btn" onclick="sendIR('back')">BACK</button>
+                    </div>
+                    <div class="ir-nav-pad">
+                        <div class="ir-nav ir-up" onclick="sendIR('up')">▲</div>
+                        <div class="ir-nav ir-left" onclick="sendIR('left')">◀</div>
+                        <div class="ir-center" onclick="sendIR('ok')">OK</div>
+                        <div class="ir-nav ir-right" onclick="sendIR('right')">▶</div>
+                        <div class="ir-nav ir-down" onclick="sendIR('down')">▼</div>
+                    </div>
+                    <div class="ir-row two-col-gap">
+                        <div class="ir-vol-ch">
+                            <div class="label">VOL</div>
+                            <button class="ir-btn" onclick="sendIR('Samsung Volume +')">+</button>
+                            <button class="ir-btn" onclick="sendIR('Samsung Volume -')">-</button>
+                        </div>
+                        <div class="ir-vol-ch">
+                            <div class="label">CH</div>
+                            <button class="ir-btn" onclick="sendIR('ch_up')">▲</button>
+                            <button class="ir-btn" onclick="sendIR('ch_down')">▼</button>
+                        </div>
+                    </div>
+                    <div class="ir-numpad">
+                        <button class="ir-num" onclick="sendIR('Samsung Canal 1')">1</button>
+                        <button class="ir-num" onclick="sendIR('2')">2</button>
+                        <button class="ir-num" onclick="sendIR('3')">3</button>
+                        <button class="ir-num" onclick="sendIR('4')">4</button>
+                        <button class="ir-num" onclick="sendIR('5')">5</button>
+                        <button class="ir-num" onclick="sendIR('6')">6</button>
+                        <button class="ir-num" onclick="sendIR('7')">7</button>
+                        <button class="ir-num" onclick="sendIR('8')">8</button>
+                        <button class="ir-num" onclick="sendIR('9')">9</button>
+                        <button class="ir-num" onclick="sendIR('Samsung Netflix')">📺</button>
+                        <button class="ir-num" onclick="sendIR('0')">0</button>
+                        <button class="ir-num" onclick="sendIR('Samsung Mute')">🔇</button>
+                    </div>
+                    <div class="ir-extra">
+                        <button class="ir-btn small red" onclick="sendIR('red')"></button>
+                        <button class="ir-btn small green" onclick="sendIR('green')"></button>
+                        <button class="ir-btn small yellow" onclick="sendIR('yellow')"></button>
+                        <button class="ir-btn small blue" onclick="sendIR('blue')"></button>
+                    </div>
+                </div>
+
+                <!-- LED Strip Remote -->
+                <div id="remote-led" class="ir-controls remote-layout" style="display:none;">
+                    <div class="ir-row">
+                        <button class="ir-btn ir-power" style="background:linear-gradient(135deg,#00ff00,#006600);"
+                            onclick="sendIR('Multilaser LED Power On')">💡 ON</button>
+                        <button class="ir-btn ir-power" style="background:linear-gradient(135deg,#ff0000,#660000);"
+                            onclick="sendIR('Multilaser LED Power Off')">💡 OFF</button>
+                    </div>
+                    <div class="led-colors"
+                        style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:15px 0;">
+                        <button class="ir-btn led-color" style="background:#ff0000;width:100%;height:45px;"
+                            onclick="sendIR('Multilaser LED Red')"></button>
+                        <button class="ir-btn led-color" style="background:#00ff00;width:100%;height:45px;"
+                            onclick="sendIR('Multilaser LED Green')"></button>
+                        <button class="ir-btn led-color" style="background:#0000ff;width:100%;height:45px;"
+                            onclick="sendIR('Multilaser LED Blue')"></button>
+                        <button class="ir-btn led-color"
+                            style="background:#ffffff;width:100%;height:45px;border:2px solid #333;"
+                            onclick="sendIR('Multilaser LED White')"></button>
+                        <button class="ir-btn led-color" style="background:#ff6600;width:100%;height:45px;"
+                            onclick="sendIR('Genérica LED DIY1')"></button>
+                        <button class="ir-btn led-color" style="background:#ffff00;width:100%;height:45px;"
+                            onclick="sendIR('Genérica LED DIY2')"></button>
+                        <button class="ir-btn led-color" style="background:#00ffff;width:100%;height:45px;"
+                            onclick="sendIR('Genérica LED DIY3')"></button>
+                        <button class="ir-btn led-color" style="background:#ff00ff;width:100%;height:45px;"
+                            onclick="sendIR('Genérica LED DIY4')"></button>
+                    </div>
+                    <div class="ir-row two-col-gap">
+                        <div class="ir-vol-ch">
+                            <div class="label">BRILHO</div>
+                            <button class="ir-btn" style="background:linear-gradient(135deg,#ffff00,#ff8800);"
+                                onclick="sendIR('Multilaser LED Brightness +')">☀️ +</button>
+                            <button class="ir-btn" style="background:linear-gradient(135deg,#666,#333);"
+                                onclick="sendIR('Multilaser LED Brightness -')">🌙 -</button>
+                        </div>
+                        <div class="ir-vol-ch">
+                            <div class="label">VELOC.</div>
+                            <button class="ir-btn" onclick="sendIR('Positivo LED Quick')">⚡</button>
+                            <button class="ir-btn" onclick="sendIR('Positivo LED Slow')">🐢</button>
+                        </div>
+                    </div>
+                    <div class="led-effects"
+                        style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:15px;">
+                        <button class="ir-btn" style="background:linear-gradient(135deg,#ff0080,#8000ff);padding:12px;"
+                            onclick="sendIR('Multilaser LED Flash')">⚡ FLASH</button>
+                        <button class="ir-btn" style="background:linear-gradient(135deg,#00ff80,#0080ff);padding:12px;"
+                            onclick="sendIR('Multilaser LED Strobe')">🔦 STROBE</button>
+                        <button class="ir-btn" style="background:linear-gradient(135deg,#ff8000,#ff0080);padding:12px;"
+                            onclick="sendIR('Multilaser LED Fade')">🌈 FADE</button>
+                        <button class="ir-btn" style="background:linear-gradient(135deg,#8000ff,#0080ff);padding:12px;"
+                            onclick="sendIR('Multilaser LED Smooth')">✨ SMOOTH</button>
+                        <button class="ir-btn"
+                            style="background:linear-gradient(45deg,#f00,#0f0,#00f,#ff0);padding:12px;grid-column:span 2;"
+                            onclick="sendIR('Genérica LED Auto')">🎨 AUTO RGB</button>
+                    </div>
+                </div>
+
+                <!-- Fan Remote -->
+                <div id="remote-fan" class="ir-controls remote-layout" style="display:none;">
+                    <div class="ir-row">
+                        <button class="ir-btn ir-power"
+                            style="background:linear-gradient(135deg,#00ccff,#0066cc);width:100%;"
+                            onclick="sendIR('Arno Fan Power On/Off')">⚡ POWER</button>
+                    </div>
+                    <div class="fan-speeds"
+                        style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:15px 0;">
+                        <button class="ir-btn"
+                            style="background:linear-gradient(135deg,#004466,#002233);padding:15px;font-size:0.8rem;"
+                            onclick="sendIR('Arno Fan Speed 1')">1</button>
+                        <button class="ir-btn"
+                            style="background:linear-gradient(135deg,#006688,#003344);padding:15px;font-size:0.8rem;"
+                            onclick="sendIR('Arno Fan Speed 2')">2</button>
+                        <button class="ir-btn"
+                            style="background:linear-gradient(135deg,#0088aa,#004455);padding:15px;font-size:0.8rem;"
+                            onclick="sendIR('Arno Fan Speed 3')">3</button>
+                        <button class="ir-btn"
+                            style="background:linear-gradient(135deg,#00aacc,#005566);padding:15px;font-size:0.8rem;"
+                            onclick="sendIR('Arno Fan Speed 4')">4</button>
+                        <button class="ir-btn"
+                            style="background:linear-gradient(135deg,#00ccee,#006677);padding:15px;font-size:0.8rem;"
+                            onclick="sendIR('Arno Fan Speed 5')">5</button>
+                    </div>
+                    <div class="fan-features"
+                        style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:15px 0;">
+                        <button class="ir-btn" style="background:linear-gradient(135deg,#ff6600,#cc3300);padding:15px;"
+                            onclick="sendIR('Arno Fan Boost')">🔥 TURBO</button>
+                        <button class="ir-btn" style="background:linear-gradient(135deg,#6600cc,#330066);padding:15px;"
+                            onclick="sendIR('Arno Fan Sleep')">😴 SLEEP</button>
+                        <button class="ir-btn" style="background:linear-gradient(135deg,#00cc66,#006633);padding:15px;"
+                            onclick="sendIR('Arno Fan Oscillation')">↔️ OSCILAR</button>
+                        <button class="ir-btn" style="background:linear-gradient(135deg,#333366,#111133);padding:15px;"
+                            onclick="sendIR('Arno Fan Night Mode')">🌙 NIGHT</button>
+                    </div>
+                    <div class="fan-timers"
+                        style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:15px;">
+                        <button class="ir-btn" style="padding:12px;" onclick="sendIR('Arno Fan Timer 1h')">⏱️
+                            1H</button>
+                        <button class="ir-btn" style="padding:12px;" onclick="sendIR('Arno Fan Timer 2h')">⏱️
+                            2H</button>
+                        <button class="ir-btn" style="padding:12px;" onclick="sendIR('Genérica Fan Sleep 3h')">⏱️
+                            3H</button>
+                    </div>
+                </div>
+
+                <!-- AC Remote -->
+                <div id="remote-ac" class="ir-controls remote-layout" style="display:none;">
+                    <div class="ir-row">
+                        <button class="ir-btn ir-power"
+                            style="background:linear-gradient(135deg,#00aaff,#0055aa);width:100%;"
+                            onclick="sendIR('Gree Power')">⚡ POWER</button>
+                    </div>
+                    <div class="ac-temp" style="text-align:center;margin:20px 0;">
+                        <div style="font-size:3rem;font-weight:bold;color:var(--accent-cyan);" id="ac-temp-display">22°C
+                        </div>
+                        <div style="display:flex;justify-content:center;gap:20px;margin-top:10px;">
+                            <button class="ir-btn"
+                                style="width:60px;height:60px;font-size:1.5rem;background:linear-gradient(135deg,#0066cc,#003366);"
+                                onclick="adjustACTemp(-1)">❄️</button>
+                            <button class="ir-btn"
+                                style="width:60px;height:60px;font-size:1.5rem;background:linear-gradient(135deg,#ff6600,#cc3300);"
+                                onclick="adjustACTemp(1)">🔥</button>
+                        </div>
+                    </div>
+                    <div class="ac-modes"
+                        style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:15px 0;">
+                        <button class="ir-btn" style="padding:12px;background:linear-gradient(135deg,#0099cc,#006699);"
+                            onclick="sendIR('Gree Modo Frio')">❄️ FRIO</button>
+                        <button class="ir-btn" style="padding:12px;background:linear-gradient(135deg,#ff6600,#cc3300);"
+                            onclick="sendIR('Daikin Modo Quente')">🔥 QUENTE</button>
+                        <button class="ir-btn" style="padding:12px;background:linear-gradient(135deg,#00cc66,#009944);"
+                            onclick="sendIR('Gree Inverter Modo Auto')">🔄 AUTO</button>
+                    </div>
+                    <div class="ac-fan"
+                        style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:15px;">
+                        <button class="ir-btn" style="padding:10px;font-size:0.75rem;"
+                            onclick="sendIR('ac_fan_low')">🌬️ LOW</button>
+                        <button class="ir-btn" style="padding:10px;font-size:0.75rem;"
+                            onclick="sendIR('ac_fan_med')">🌬️ MED</button>
+                        <button class="ir-btn" style="padding:10px;font-size:0.75rem;"
+                            onclick="sendIR('Midea Inverter Fan High')">🌬️ HIGH</button>
+                        <button class="ir-btn" style="padding:10px;font-size:0.75rem;"
+                            onclick="sendIR('ac_fan_auto')">🌬️ AUTO</button>
+                    </div>
+                </div>
+
+                <!-- Soundbar Remote -->
+                <div id="remote-soundbar" class="ir-controls remote-layout" style="display:none;">
+                    <div class="ir-row">
+                        <button class="ir-btn ir-power"
+                            style="background:linear-gradient(135deg,#ff0066,#990033);width:100%;"
+                            onclick="sendIR('JBL Bar Power')">⚡ POWER</button>
+                    </div>
+                    <div class="sound-vol" style="display:flex;flex-direction:column;align-items:center;margin:20px 0;">
+                        <div style="font-size:1.5rem;margin-bottom:10px;">🔊 VOLUME</div>
+                        <div style="display:flex;gap:20px;">
+                            <button class="ir-btn"
+                                style="width:70px;height:70px;font-size:2rem;background:linear-gradient(135deg,#00cc66,#009944);"
+                                onclick="sendIR('JBL Bar Volume +')">+</button>
+                            <button class="ir-btn"
+                                style="width:70px;height:70px;font-size:2rem;background:linear-gradient(135deg,#cc3300,#990000);"
+                                onclick="sendIR('JBL Bar Volume -')">-</button>
+                        </div>
+                        <button class="ir-btn" style="margin-top:15px;padding:12px 30px;"
+                            onclick="sendIR('JBL Bar Mute')">🔇 MUTE</button>
+                    </div>
+                    <div class="sound-sources"
+                        style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:15px 0;">
+                        <button class="ir-btn" style="padding:12px;background:linear-gradient(135deg,#0066ff,#0033cc);"
+                            onclick="sendIR('JBL Bar Bluetooth')">📶 BLUETOOTH</button>
+                        <button class="ir-btn" style="padding:12px;background:linear-gradient(135deg,#ff6600,#cc3300);"
+                            onclick="sendIR('JBL Bar HDMI')">📺 HDMI</button>
+                        <button class="ir-btn" style="padding:12px;background:linear-gradient(135deg,#00cc66,#009944);"
+                            onclick="sendIR('Philips HTL Aux')">🎵 AUX</button>
+                        <button class="ir-btn" style="padding:12px;background:linear-gradient(135deg,#9933ff,#6600cc);"
+                            onclick="sendIR('Philips HTL Optical')">💿 OPTICAL</button>
+                    </div>
+                    <div class="sound-eq"
+                        style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:15px;">
+                        <button class="ir-btn" style="padding:12px;" onclick="sendIR('JBL Bar Bass +')">🔊 BASS
+                            +</button>
+                        <button class="ir-btn" style="padding:12px;" onclick="sendIR('JBL Bar Treble -')">🎵
+                            TREBLE</button>
+                        <button class="ir-btn"
+                            style="padding:12px;grid-column:span 2;background:linear-gradient(135deg,#ff0066,#cc0052);"
+                            onclick="sendIR('JBL Bar Surround On')">🎭 SURROUND</button>
+                    </div>
+                </div>
+
+                <!-- Projector Remote -->
+                <div id="remote-projector" class="ir-controls remote-layout" style="display:none;">
+                    <div class="ir-row">
+                        <button class="ir-btn ir-power"
+                            style="background:linear-gradient(135deg,#ffcc00,#cc9900);width:100%;"
+                            onclick="sendIR('Epson Power')">⚡ POWER</button>
+                    </div>
+                    <div class="proj-nav" style="margin:20px 0;">
+                        <div class="ir-nav-pad">
+                            <div class="ir-nav ir-up" onclick="sendIR('up')">▲</div>
+                            <div class="ir-nav ir-left" onclick="sendIR('left')">◀</div>
+                            <div class="ir-center" onclick="sendIR('ok')">OK</div>
+                            <div class="ir-nav ir-right" onclick="sendIR('right')">▶</div>
+                            <div class="ir-nav ir-down" onclick="sendIR('down')">▼</div>
+                        </div>
+                    </div>
+                    <div class="proj-sources"
+                        style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:15px 0;">
+                        <button class="ir-btn" style="padding:12px;background:linear-gradient(135deg,#0066ff,#0033cc);"
+                            onclick="sendIR('Epson Source HDMI')">📺 HDMI</button>
+                        <button class="ir-btn" style="padding:12px;background:linear-gradient(135deg,#00cc66,#009944);"
+                            onclick="sendIR('Acer K132 Source HDMI')">💻 VGA</button>
+                        <button class="ir-btn" style="padding:12px;" onclick="sendIR('Acer K132 Volume +')">🔊
+                            VOL+</button>
+                        <button class="ir-btn" style="padding:12px;" onclick="sendIR('Acer K132 Mute')">🔇 MUTE</button>
+                    </div>
+                    <button class="ir-btn"
+                        style="width:100%;padding:12px;background:linear-gradient(135deg,#6600cc,#330066);"
+                        onclick="sendIR('Acer K132 Freeze')">❄️ FREEZE</button>
+                </div>
+
+                <!-- Receiver Remote -->
+                <div id="remote-receiver" class="ir-controls remote-layout" style="display:none;">
+                    <div class="ir-row">
+                        <button class="ir-btn ir-power"
+                            style="background:linear-gradient(135deg,#009933,#006622);width:100%;"
+                            onclick="sendIR('Sky HD Power')">⚡ POWER</button>
+                    </div>
+                    <div class="ir-nav-pad" style="margin:20px 0;">
+                        <div class="ir-nav ir-up" onclick="sendIR('up')">▲</div>
+                        <div class="ir-nav ir-left" onclick="sendIR('left')">◀</div>
+                        <div class="ir-center" onclick="sendIR('ok')">OK</div>
+                        <div class="ir-nav ir-right" onclick="sendIR('right')">▶</div>
+                        <div class="ir-nav ir-down" onclick="sendIR('down')">▼</div>
+                    </div>
+                    <div class="ir-row two-col-gap">
+                        <div class="ir-vol-ch">
+                            <div class="label">VOL</div>
+                            <button class="ir-btn" onclick="sendIR('vol_up')">+</button>
+                            <button class="ir-btn" onclick="sendIR('vol_down')">-</button>
+                        </div>
+                        <div class="ir-vol-ch">
+                            <div class="label">CH</div>
+                            <button class="ir-btn" onclick="sendIR('ch_up')">▲</button>
+                            <button class="ir-btn" onclick="sendIR('ch_down')">▼</button>
+                        </div>
+                    </div>
+                    <div class="ir-numpad" style="margin-top:15px;">
+                        <button class="ir-num" onclick="sendIR('1')">1</button>
+                        <button class="ir-num" onclick="sendIR('2')">2</button>
+                        <button class="ir-num" onclick="sendIR('3')">3</button>
+                        <button class="ir-num" onclick="sendIR('4')">4</button>
+                        <button class="ir-num" onclick="sendIR('5')">5</button>
+                        <button class="ir-num" onclick="sendIR('6')">6</button>
+                        <button class="ir-num" onclick="sendIR('7')">7</button>
+                        <button class="ir-num" onclick="sendIR('8')">8</button>
+                        <button class="ir-num" onclick="sendIR('9')">9</button>
+                        <button class="ir-num" onclick="sendIR('guide')">📋</button>
+                        <button class="ir-num" onclick="sendIR('0')">0</button>
+                        <button class="ir-num" onclick="sendIR('info')">ℹ️</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <!-- Auto-Find Remote -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h3>🔍 Encontrar Controle</h3>
+                </div>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:15px;">Descubra automaticamente qual
+                    controle funciona para seu dispositivo.</p>
+                <div class="form-group"><label>Marca</label>
+                    <select id="ir-autofind-brand">
+                        <option value="lg">LG</option>
+                        <option value="samsung">Samsung</option>
+                        <option value="sony">Sony</option>
+                        <option value="philips">Philips</option>
+                        <option value="panasonic">Panasonic</option>
+                        <option value="toshiba">Toshiba</option>
+                        <option value="aoc">AOC</option>
+                        <option value="tcl">TCL</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" style="width:100%;" onclick="startAutoFind()">🚀 Iniciar Busca
+                    Automática</button>
+                <div id="ir-autofind-status"
+                    style="display:none;margin-top:15px;padding:15px;background:var(--bg-tertiary);border-radius:8px;">
+                    <div id="ir-autofind-text">Testando código 1 de 50...</div>
+                    <div style="margin-top:10px;">
+                        <button class="btn btn-success" onclick="autoFindYes()">✅ Funcionou!</button>
+                        <button class="btn btn-danger" onclick="autoFindNo()">❌ Não</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Record Remote -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h3>⏺️ Gravar Controle</h3>
+                </div>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:15px;">Grave os botões do seu controle
+                    original apontando para o sensor IR.</p>
+                <div class="form-group"><label>Nome do Controle</label><input type="text" id="ir-record-name"
+                        placeholder="Ex: TV Sala"></div>
+                <button class="btn btn-warning" style="width:100%;" onclick="startIRRecording()">⏺️ Iniciar
+                    Gravação</button>
+                <div id="ir-record-status"
+                    style="display:none;margin-top:15px;padding:15px;background:var(--bg-tertiary);border-radius:8px;">
+                    <div id="ir-record-text">Pressione o botão no controle original...</div>
+                    <div style="font-size:2rem;text-align:center;margin:10px 0;" id="ir-record-btn">POWER</div>
+                </div>
+            </div>
+
+            <!-- Saved Remotes -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>💾 Controles Salvos</h3>
+                </div>
+                <div id="saved-remotes-list" style="max-height:200px;overflow-y:auto;">
+                    <div class="text-muted" style="padding:10px;text-align:center;">Nenhum controle salvo</div>
+                </div>
+                <button class="btn btn-secondary mt-2" onclick="loadSavedRemotes()">🔄 Atualizar</button>
+            </div>
+
+            <!-- TV NUKE -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h3>☠️ IR NUKE</h3>
+                </div>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:10px;">Desliga TODAS as TVs, ACs,
+                    LEDs, ventiladores e aparelhos próximos enviando 1200+ códigos de power.</p>
+                <button class="btn btn-danger" style="width:100%;font-weight:bold;" onclick="startTVBeGone()">☠️
+                    DESLIGAR TUDO ☠️</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    // Device brands mapping
+    const deviceBrands = {
+        tv: ['Samsung', 'LG', 'Philco', 'Semp', 'AOC', 'Toshiba', 'Panasonic', 'Hisense', 'TCL', 'Sony'],
+        ac: ['Gree', 'Midea', 'Springer', 'LG', 'Samsung', 'Consul', 'Electrolux', 'Daikin', 'Fujitsu'],
+        led: ['Multilaser', 'Elgin', 'Positivo', 'Genérica'],
+        fan: ['Arno', 'Mondial', 'Britânia', 'Cadence', 'Genérica'],
+        soundbar: ['JBL', 'Philips', 'Sony', 'Samsung', 'LG', 'Bose', 'Yamaha'],
+        projector: ['Epson', 'BenQ', 'Optoma', 'Acer', 'ViewSonic'],
+        receiver: ['Sky', 'Claro', 'Visionsat', 'Duosat', 'Azamerica']
+    };
+
+    let currentDevice = 'tv';
+    let currentBrand = 'Samsung';
+    let acTemp = 22;
+
+    // Initialize brand dropdown
+    function updateBrandDropdown(device) {
+        const brandSelect = document.getElementById('ir-brand');
+        const brands = deviceBrands[device] || [];
+        brandSelect.innerHTML = brands.map(b => `<option value="${b}">${b}</option>`).join('');
+        if (brands.length > 0) {
+            currentBrand = brands[0];
+            changeBrand(currentBrand);
+        }
+    }
+
+    // Change device type with transition
+    function changeDeviceType(device) {
+        const wrapper = document.getElementById('ir-remote-wrapper');
+        const oldRemote = document.querySelector('.remote-layout.active');
+        const newRemote = document.getElementById('remote-' + device);
+
+        // Animate out
+        wrapper.style.transform = 'scale(0.9) rotateY(90deg)';
+        wrapper.style.opacity = '0';
+
+        setTimeout(() => {
+            // Hide old, show new
+            if (oldRemote) oldRemote.classList.remove('active');
+            document.querySelectorAll('.remote-layout').forEach(r => r.style.display = 'none');
+            if (newRemote) {
+                newRemote.style.display = 'block';
+                newRemote.classList.add('active');
+            }
+
+            // Update display
+            currentDevice = device;
+            updateBrandDropdown(device);
+            updateScreenDisplay();
+
+            // Animate in
+            wrapper.style.transform = 'scale(1) rotateY(0deg)';
+            wrapper.style.opacity = '1';
+        }, 300);
+    }
+
+    // Change brand
+    function changeBrand(brand) {
+        currentBrand = brand;
+        updateScreenDisplay();
+    }
+
+    // Update screen display
+    function updateScreenDisplay() {
+        const deviceNames = {
+            tv: '📺 TV', ac: '❄️ AC', led: '💡 LED', fan: '🌀 Ventilador',
+            soundbar: '🔊 Soundbar', projector: '🎬 Projetor', receiver: '📡 Receptor'
+        };
+        document.getElementById('ir-brand-display').textContent = currentBrand + ' ' + (deviceNames[currentDevice] || '');
+        document.getElementById('ir-status-display').textContent = 'Conectado';
+    }
+
+    // AC Temperature adjustment
+    function adjustACTemp(delta) {
+        acTemp = Math.max(16, Math.min(30, acTemp + delta));
+        document.getElementById('ac-temp-display').textContent = acTemp + '°C';
+        // Send corresponding IR code
+        const tempCode = currentBrand + ' ' + acTemp + '°C';
+        sendIR(tempCode);
+    }
+
+    // Init
+    document.addEventListener('DOMContentLoaded', function () {
+        updateBrandDropdown('tv');
+        updateScreenDisplay();
+    });
+</script>
+
+<style>
+    .remote-layout {
+        transition: all 0.3s ease;
+    }
+
+    .remote-layout.active {
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .led-color:hover {
+        transform: scale(1.1);
+        box-shadow: 0 0 15px currentColor;
+    }
+
+    .fan-speeds button:hover {
+        transform: scale(1.05);
+    }
+
+    #ir-remote-wrapper {
+        perspective: 1000px;
+    }
+</style>

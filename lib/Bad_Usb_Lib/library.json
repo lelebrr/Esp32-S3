@@ -1,0 +1,7 @@
+{
+    "name": "Bad_Usb_Lib",
+    "version": "1.0.0",
+    "dependencies": {
+        "h2zero/NimBLE-Arduino": "^2.3.3"
+    }
+}
