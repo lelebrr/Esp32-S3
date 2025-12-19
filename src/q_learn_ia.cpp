@@ -4,6 +4,7 @@
 
 #define ACTIONS 6 // None, BLE, WiFi, NFC, SubGHz, IR
 #define STATES 24 // Ex: 4 Battery Levels * 2 Time of Day intervals (Day/Night) * 3 Activity Levels
+#define INVALID_MAX 9999.0f
 
 float* q_table = nullptr;
 bool ai_initialized = false;
