@@ -1,0 +1,16 @@
+Monster S3 Manual
+
+[USA]
+- BadUSB: Injects keystrokes.
+- WAX: NTLM Capture.
+- MouseJack: Hijack mice.
+
+[WIFI]
+- Deauth: Disconnects users.
+- PMKID: Capture hashes.
+
+[BLE]
+- Spam: Flood addresses.
+
+[IR]
+- TV-B-Gone: Off/On TVs.

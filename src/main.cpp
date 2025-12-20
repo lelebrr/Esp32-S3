@@ -1,3 +1,15 @@
+/**
+ * @file main.cpp
+ * @brief System Entry Point and Task Scheduler
+ * 
+ * Initializes hardware drivers, mounts filesystems, and creates
+ * FreeRTOS tasks for display, network, attack engine, and AI.
+ * Functions as the central coordinator for the Monster S3 firmware.
+ * 
+ * @author Monster S3 Team
+ * @date 2025
+ */
+
 #include <Arduino.h>
 #include "s3_driver.h"
 #include "pin_config.h"
@@ -6,21 +18,37 @@
 #include "gesture_sensor.h"
 #include "gps_driver.h"
 #include "core/aggressive_sd.h"
+#include "tts_espeak.h"
+#include "q_learn_ia.h"
+#include "fault_mosfet.h"
+#include "web_dashboard.h"
 
-// Task Handles
+// ============================================================================
+// TASK HANDLES
+// ============================================================================
 TaskHandle_t hDisplayTask;
 TaskHandle_t hNetTask;
 TaskHandle_t hAttackTask;
 TaskHandle_t hGestureTask;
 TaskHandle_t hGPSTask;
+TaskHandle_t hAITask;
+TaskHandle_t hAudioTask;
 
-// Forward declarations
+// ============================================================================
+// FORWARD DECLARATIONS
+// ============================================================================
 void handleGestureAction(GestureAction action);
+void checkHardwareButtons();
 
+// ============================================================================
+// TASKS
+// ============================================================================
+
+/**
+ * @brief Display/UI task - handles LVGL rendering
+ * Runs on Core 1 for smooth UI
+ */
 void taskSystemDisplay(void *p) {
-    // Init LVGL inside the task (it's safe usually, but better if called once. 
-    // setup_lvgl_menu() calls st7789_init which uses SPI. SPI should be thread safe or used on one task.
-    // We will assume Display Task OWNS the display SPI.)
     setup_lvgl_menu();
     
     for(;;) {
@@ -29,61 +57,75 @@ void taskSystemDisplay(void *p) {
     }
 }
 
+/**
+ * @brief Network task - handles web server and WiFi
+ * Runs on Core 1
+ */
 void taskNetworkManager(void *p) {
+    // Small delay to let other systems init
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    
+    setup_web_dashboard();
+    
     for(;;) {
-        // Web Server Handle
-        vTaskDelay(100 / portTICK_PERIOD_MS);
-    }
-}
-
-void taskAttackEngine(void *p) {
-    attacks_init();
-    pinMode(PIN_BTN_FAULT, INPUT_PULLUP);
-    for(;;) {
-        // Check Hardware Trigger
-        if(digitalRead(PIN_BTN_FAULT) == LOW) {
-            Serial.println("[ATTACK] Hardware Triggered Fault Injection!");
-            digitalWrite(PIN_LED_RED_ATTACK_HI, HIGH);
-            delay(50); // Debounce
-            digitalWrite(PIN_LED_RED_ATTACK_HI, LOW);
-            // attacks_start(ATTACK_NFC_FAULT); // Example
-        }
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+        // Process WebSocket clients and status broadcasts
+        web_dashboard_loop();
+        vTaskDelay(50 / portTICK_PERIOD_MS);
     }
 }
 
 /**
- * @brief Gesture sensor polling task
- * Runs on Core 1, updates gesture sensor and processes actions
+ * @brief Attack engine task - manages attack execution
+ * Runs on Core 0 (dedicated)
+ */
+void taskAttackEngine(void *p) {
+    attacks_init();
+    setup_fault_mosfet();
+    
+    for(;;) {
+        // Check hardware fault trigger button
+        if (fault_button_pressed()) {
+            Serial.println("[ATTACK] Hardware Triggered Fault Injection!");
+            digitalWrite(PIN_LED_RED_ATTACK_HI, HIGH);
+            fault_pulse_trigger();
+            delay(50); // Debounce
+            digitalWrite(PIN_LED_RED_ATTACK_HI, LOW);
+            while(fault_button_pressed()) delay(10); // Wait release
+        }
+        
+        // Update running attacks
+        attacks_update();
+        
+        vTaskDelay(50 / portTICK_PERIOD_MS);
+    }
+}
+
+/**
+ * @brief Gesture sensor task - polls PAJ7620U2
+ * Runs on Core 1
  */
 void taskGestureSensor(void *p) {
     Serial.println("[GESTURE] Task started");
-    
-    // Wait for sensor to be ready
     vTaskDelay(100 / portTICK_PERIOD_MS);
     
     for(;;) {
         if (GestureSensor::isAvailable()) {
-            // Poll for gestures
             GestureSensor::update();
             
-            // Check if we got a gesture
             GestureType gesture = GestureSensor::getLastGesture();
             if (gesture != GESTURE_NONE) {
-                // Convert to action and handle
                 GestureAction action = GestureSensor::getActionForGesture(gesture);
                 handleGestureAction(action);
             }
         }
         
-        // Poll every 30ms for responsive gesture detection
         vTaskDelay(30 / portTICK_PERIOD_MS);
     }
 }
 
 /**
- * @brief GPS polling task
- * Runs on Core 0, continuously reads GPS data from UART2
+ * @brief GPS task - reads UART2 data
+ * Runs on Core 0
  */
 void taskGPS(void *p) {
     Serial.println("[GPS] Task started");
@@ -92,116 +134,167 @@ void taskGPS(void *p) {
         if (GPSDriver::isAvailable()) {
             GPSDriver::update();
             
-            // Log position every 10 seconds if valid
             static uint32_t lastLog = 0;
             if (GPSDriver::isValid() && millis() - lastLog > 10000) {
-                Serial.printf("[GPS] Position: %s, Sats: %d, HDOP: %.1f\n",
+                Serial.printf("[GPS] Position: %s, Sats: %d\n",
                     GPSDriver::getCoordsString().c_str(),
-                    GPSDriver::getSatellites(),
-                    GPSDriver::getHDOP());
+                    GPSDriver::getSatellites());
                 lastLog = millis();
             }
         }
         
-        // Poll every 100ms for GPS data
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 }
 
 /**
- * @brief Handle gesture actions - map to navigation/UI events and attacks
+ * @brief AI task - Q-learning decision making
+ * Runs on Core 0
+ */
+void taskAI(void *p) {
+    Serial.println("[AI] Task started");
+    setup_q_learn();
+    
+    for(;;) {
+        ai_loop_step();
+        checkHardwareButtons(); // Check AI feedback buttons
+        vTaskDelay(500 / portTICK_PERIOD_MS);
+    }
+}
+
+/**
+ * @brief Audio task - TTS playback
+ * Runs on Core 1
+ */
+void taskAudio(void *p) {
+    Serial.println("[AUDIO] Task started");
+    setup_tts();
+    
+    for(;;) {
+        loop_tts();
+        vTaskDelay(10 / portTICK_PERIOD_MS);
+    }
+}
+
+// ============================================================================
+// HELPERS
+// ============================================================================
+
+/**
+ * @brief Handle gesture actions - UI navigation and attack control
  */
 void handleGestureAction(GestureAction action) {
-    // Get LVGL key for this gesture
     uint32_t lvgl_key = gesture_action_to_lvgl_key(action);
     
-    // Send to LVGL if it's a navigation action
     if (lvgl_key != 0) {
         lvgl_send_gesture_key(lvgl_key);
     }
     
-    // Handle specific gestures
     switch (action) {
         case ACTION_MENU_UP:
             Serial.println("[GESTURE->UI] Navigate UP");
             break;
-            
         case ACTION_MENU_DOWN:
             Serial.println("[GESTURE->UI] Navigate DOWN");
             break;
-            
         case ACTION_MENU_LEFT:
             Serial.println("[GESTURE->UI] Navigate LEFT");
             break;
-            
         case ACTION_MENU_RIGHT:
             Serial.println("[GESTURE->UI] Navigate RIGHT");
             break;
-            
         case ACTION_SELECT:
-            Serial.println("[GESTURE->UI] SELECT/CONFIRM");
+            Serial.println("[GESTURE->UI] SELECT");
             break;
-            
         case ACTION_BACK:
-            Serial.println("[GESTURE->UI] BACK/CANCEL");
-            // Also stop any running attack when going back
+            Serial.println("[GESTURE->UI] BACK");
             if (attacks_is_running()) {
                 attacks_stop();
-                Serial.println("[GESTURE] Attack stopped via BACK gesture");
+                speak(TTS_SUCCESS);
             }
             break;
-            
-        case ACTION_SPECIAL_1:
-            Serial.println("[GESTURE->UI] Clockwise - Next Attack");
-            // Could cycle to next attack type
-            break;
-            
-        case ACTION_SPECIAL_2:
-            Serial.println("[GESTURE->UI] Anti-Clockwise - Prev Attack");
-            // Could cycle to previous attack type
-            break;
-            
         case ACTION_WAKE:
-            Serial.println("[GESTURE] WAVE - Emergency Stop All!");
-            // Wave gesture = STOP ALL ATTACKS (emergency)
+            Serial.println("[GESTURE] WAVE - Emergency Stop!");
             if (attacks_is_running()) {
                 attacks_stop();
-                Serial.println("[GESTURE] All attacks stopped via WAVE gesture!");
             }
-            // Also wake screen if dimmed
             digitalWrite(PIN_TFT_BL, HIGH);
             break;
-            
         default:
             break;
     }
 }
 
-void setup() {
-    // --- AGGRESSIVE SD BOOT - FIRST PRIORITY ---
-    Serial.begin(115200);
-    delay(100);
-    aggressive_boot_logic();
+/**
+ * @brief Check hardware buttons for AI feedback
+ * Button C = Success, Button D = Fail
+ */
+void checkHardwareButtons() {
+    static uint32_t lastCheck = 0;
+    if (millis() - lastCheck < 200) return; // Debounce
     
-    // --- Standard Driver Init ---
-    MonsterDriver::init();
-    
-    // Check if we woke up from gesture
-    if (GestureSensor::wasWakeupByGesture()) {
-        Serial.println("[GESTURE] Woke up from deep sleep by gesture!");
+    // Button C (Down) = Success feedback
+    if (digitalRead(PIN_BTN_C) == LOW) {
+        ai_feedback_success();
+        lastCheck = millis();
+        while(digitalRead(PIN_BTN_C) == LOW) delay(10);
     }
     
-    // Ready Signal
-    digitalWrite(PIN_LED_RED_ATTACK_LO, HIGH); 
+    // Button D (Left) = Fail feedback
+    if (digitalRead(PIN_BTN_D) == LOW) {
+        ai_feedback_fail();
+        lastCheck = millis();
+        while(digitalRead(PIN_BTN_D) == LOW) delay(10);
+    }
+}
 
-    // Create Tasks
-    xTaskCreatePinnedToCore(taskSystemDisplay,   "Display",  8192, NULL, 2, &hDisplayTask,  1);
-    xTaskCreatePinnedToCore(taskNetworkManager,  "Net",      4096, NULL, 1, &hNetTask,      1);
-    xTaskCreatePinnedToCore(taskAttackEngine,    "Attacks",  8192, NULL, 5, &hAttackTask,   0);
-    xTaskCreatePinnedToCore(taskGestureSensor,   "Gesture",  4096, NULL, 3, &hGestureTask,  1);
-    xTaskCreatePinnedToCore(taskGPS,             "GPS",      4096, NULL, 2, &hGPSTask,      0);
+// ============================================================================
+// SETUP & LOOP
+// ============================================================================
+
+void setup() {
+    // --- SERIAL FIRST ---
+    Serial.begin(115200);
+    delay(100);
+    
+    // --- AGGRESSIVE SD BOOT ---
+    aggressive_boot_logic();
+    
+    // --- HARDWARE INIT ---
+    MonsterDriver::init();
+    
+    // --- BUTTON PINS ---
+    pinMode(PIN_BTN_C, INPUT_PULLUP);
+    pinMode(PIN_BTN_D, INPUT_PULLUP);
+    
+    // Check wake source
+    if (GestureSensor::wasWakeupByGesture()) {
+        Serial.println("[SYSTEM] Woke up by gesture!");
+    }
+    
+    // Ready signal
+    digitalWrite(PIN_LED_RED_ATTACK_LO, HIGH);
+    delay(200);
+    digitalWrite(PIN_LED_RED_ATTACK_LO, LOW);
+
+    // --- CREATE TASKS ---
+    // Core 1: Display, Network, Gesture, Audio (UI-related)
+    // Core 0: Attacks, GPS, AI (processing)
+    
+    xTaskCreatePinnedToCore(taskSystemDisplay,   "Display",  8192,  NULL, 2, &hDisplayTask,  1);
+    xTaskCreatePinnedToCore(taskNetworkManager,  "Net",      8192,  NULL, 1, &hNetTask,      1);
+    xTaskCreatePinnedToCore(taskGestureSensor,   "Gesture",  4096,  NULL, 3, &hGestureTask,  1);
+    xTaskCreatePinnedToCore(taskAudio,           "Audio",    8192,  NULL, 2, &hAudioTask,    1);
+    xTaskCreatePinnedToCore(taskAttackEngine,    "Attacks",  8192,  NULL, 5, &hAttackTask,   0);
+    xTaskCreatePinnedToCore(taskGPS,             "GPS",      4096,  NULL, 2, &hGPSTask,      0);
+    xTaskCreatePinnedToCore(taskAI,              "AI",       8192,  NULL, 1, &hAITask,       0);
+    
+    Serial.println("[SYSTEM] Monster S3 Ready!");
+    Serial.printf("[SYSTEM] Free Heap: %d, Free PSRAM: %d\n", 
+                  ESP.getFreeHeap(), ESP.getFreePsram());
 }
 
 void loop() {
+    // Main loop does nothing - all work in FreeRTOS tasks
     vTaskDelay(1000 / portTICK_PERIOD_MS);
 }

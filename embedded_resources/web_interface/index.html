@@ -4,133 +4,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LELE // OMNI-DASHBOARD 3D</title>
-    <meta name="theme-color" content="#000000">
-    <meta name="description" content="ESP32 Cyberpunk Control Interface">
-
-    <!-- Three.js from CDN (fallback for local preview) -->
-    <script src="js/three.min.js" onerror="
-        console.warn('Local three.min.js not found, loading from CDN...');
-        var s = document.createElement('script');
-        s.src = 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.min.js';
-        document.head.appendChild(s);
-    "></script>
-
+    <title>MONSTER S3 // ATTACK CENTER</title>
+    <meta name="theme-color" content="#0a0a0f">
+    <meta name="description" content="ESP32-S3 Complete Attack Interface">
     <style>
-        /* ========== RESET & BASE ========== */
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap');
 
         :root {
+            --bg-dark: #0a0a0f;
+            --bg-panel: rgba(15, 20, 35, 0.95);
             --neon-cyan: #00f3ff;
             --neon-magenta: #ff00ff;
             --neon-green: #00ff41;
             --neon-red: #ff003c;
             --neon-yellow: #ffff00;
-            --bg-dark: #050510;
-            --glass-bg: rgba(10, 15, 25, 0.75);
-            --glass-border: 1px solid rgba(0, 243, 255, 0.3);
-            --glass-shadow: 0 0 30px rgba(0, 243, 255, 0.15);
+            --neon-orange: #ff8c00;
+            --neon-purple: #9d4edd;
             --font-head: 'Orbitron', sans-serif;
             --font-mono: 'Share Tech Mono', monospace;
+            --border-glow: 0 0 10px rgba(0, 243, 255, 0.3);
         }
 
         * {
             box-sizing: border-box;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
             margin: 0;
             padding: 0;
         }
 
         html,
         body {
-            overflow: hidden;
-            background: var(--bg-dark);
             font-family: var(--font-mono);
+            background: var(--bg-dark);
             color: var(--neon-cyan);
-            height: 100%;
-            width: 100%;
+            min-height: 100vh;
+            overflow-x: hidden;
         }
 
-        /* ========== 3D CANVAS ========== */
-        #canvas-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-        }
-
-        /* CRT Effect */
-        .scanlines {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: repeating-linear-gradient(0deg,
-                    transparent,
-                    transparent 2px,
-                    rgba(0, 0, 0, 0.15) 2px,
-                    rgba(0, 0, 0, 0.15) 4px);
-            pointer-events: none;
-            z-index: 1000;
-            opacity: 0.4;
-        }
-
-        /* ========== UI LAYER ========== */
-        #ui-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            padding: 8px;
-            pointer-events: none;
-            gap: 8px;
-        }
-
-        /* ========== GLASS PANELS ========== */
-        .panel {
-            pointer-events: auto;
-            background: var(--glass-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: var(--glass-border);
-            box-shadow: var(--glass-shadow);
-            border-radius: 12px;
-            padding: 12px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .panel::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
-            animation: scan 4s linear infinite;
-        }
-
-        @keyframes scan {
-            0% {
-                left: -100%;
-            }
-
-            100% {
-                left: 100%;
-            }
-        }
-
-        /* ========== HEADER ========== */
-        header.panel {
+        /* Header */
+        header {
+            background: var(--bg-panel);
+            border-bottom: 1px solid rgba(0, 243, 255, 0.2);
+            padding: 12px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -140,51 +54,24 @@
 
         h1 {
             font-family: var(--font-head);
-            font-size: 1.4rem;
-            margin: 0;
-            text-shadow: 0 0 15px var(--neon-cyan), 0 0 30px var(--neon-cyan);
-            letter-spacing: 3px;
-            animation: flicker 3s infinite;
-        }
-
-        @keyframes flicker {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            92% {
-                opacity: 1;
-            }
-
-            93% {
-                opacity: 0.8;
-            }
-
-            94% {
-                opacity: 1;
-            }
-
-            95% {
-                opacity: 0.9;
-            }
+            font-size: 1.3rem;
+            text-shadow: 0 0 20px var(--neon-cyan);
+            letter-spacing: 2px;
         }
 
         .status-bar {
             display: flex;
             gap: 15px;
-            font-size: 0.85rem;
-            flex-wrap: wrap;
+            font-size: 0.8rem;
         }
 
         .status-item {
             display: flex;
             align-items: center;
             gap: 5px;
-            padding: 4px 8px;
+            padding: 4px 10px;
             background: rgba(0, 0, 0, 0.3);
-            border-radius: 6px;
+            border-radius: 4px;
         }
 
         .status-dot {
@@ -205,151 +92,215 @@
 
             0%,
             100% {
-                transform: scale(1);
                 opacity: 1;
             }
 
             50% {
-                transform: scale(1.2);
-                opacity: 0.7;
+                opacity: 0.5;
             }
         }
 
-        /* ========== MAIN CONTENT ========== */
-        main {
-            flex: 1;
+        /* Navigation Tabs */
+        .nav-tabs {
             display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            gap: 8px;
+            gap: 5px;
+            padding: 10px 15px;
+            background: var(--bg-panel);
+            overflow-x: auto;
+            flex-wrap: nowrap;
         }
 
-        .view-section {
-            display: none;
-            flex-direction: column;
-            gap: 8px;
-            height: 100%;
-            overflow-y: auto;
-        }
-
-        .view-section.active {
-            display: flex;
-        }
-
-        /* ========== MODULE GRID ========== */
-        .modules-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 10px;
-            padding: 10px 0;
-        }
-
-        .module-card {
-            pointer-events: auto;
-            background: rgba(0, 0, 0, 0.6);
-            border: 1px solid rgba(0, 243, 255, 0.2);
-            border-radius: 10px;
-            padding: 15px 10px;
-            text-align: center;
+        .nav-tab {
+            padding: 10px 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: #888;
             cursor: pointer;
-            transition: all 0.25s ease;
-            position: relative;
-            overflow: hidden;
+            font-family: var(--font-head);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+            white-space: nowrap;
         }
 
-        .module-card::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, transparent 40%, rgba(0, 243, 255, 0.1) 50%, transparent 60%);
-            transform: translateX(-100%);
-            transition: transform 0.5s;
+        .nav-tab:hover {
+            border-color: var(--neon-cyan);
+            color: var(--neon-cyan);
         }
 
-        .module-card:hover::after {
-            transform: translateX(100%);
-        }
-
-        .module-card:hover {
+        .nav-tab.active {
             background: rgba(0, 243, 255, 0.1);
             border-color: var(--neon-cyan);
-            transform: translateY(-3px);
-            box-shadow: 0 5px 25px rgba(0, 243, 255, 0.3);
+            color: var(--neon-cyan);
+            box-shadow: var(--border-glow);
         }
 
-        .module-card:active {
-            transform: scale(0.95);
+        /* Main Content */
+        main {
+            padding: 15px;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
-        .module-icon {
-            font-size: 2rem;
+        /* Sections */
+        .section {
+            display: none;
+        }
+
+        .section.active {
             display: block;
-            margin-bottom: 8px;
-            filter: drop-shadow(0 0 5px currentColor);
         }
 
-        .module-card span:last-child {
-            font-size: 0.75rem;
+        /* Panels */
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .panel-title {
             font-family: var(--font-head);
-            letter-spacing: 1px;
+            font-size: 1rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        /* ========== BUTTONS ========== */
+        .panel-title .icon {
+            font-size: 1.3rem;
+        }
+
+        /* Attack Grid */
+        .attack-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        /* Buttons */
         .btn {
-            padding: 12px 20px;
-            border: 1px solid var(--neon-red);
-            background: rgba(255, 0, 60, 0.1);
-            color: var(--neon-red);
+            padding: 12px 16px;
+            border: 1px solid var(--neon-cyan);
+            background: rgba(0, 243, 255, 0.1);
+            color: var(--neon-cyan);
             font-family: var(--font-head);
-            font-size: 0.85rem;
-            font-weight: bold;
+            font-size: 0.75rem;
             cursor: pointer;
             text-transform: uppercase;
             letter-spacing: 1px;
             border-radius: 6px;
             transition: all 0.2s;
-            position: relative;
-            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
         }
 
         .btn:hover {
-            background: var(--neon-red);
+            background: var(--neon-cyan);
             color: #000;
-            box-shadow: 0 0 25px var(--neon-red);
+            box-shadow: 0 0 20px var(--neon-cyan);
         }
 
         .btn:active {
             transform: scale(0.95);
         }
 
-        .btn-cyan {
-            border-color: var(--neon-cyan);
-            color: var(--neon-cyan);
-            background: rgba(0, 243, 255, 0.1);
+        .btn .icon {
+            font-size: 1.5rem;
         }
 
-        .btn-cyan:hover {
-            background: var(--neon-cyan);
+        /* Color variants */
+        .btn-ble {
+            border-color: #0077b6;
+            background: rgba(0, 119, 182, 0.1);
+            color: #00b4d8;
+        }
+
+        .btn-ble:hover {
+            background: #0077b6;
+            color: #fff;
+            box-shadow: 0 0 20px #0077b6;
+        }
+
+        .btn-wifi {
+            border-color: #00b4d8;
+            background: rgba(0, 180, 216, 0.1);
+            color: #00b4d8;
+        }
+
+        .btn-wifi:hover {
+            background: #00b4d8;
             color: #000;
-            box-shadow: 0 0 25px var(--neon-cyan);
+            box-shadow: 0 0 20px #00b4d8;
         }
 
-        .btn-green {
+        .btn-rf {
+            border-color: var(--neon-orange);
+            background: rgba(255, 140, 0, 0.1);
+            color: var(--neon-orange);
+        }
+
+        .btn-rf:hover {
+            background: var(--neon-orange);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-orange);
+        }
+
+        .btn-nfc {
+            border-color: var(--neon-purple);
+            background: rgba(157, 78, 221, 0.1);
+            color: var(--neon-purple);
+        }
+
+        .btn-nfc:hover {
+            background: var(--neon-purple);
+            color: #fff;
+            box-shadow: 0 0 20px var(--neon-purple);
+        }
+
+        .btn-ir {
+            border-color: var(--neon-yellow);
+            background: rgba(255, 255, 0, 0.1);
+            color: var(--neon-yellow);
+        }
+
+        .btn-ir:hover {
+            background: var(--neon-yellow);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-yellow);
+        }
+
+        .btn-usb {
             border-color: var(--neon-green);
-            color: var(--neon-green);
             background: rgba(0, 255, 65, 0.1);
+            color: var(--neon-green);
         }
 
-        .btn-green:hover {
+        .btn-usb:hover {
             background: var(--neon-green);
             color: #000;
-            box-shadow: 0 0 25px var(--neon-green);
+            box-shadow: 0 0 20px var(--neon-green);
         }
 
-        .btn-nuke {
+        .btn-danger {
+            border-color: var(--neon-red);
+            background: rgba(255, 0, 60, 0.2);
+            color: var(--neon-red);
+        }
+
+        .btn-danger:hover {
+            background: var(--neon-red);
+            color: #fff;
+            box-shadow: 0 0 20px var(--neon-red);
+        }
+
+        .btn-stop {
             background: linear-gradient(135deg, #ff0000, #ff6600);
             border: none;
             color: #fff;
@@ -364,58 +315,29 @@
             }
 
             50% {
-                box-shadow: 0 0 30px #ff0000, 0 0 50px #ff6600;
+                box-shadow: 0 0 30px #ff0000;
             }
         }
 
-        .btn-block {
-            width: 100%;
-        }
-
-        /* ========== ATTACK GRID ========== */
-        .attack-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-        }
-
-        /* ========== TABLES ========== */
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.75rem;
-        }
-
-        .data-table th {
-            text-align: left;
-            color: var(--neon-magenta);
-            padding: 6px;
-            border-bottom: 1px solid rgba(255, 0, 255, 0.3);
-        }
-
-        .data-table td {
-            padding: 6px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .data-table tr:hover {
-            background: rgba(0, 243, 255, 0.05);
-        }
-
-        /* ========== TERMINAL ========== */
+        /* Terminal Log */
         .terminal {
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 6px;
-            padding: 8px;
-            font-size: 0.7rem;
-            height: 120px;
-            overflow-y: auto;
+            background: #000;
             border: 1px solid #222;
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 0.7rem;
+            height: 150px;
+            overflow-y: auto;
+            font-family: var(--font-mono);
         }
 
         .log-line {
-            margin: 2px 0;
+            margin: 3px 0;
             opacity: 0.9;
+        }
+
+        .log-line.success {
+            color: var(--neon-green);
         }
 
         .log-line.warn {
@@ -426,55 +348,144 @@
             color: var(--neon-red);
         }
 
-        .log-line.success {
-            color: var(--neon-green);
+        /* Responsive */
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1rem;
+            }
+
+            .attack-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .btn {
+                padding: 10px 12px;
+                font-size: 0.65rem;
+            }
         }
 
-        /* ========== RADAR ========== */
-        .radar-container {
-            position: relative;
+        /* ===== CONFIGURATION STYLES ===== */
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin: 12px 0;
+        }
+
+        .config-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+        }
+
+        .config-item label {
+            font-size: 0.75rem;
+            color: #aaa;
+        }
+
+        .config-row {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin: 12px 0;
+        }
+
+        .config-row label {
+            font-size: 0.75rem;
+            color: #aaa;
+        }
+
+        .config-input {
             width: 100%;
-            height: 180px;
-            border: 1px solid var(--neon-green);
-            border-radius: 50%;
-            overflow: hidden;
-            background: radial-gradient(circle, rgba(0, 255, 65, 0.05) 0%, transparent 70%);
+            padding: 10px 12px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            border-radius: 6px;
+            color: var(--neon-cyan);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
         }
 
-        .radar-sweep {
+        .config-input:focus {
+            outline: none;
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+        }
+
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            border-radius: 6px;
+            color: var(--neon-cyan);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--neon-cyan);
+        }
+
+        select option {
+            background: #111;
+            color: #fff;
+        }
+
+        /* Toggle Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 26px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .switch .slider {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 50%;
-            height: 3px;
-            background: linear-gradient(90deg, var(--neon-green), transparent);
-            transform-origin: 0 0;
-            animation: sweep 2s linear infinite;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #333;
+            border-radius: 26px;
+            transition: 0.3s;
         }
 
-        @keyframes sweep {
-            from {
-                transform: rotate(0deg);
-            }
-
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        .radar-center {
+        .switch .slider:before {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 10px;
-            height: 10px;
-            background: #fff;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #888;
             border-radius: 50%;
-            transform: translate(-50%, -50%);
-            box-shadow: 0 0 15px #fff;
+            transition: 0.3s;
         }
 
-        /* ========== SLIDER ========== */
+        .switch input:checked+.slider {
+            background-color: var(--neon-green);
+            box-shadow: 0 0 10px var(--neon-green);
+        }
+
+        .switch input:checked+.slider:before {
+            transform: translateX(22px);
+            background-color: #fff;
+        }
+
+        /* Range Slider */
         input[type="range"] {
             -webkit-appearance: none;
             width: 100%;
@@ -486,663 +497,1595 @@
 
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
             background: var(--neon-cyan);
             border-radius: 50%;
             cursor: pointer;
             box-shadow: 0 0 10px var(--neon-cyan);
         }
 
-        /* ========== BACK BUTTON ========== */
-        .back-btn {
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: var(--neon-cyan);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-cyan {
+            border-color: var(--neon-cyan);
+            background: rgba(0, 243, 255, 0.1);
+        }
+
+        .btn-cyan:hover {
+            background: var(--neon-cyan);
+            color: #000;
+        }
+
+        @media (max-width: 600px) {
+            .config-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* HOAXSHELL STYLES */
+        .hoax-terminal {
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .hoax-output {
+            flex: 1;
+            overflow-y: auto;
+            color: #0f0;
+            font-size: 0.8rem;
+            white-space: pre-wrap;
+            margin-bottom: 10px;
+        }
+
+        .hoax-output::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .hoax-output::-webkit-scrollbar-track {
+            background: #222;
+        }
+
+        .hoax-output::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 4px;
+        }
+
+        .hoax-input-line {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            border-top: 1px solid #333;
+            padding-top: 5px;
+        }
+
+        .hoax-prompt {
+            color: #0f0;
+            font-weight: bold;
+        }
+
+        .hoax-input {
+            flex: 1;
             background: transparent;
             border: none;
-            color: var(--neon-cyan);
+            color: #fff;
+            font-family: inherit;
             font-size: 0.9rem;
-            cursor: pointer;
-            padding: 10px;
-            text-align: center;
-            width: 100%;
-            margin-top: auto;
+            outline: none;
         }
 
-        .back-btn:hover {
-            text-decoration: underline;
+        .hoax-session-list {
+            margin-bottom: 10px;
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 5px;
         }
 
-        /* ========== SCROLLBAR ========== */
-        ::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--neon-cyan);
-            border-radius: 2px;
-        }
-
-        /* ========== RESPONSIVE ========== */
-        @media (max-width: 480px) {
-            h1 {
-                font-size: 1rem;
-            }
-
-            .modules-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-
-            .module-card {
-                padding: 10px 5px;
-            }
-
-            .module-icon {
-                font-size: 1.5rem;
-            }
-        }
-
-        /* ========== PREVIEW MODE INDICATOR ========== */
-        .preview-mode {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            background: var(--neon-yellow);
-            color: #000;
+        .hoax-session {
+            background: #222;
             padding: 5px 10px;
             border-radius: 4px;
-            font-size: 0.7rem;
-            font-weight: bold;
-            z-index: 2000;
-            display: none;
+            cursor: pointer;
+            border: 1px solid #444;
+            font-size: 0.75rem;
+            white-space: nowrap;
         }
 
-        .preview-mode.active {
-            display: block;
+        .hoax-session:hover {
+            border-color: #0f0;
+        }
+
+        .hoax-session.active {
+            border-color: #0f0;
+            background: #003300;
+            color: #0f0;
+            box-shadow: 0 0 5px #0f0;
         }
     </style>
 </head>
 
 <body>
-    <!-- 3D WORLD -->
-    <div id="canvas-container"></div>
-    <div class="scanlines"></div>
-
-    <!-- PREVIEW MODE INDICATOR (shown when not connected) -->
-    <div id="preview-badge" class="preview-mode">⚠️ PREVIEW MODE</div>
-
-    <!-- UI LAYER -->
-    <div id="ui-layer">
-
-        <!-- HEADER -->
-        <header class="panel">
-            <h1>LELE // SYSTEM</h1>
-            <div class="status-bar">
-                <div class="status-item">
-                    <div id="conn-dot" class="status-dot offline"></div> <span id="conn-status">OFFLINE</span>
-                </div>
-                <div class="status-item">🔋 <span id="bat-val">--</span>%</div>
-                <div class="status-item">🌡️ <span id="temp-val">--</span>°C</div>
-                <div class="status-item">📡 <span id="pps-val">0</span> PPS</div>
+    <!-- Header -->
+    <header>
+        <h1>🐉 MONSTER S3</h1>
+        <div class="status-bar">
+            <div class="status-item">
+                <div id="conn-dot" class="status-dot offline"></div>
+                <span id="conn-status">OFFLINE</span>
             </div>
-        </header>
+            <div class="status-item">🔋 <span id="bat-val">--</span>%</div>
+            <div class="status-item">🌡️ <span id="temp-val">--</span>°C</div>
+            <div class="status-item">📡 <span id="pps-val">0</span> PPS</div>
+        </div>
+    </header>
 
-        <!-- MAIN -->
-        <main>
-            <!-- ===== DASHBOARD ===== -->
-            <section id="view-dashboard" class="view-section active">
-                <div class="panel"
-                    style="flex:1; display:flex; align-items:center; justify-content:center; background:transparent; border:none; box-shadow:none;">
-                    <div style="text-align:center; margin-top:80px;">
-                        <h2 style="font-size:1.5rem; text-shadow:0 0 30px var(--neon-cyan);">ESP32 ONLINE</h2>
-                        <p style="color:#888; font-size:0.8rem;">SISTEMA PRONTO // SELECIONE MÓDULO</p>
-                    </div>
-                </div>
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+        <div class="nav-tab active" onclick="showSection('home')">🏠 Home</div>
+        <div class="nav-tab" onclick="showSection('stats')">📊 Stats</div>
+        <div class="nav-tab" onclick="showSection('ble')">📶 BLE</div>
+        <div class="nav-tab" onclick="showSection('ble')">📶 BLE</div>
+        <div class="nav-tab" onclick="showSection('hoax')">🐚 Shell</div>
+        <div class="nav-tab" onclick="showSection('wifi')">📡 WiFi</div>
+        <div class="nav-tab" onclick="showSection('rf')">📻 RF</div>
+        <div class="nav-tab" onclick="showSection('nfc')">💳 NFC</div>
+        <div class="nav-tab" onclick="showSection('ir')">📺 IR</div>
+        <div class="nav-tab" onclick="showSection('usb')">💻 USB</div>
+        <div class="nav-tab" onclick="showSection('nrf')">🖱️ NRF</div>
+        <div class="nav-tab" onclick="showSection('hw')">⚡ HW</div>
+        <div class="nav-tab" onclick="showSection('tools')">🛠️ Tools</div>
+        <div class="nav-tab" onclick="showSection('docs')">📖 Docs</div>
+        <div class="nav-tab" onclick="showSection('settings')">⚙️ Config</div>
+        <div class="nav-tab" onclick="showSection('help')">❓ Help</div>
+    </nav>
 
-                <div class="panel modules-grid">
-                    <div class="module-card" onclick="app.nav('wifi')">
-                        <span class="module-icon">📡</span>
-                        <span>WIFI</span>
-                    </div>
-                    <div class="module-card" onclick="app.nav('ble')">
-                        <span class="module-icon">📶</span>
-                        <span>BLE</span>
-                    </div>
-                    <div class="module-card" onclick="app.nav('eviltwin')">
-                        <span class="module-icon">👯</span>
-                        <span>EVIL TWIN</span>
-                    </div>
-                    <div class="module-card" onclick="app.nav('keylogger')">
-                        <span class="module-icon">⌨️</span>
-                        <span>KEYLOG</span>
-                    </div>
-                    <div class="module-card" onclick="app.nav('nfc')">
-                        <span class="module-icon">💳</span>
-                        <span>NFC</span>
-                    </div>
-                    <div class="module-card" onclick="app.nav('rf')">
-                        <span class="module-icon">📻</span>
-                        <span>RF 433</span>
-                    </div>
-                    <div class="module-card" onclick="app.nav('files')">
-                        <span class="module-icon">📂</span>
-                        <span>FILES</span>
-                    </div>
-                    <div class="module-card" onclick="app.nav('settings')">
-                        <span class="module-icon">⚙️</span>
-                        <span>SYSTEM</span>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ===== WIFI ATTACKS ===== -->
-            <section id="view-wifi" class="view-section">
-                <div class="panel">
-                    <h3 style="color:var(--neon-magenta); margin-bottom:10px;">📡 SPECTRUM WARFARE</h3>
-                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                        <button class="btn btn-cyan" onclick="app.cmd('scan_wifi')">🔍 SCAN</button>
-                        <button class="btn" onclick="app.cmd('stop_all')">⏹️ STOP</button>
-                    </div>
-                </div>
-
-                <div class="panel" style="flex:1; overflow-y:auto;">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>SSID</th>
-                                <th>BSSID</th>
-                                <th>PWR</th>
-                                <th>CH</th>
-                                <th>ACT</th>
-                            </tr>
-                        </thead>
-                        <tbody id="wifi-list">
-                            <tr>
-                                <td colspan="5" style="text-align:center; color:#666;">NO TARGETS - CLICK SCAN</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="panel" style="border-color:var(--neon-red);">
-                    <h4 style="color:var(--neon-red); margin-bottom:8px;">⚡ ACTIVE OFFENSIVE</h4>
-                    <div class="attack-grid">
-                        <button class="btn btn-block" onclick="app.cmd('deauth_all')">⚡ DEAUTH ALL</button>
-                        <button class="btn btn-block" onclick="app.cmd('beacon_spam')">🌊 BEACON FLOOD</button>
-                        <button class="btn btn-block" onclick="app.cmd('handshake')">🤝 CAPTURE HS</button>
-                        <button class="btn btn-nuke btn-block" onclick="app.cmd('pwn_all')">☢️ NUKE</button>
-                    </div>
-                </div>
-
-                <button class="back-btn" onclick="app.nav('dashboard')">◀ VOLTAR</button>
-            </section>
-
-            <!-- ===== BLE RADAR ===== -->
-            <section id="view-ble" class="view-section">
-                <div class="panel">
-                    <h3 style="color:var(--neon-green); margin-bottom:10px;">📶 BLE RADAR</h3>
-                    <button class="btn btn-green" onclick="app.cmd('scan_ble')">🔍 START SCAN</button>
-                </div>
-
-                <div class="panel" style="flex:1;">
-                    <div class="radar-container">
-                        <div class="radar-center"></div>
-                        <div class="radar-sweep"></div>
-                    </div>
-                    <div id="ble-devices" style="margin-top:10px; font-size:0.75rem; color:#888;">
-                        No devices found yet...
-                    </div>
-                </div>
-
-                <div class="panel">
-                    <h4 style="margin-bottom:8px;">💉 INJECTION</h4>
-                    <div class="attack-grid">
-                        <button class="btn btn-block" onclick="app.cmd('ble_spam_ios')">🍎 SPAM iOS</button>
-                        <button class="btn btn-block" onclick="app.cmd('ble_spam_win')">🪟 SPAM Windows</button>
-                        <button class="btn btn-block" onclick="app.cmd('ble_flood')">🌊 FLOOD ALL</button>
-                        <button class="btn btn-block" onclick="app.cmd('ble_stop')">⏹️ STOP</button>
-                    </div>
-                </div>
-
-                <button class="back-btn" onclick="app.nav('dashboard')">◀ VOLTAR</button>
-            </section>
-
-            <!-- ===== EVIL TWIN ===== -->
-            <section id="view-eviltwin" class="view-section">
-                <div class="panel">
-                    <h3 style="color:var(--neon-magenta);">👯 EVIL TWIN ATTACK</h3>
-                    <p style="font-size:0.75rem; color:#888;">Crie AP falso para capturar credenciais</p>
-                </div>
-                <div class="panel">
-                    <label>SSID Alvo:</label>
-                    <input type="text" id="et-ssid" placeholder="Nome da rede"
-                        style="width:100%; padding:10px; background:#111; border:1px solid #333; color:#fff; border-radius:4px; margin:8px 0;">
-                    <button class="btn btn-cyan btn-block"
-                        onclick="app.cmd('eviltwin_start', document.getElementById('et-ssid').value)">▶️ START
-                        PORTAL</button>
-                </div>
-                <div class="panel" style="flex:1;">
-                    <h4>📋 CREDENCIAIS CAPTURADAS</h4>
-                    <div id="et-creds" style="font-size:0.75rem; color:#888; margin-top:10px;">
-                        Nenhuma credencial ainda...
-                    </div>
-                </div>
-                <button class="back-btn" onclick="app.nav('dashboard')">◀ VOLTAR</button>
-            </section>
-
-            <!-- ===== KEYLOGGER ===== -->
-            <section id="view-keylogger" class="view-section">
-                <div class="panel">
-                    <h3 style="color:var(--neon-yellow);">⌨️ UART KEYLOGGER</h3>
-                    <div style="display:flex; gap:8px;">
-                        <button class="btn btn-green" onclick="app.cmd('keylog_start')">▶️ START</button>
-                        <button class="btn" onclick="app.cmd('keylog_stop')">⏹️ STOP</button>
-                    </div>
-                </div>
-                <div class="panel" style="flex:1;">
-                    <div class="terminal" id="keylog-output">
-                        [KEYLOGGER] Aguardando dados UART...
-                    </div>
-                </div>
-                <button class="back-btn" onclick="app.nav('dashboard')">◀ VOLTAR</button>
-            </section>
-
-            <!-- ===== NFC ===== -->
-            <section id="view-nfc" class="view-section">
-                <div class="panel">
-                    <h3 style="color:var(--neon-cyan);">💳 NFC / RFID</h3>
-                    <div class="attack-grid">
-                        <button class="btn btn-cyan btn-block" onclick="app.cmd('nfc_read')">📖 READ TAG</button>
-                        <button class="btn btn-block" onclick="app.cmd('nfc_clone')">📋 CLONE</button>
-                        <button class="btn btn-block" onclick="app.cmd('nfc_write')">✏️ WRITE</button>
-                        <button class="btn btn-block" onclick="app.cmd('nfc_format')">🗑️ FORMAT</button>
-                    </div>
-                </div>
-                <div class="panel" style="flex:1;">
-                    <h4>📊 TAG DATA</h4>
-                    <div id="nfc-data" style="font-size:0.75rem; color:#888; margin-top:10px; font-family:monospace;">
-                        Aproxime um cartão NFC...
-                    </div>
-                </div>
-                <button class="back-btn" onclick="app.nav('dashboard')">◀ VOLTAR</button>
-            </section>
-
-            <!-- ===== RF 433 ===== -->
-            <section id="view-rf" class="view-section">
-                <div class="panel">
-                    <h3 style="color:var(--neon-yellow);">📻 RF 433 MHz</h3>
-                    <div class="attack-grid">
-                        <button class="btn btn-cyan btn-block" onclick="app.cmd('rf_receive')">📡 RECEIVE</button>
-                        <button class="btn btn-block" onclick="app.cmd('rf_replay')">🔁 REPLAY</button>
-                        <button class="btn btn-block" onclick="app.cmd('rf_jam')">📢 JAMMER</button>
-                        <button class="btn btn-block" onclick="app.cmd('rf_stop')">⏹️ STOP</button>
-                    </div>
-                </div>
-                <div class="panel" style="flex:1;">
-                    <h4>📶 CAPTURED SIGNALS</h4>
-                    <div id="rf-signals" style="font-size:0.75rem; color:#888;">
-                        No signals captured...
-                    </div>
-                </div>
-                <button class="back-btn" onclick="app.nav('dashboard')">◀ VOLTAR</button>
-            </section>
-
-            <!-- ===== FILES ===== -->
-            <section id="view-files" class="view-section">
-                <div class="panel">
-                    <h3>📂 FILE MANAGER</h3>
-                    <div style="display:flex; gap:8px;">
-                        <button class="btn btn-cyan" onclick="app.cmd('list_sd')">📁 SD Card</button>
-                        <button class="btn" onclick="app.cmd('list_flash')">💾 Flash</button>
-                    </div>
-                </div>
-                <div class="panel" style="flex:1; overflow-y:auto;">
-                    <div id="file-list" style="font-size:0.75rem;">
-                        Click a button above to list files...
-                    </div>
-                </div>
-                <button class="back-btn" onclick="app.nav('dashboard')">◀ VOLTAR</button>
-            </section>
-
-            <!-- ===== SETTINGS ===== -->
-            <section id="view-settings" class="view-section">
-                <div class="panel">
-                    <h3>⚙️ SYSTEM SETTINGS</h3>
-                </div>
-                <div class="panel">
-                    <label>CPU CLOCK</label>
-                    <input type="range" min="80" max="240" value="240" id="cpu-slider">
-                    <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#666;">
-                        <span>80 MHz</span>
-                        <span id="cpu-val">240 MHz</span>
-                        <span>240 MHz</span>
-                    </div>
-                </div>
-                <div class="panel" style="border-color:var(--neon-red);">
-                    <h4 style="color:var(--neon-red);">⚠️ DANGER ZONE</h4>
-                    <div class="attack-grid">
-                        <button class="btn btn-block" onclick="app.cmd('reboot')">🔄 REBOOT</button>
-                        <button class="btn btn-block" onclick="app.cmd('stealth')">👁️ STEALTH</button>
-                        <button class="btn btn-block" onclick="app.cmd('format_sd')">🗑️ FORMAT SD</button>
-                        <button class="btn btn-nuke btn-block"
-                            onclick="if(confirm('SELF DESTRUCT? All data will be erased!')) app.cmd('self_destruct')">🔥
-                            SELF DESTRUCT</button>
-                    </div>
-                </div>
-                <button class="back-btn" onclick="app.nav('dashboard')">◀ VOLTAR</button>
-            </section>
-
-            <!-- ===== TERMINAL FOOTER ===== -->
-            <div class="panel" style="margin-top:auto;">
-                <div style="font-size:0.65rem; color:#555; margin-bottom:4px;">SYSTEM LOG //</div>
-                <div id="console-output" class="terminal">
-                    <div class="log-line success">[BOOT] LELE SYSTEM INITIALIZED</div>
-                    <div class="log-line">[INIT] INTERFACE v3.0 LOADED</div>
+    <!-- Main Content -->
+    <main>
+        <!-- HOME SECTION -->
+        <section id="sec-home" class="section active">
+            <div class="panel">
+                <h2 class="panel-title"><span class="icon">⚡</span> Quick Actions</h2>
+                <div class="attack-grid">
+                    <button class="btn btn-ble" onclick="sendCmd('ble_spam')">
+                        <span class="icon">📱</span> Spam BR
+                    </button>
+                    <button class="btn btn-wifi" onclick="sendCmd('wifi_deauth')">
+                        <span class="icon">⚡</span> Deauth All
+                    </button>
+                    <button class="btn btn-rf" onclick="sendCmd('rf_jam_433')">
+                        <span class="icon">📻</span> Jammer 433
+                    </button>
+                    <button class="btn btn-ir" onclick="sendCmd('ir_tvbgone')">
+                        <span class="icon">📺</span> TV-B-Gone
+                    </button>
                 </div>
             </div>
-        </main>
-    </div>
+
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--neon-red);"><span class="icon">☢️</span> Master Control</h2>
+                <div class="attack-grid">
+                    <button class="btn btn-stop" onclick="sendCmd('stop_all')" style="grid-column: span 2;">
+                        <span class="icon">⏹️</span> STOP ALL ATTACKS
+                    </button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2 class="panel-title"><span class="icon">📊</span> System Log</h2>
+                <div id="terminal" class="terminal">
+                    <div class="log-line success">[BOOT] Monster S3 Attack Center Ready</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- STATS SECTION -->
+        <section id="sec-stats" class="section">
+            <div class="panel">
+                <h2 class="panel-title"><span class="icon">📊</span> Real-time Statistics</h2>
+                <div class="stats-grid">
+                    <div class="stat-card wifi">
+                        <div class="stat-value" id="stat-wifi">0</div>
+                        <div class="stat-label">WiFi Networks</div>
+                    </div>
+                    <div class="stat-card ble">
+                        <div class="stat-value" id="stat-ble">0</div>
+                        <div class="stat-label">BLE Devices</div>
+                    </div>
+                    <div class="stat-card attack">
+                        <div class="stat-value" id="stat-attacks">0</div>
+                        <div class="stat-label">Attacks Run</div>
+                    </div>
+                    <div class="stat-card rf">
+                        <div class="stat-value" id="stat-uptime">0</div>
+                        <div class="stat-label">Uptime (min)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2 class="panel-title"><span class="icon">📈</span> Attack Timeline</h2>
+                <div class="chart-container">
+                    <div class="chart-wrapper">
+                        <canvas id="attackTimelineChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="chart-container">
+                    <div class="chart-title">Attack Types</div>
+                    <div class="chart-wrapper small">
+                        <canvas id="attackTypesChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Resources</div>
+                    <div class="chart-wrapper small">
+                        <canvas id="resourceGaugeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <button class="btn btn-wifi"
+                    onclick="if(typeof DashboardStats!=='undefined')DashboardStats.exportStats()" style="width:100%">
+                    <span class="icon">📥</span> Export Statistics (JSON)
+                </button>
+            </div>
+        </section>
+
+        <!-- HOAXSHELL SECTION -->
+        <section id="sec-hoax" class="section">
+            <div class="panel">
+                <h2 class="panel-title" style="color: #ff00ff;"><span class="icon">🐚</span> HoaxShell C2</h2>
+
+                <div class="hoax-controls" style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center;">
+                    <button class="btn btn-nfc" onclick="hoaxGeneratePayload()" style="width: auto; padding: 8px 15px;">
+                        <span class="icon">🚀</span> Generate Payload
+                    </button>
+                    <div style="font-size: 0.8rem; color: #888;">Generate PowerShell payload to run on target</div>
+                </div>
+
+                <div class="panel-title" style="font-size: 0.8rem; margin-bottom: 5px;">Active Sessions:</div>
+                <div id="hoax-sessions" class="hoax-session-list">
+                    <div class="hoax-session active" onclick="hoaxSelectSession('ALL')">ALL SESSIONS</div>
+                </div>
+
+                <div class="hoax-terminal">
+                    <div id="hoax-output" class="hoax-output">
+                        <div class="log-line success">[SYSTEM] HoaxShell C2 Ready. Waiting for beacons...</div>
+                    </div>
+                    <div class="hoax-input-line">
+                        <span class="hoax-prompt" id="hoax-prompt-str">PS ALL ></span>
+                        <input type="text" id="hoax-input" class="hoax-input" placeholder="Enter PowerShell command..."
+                            onkeydown="hoaxInputKey(event)" autocomplete="off">
+                    </div>
+                </div>
+
+                <div style="margin-top: 10px; font-size: 0.7rem; color: #666;">
+                    Generated payloads use HTTP protocol. Ensure target can reach ESP32 IP/Port.
+                </div>
+            </div>
+        </section>
+
+        <!-- BLE SECTION - 4 Attacks -->
+        <section id="sec-ble" class="section">
+            <div class="panel">
+                <h2 class="panel-title" style="color: #00b4d8;"><span class="icon">📶</span> BLE Attacks (4)</h2>
+                <div class="attack-grid">
+                    <button class="btn btn-ble" onclick="sendCmd('ble_spam')">
+                        <span class="icon">📱</span> Spam BR
+                        <small>Nomes brasileiros</small>
+                    </button>
+                    <button class="btn btn-ble" onclick="sendCmd('ble_sour_apple')">
+                        <span class="icon">🍎</span> Sour Apple
+                        <small>iOS popup spam</small>
+                    </button>
+                    <button class="btn btn-ble" onclick="sendCmd('ble_swift_pair')">
+                        <span class="icon">🪟</span> Swift Pair
+                        <small>Windows popup</small>
+                    </button>
+                    <button class="btn btn-ble" onclick="sendCmd('ble_fast_pair')">
+                        <span class="icon">🤖</span> Fast Pair
+                        <small>Android popup</small>
+                    </button>
+                </div>
+            </div>
+            <div class="panel">
+                <button class="btn btn-stop" onclick="sendCmd('stop_ble')" style="width: 100%;">
+                    <span class="icon">⏹️</span> STOP BLE
+                </button>
+            </div>
+        </section>
+
+        <!-- WIFI SECTION - 5 Attacks -->
+        <section id="sec-wifi" class="section">
+            <div class="panel">
+                <h2 class="panel-title" style="color: #00b4d8;"><span class="icon">📡</span> WiFi Attacks (5)</h2>
+                <div class="attack-grid">
+                    <button class="btn btn-wifi" onclick="sendCmd('wifi_deauth')">
+                        <span class="icon">⚡</span> Deauth All
+                        <small>Disconnect clients</small>
+                    </button>
+                    <button class="btn btn-wifi" onclick="sendCmd('wifi_beacon')">
+                        <span class="icon">🌊</span> Beacon Spam
+                        <small>Fake networks</small>
+                    </button>
+                    <button class="btn btn-wifi" onclick="sendCmd('wifi_eviltwin')">
+                        <span class="icon">👯</span> Evil Twin
+                        <small>Clone network</small>
+                    </button>
+                    <button class="btn btn-wifi" onclick="sendCmd('wifi_pmkid')">
+                        <span class="icon">🔐</span> PMKID
+                        <small>Capture hash</small>
+                    </button>
+                    <button class="btn btn-wifi" onclick="sendCmd('wifi_wardrive')">
+                        <span class="icon">🗺️</span> Wardriving
+                        <small>GPS logging</small>
+                    </button>
+                </div>
+            </div>
+            <div class="panel">
+                <button class="btn btn-stop" onclick="sendCmd('stop_wifi')" style="width: 100%;">
+                    <span class="icon">⏹️</span> STOP WIFI
+                </button>
+            </div>
+        </section>
+
+        <!-- RF SECTION - 12 Attacks -->
+        <section id="sec-rf" class="section">
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--neon-orange);"><span class="icon">📢</span> RF Jammers (5)
+                </h2>
+                <div class="attack-grid">
+                    <button class="btn btn-rf" onclick="sendCmd('rf_jam_433')">
+                        <span class="icon">📻</span> 433 MHz
+                    </button>
+                    <button class="btn btn-rf" onclick="sendCmd('rf_jam_315')">
+                        <span class="icon">📻</span> 315 MHz
+                    </button>
+                    <button class="btn btn-rf" onclick="sendCmd('rf_jam_868')">
+                        <span class="icon">📻</span> 868 MHz
+                    </button>
+                    <button class="btn btn-rf" onclick="sendCmd('rf_jam_burst')">
+                        <span class="icon">💥</span> Burst
+                    </button>
+                    <button class="btn btn-rf" onclick="sendCmd('rf_jam_smart')">
+                        <span class="icon">🧠</span> Smart
+                        <small>Detect & jam</small>
+                    </button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--neon-orange);"><span class="icon">🛠️</span> RF Tools (7)
+                </h2>
+                <div class="attack-grid">
+                    <button class="btn btn-rf" onclick="sendCmd('rf_scan')">
+                        <span class="icon">📡</span> Scan
+                    </button>
+                    <button class="btn btn-rf" onclick="sendCmd('rf_capture')">
+                        <span class="icon">📥</span> Capture
+                    </button>
+                    <button class="btn btn-rf" onclick="sendCmd('rf_replay')">
+                        <span class="icon">🔁</span> Replay
+                    </button>
+                    <button class="btn btn-rf" onclick="sendCmd('rf_ghost')">
+                        <span class="icon">👻</span> Ghost
+                        <small>Random replay</small>
+                    </button>
+                    <button class="btn btn-rf" onclick="sendCmd('rf_brute')">
+                        <span class="icon">🔓</span> Brute Force
+                    </button>
+                    <button class="btn btn-rf" onclick="sendCmd('rf_debruijn')">
+                        <span class="icon">🔢</span> De Bruijn
+                    </button>
+                    <button class="btn btn-rf" onclick="sendCmd('rf_spectrum')">
+                        <span class="icon">📊</span> Spectrum
+                    </button>
+                    <button class="btn btn-rf" onclick="sendCmd('rf_rolljam')">
+                        <span class="icon">🔓</span> Rolljam
+                        <small>Capture+Jam</small>
+                    </button>
+                    <button class="btn btn-rf" onclick="sendCmd('rf_rollback')">
+                        <span class="icon">⏮️</span> Rollback
+                        <small>Resync</small>
+                    </button>
+                </div>
+            </div>
+            <div class="panel">
+                <button class="btn btn-stop" onclick="sendCmd('stop_rf')" style="width: 100%;">
+                    <span class="icon">⏹️</span> STOP RF
+                </button>
+            </div>
+        </section>
+
+        <!-- NFC SECTION - 3 Attacks -->
+        <section id="sec-nfc" class="section">
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--neon-purple);"><span class="icon">💳</span> NFC Attacks (3)
+                </h2>
+                <div class="attack-grid">
+                    <button class="btn btn-nfc" onclick="sendCmd('nfc_clone')">
+                        <span class="icon">📋</span> Clone Card
+                        <small>Read & save</small>
+                    </button>
+                    <button class="btn btn-nfc" onclick="sendCmd('nfc_fault')">
+                        <span class="icon">⚡</span> Fault Inject
+                        <small>Glitch auth</small>
+                    </button>
+                    <button class="btn btn-nfc" onclick="sendCmd('nfc_phishing')">
+                        <span class="icon">🎣</span> Phishing
+                        <small>Write NDEF URL</small>
+                    </button>
+                </div>
+            </div>
+            <div class="panel">
+                <button class="btn btn-stop" onclick="sendCmd('stop_nfc')" style="width: 100%;">
+                    <span class="icon">⏹️</span> STOP NFC
+                </button>
+            </div>
+        </section>
+
+        <!-- IR SECTION - 3 Attacks -->
+        <section id="sec-ir" class="section">
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--neon-yellow);"><span class="icon">📺</span> IR Attacks (3)
+                </h2>
+                <div class="attack-grid">
+                    <button class="btn btn-ir" onclick="sendCmd('ir_tvbgone')">
+                        <span class="icon">📺</span> TV-B-Gone
+                        <small>Turn off TVs</small>
+                    </button>
+                    <button class="btn btn-ir" onclick="sendCmd('ir_brute')">
+                        <span class="icon">🔓</span> Brute Force
+                        <small>All NEC codes</small>
+                    </button>
+                    <button class="btn btn-ir" onclick="sendCmd('ir_clone')">
+                        <span class="icon">📖</span> Clone
+                        <small>Learn & replay</small>
+                    </button>
+                </div>
+            </div>
+            <div class="panel">
+                <button class="btn btn-stop" onclick="sendCmd('stop_ir')" style="width: 100%;">
+                    <span class="icon">⏹️</span> STOP IR
+                </button>
+            </div>
+        </section>
+
+        <!-- USB SECTION - 2 Attacks -->
+        <section id="sec-usb" class="section">
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--neon-green);"><span class="icon">💻</span> USB Attacks (2)
+                </h2>
+                <div class="attack-grid">
+                    <button class="btn btn-usb" onclick="sendCmd('usb_badusb')">
+                        <span class="icon">⌨️</span> BadUSB HID
+                        <small>Keyboard inject</small>
+                    </button>
+                    <button class="btn btn-usb" onclick="sendCmd('usb_exfil')">
+                        <span class="icon">📤</span> Data Exfil
+                        <small>Extract files</small>
+                    </button>
+                    <button class="btn btn-usb" onclick="sendCmd('usb_wax')">
+                        <span class="icon">🕯️</span> WAX Payload
+                        <small>Hash Capture</small>
+                    </button>
+                    <button class="btn btn-usb" onclick="sendCmd('posh_c2')">
+                        <span class="icon">🐍</span> PoshC2
+                        <small>Run Payload</small>
+                    </button>
+                </div>
+            </div>
+            <div class="panel">
+                <button class="btn btn-stop" onclick="sendCmd('stop_usb')" style="width: 100%;">
+                    <span class="icon">⏹️</span> STOP USB
+                </button>
+            </div>
+        </section>
+
+        <!-- NRF24 SECTION - 2 Attacks -->
+        <section id="sec-nrf" class="section">
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--neon-orange);"><span class="icon">🖱️</span> NRF24 Attacks
+                </h2>
+                <div class="attack-grid">
+                    <button class="btn btn-rf" onclick="sendCmd('nrf_mousejack')">
+                        <span class="icon">🖱️</span> MouseJack
+                        <small>Injection</small>
+                    </button>
+                    <button class="btn btn-rf" onclick="sendCmd('nrf_keyboard')">
+                        <span class="icon">⌨️</span> Key Sniffer
+                        <small>Log strokes</small>
+                    </button>
+                </div>
+            </div>
+            <div class="panel">
+                <button class="btn btn-stop" onclick="sendCmd('stop_nrf')" style="width: 100%;">
+                    <span class="icon">⏹️</span> STOP NRF
+                </button>
+            </div>
+        </section>
+
+        </section>
+
+        <!-- HARDWARE GLITCHER SECTION -->
+        <section id="sec-hw" class="section">
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--neon-yellow);"><span class="icon">⚡</span> Hardware Glitcher
+                    (MOSFET)</h2>
+                <div class="config-grid">
+                    <div class="config-row">
+                        <label>Pulse Width (µs)</label>
+                        <input type="number" id="hw-width" value="100" class="config-input" onchange="HW.updateVals()">
+                    </div>
+                    <div class="config-row">
+                        <label>Burst Delay (ms)</label>
+                        <input type="number" id="hw-delay" value="100" class="config-input" onchange="HW.updateVals()">
+                    </div>
+                    <div class="config-row">
+                        <label>Burst Count</label>
+                        <input type="number" id="hw-count" value="5" class="config-input" onchange="HW.updateVals()">
+                    </div>
+                </div>
+                <div class="attack-grid" style="margin-top: 15px;">
+                    <button class="btn btn-danger" onclick="HW.triggerSingle()">
+                        <span class="icon">⚡</span> Single Pulse
+                        <small><span id="hw-width-val">100</span> µs</small>
+                    </button>
+                    <button class="btn btn-danger" onclick="HW.triggerBurst()">
+                        <span class="icon">💥</span> Burst Mode
+                        <small><span id="hw-count-val">5</span>x / <span id="hw-delay-val">100</span>ms</small>
+                    </button>
+                    <button class="btn btn-ir" onclick="HW.triggerSweep()">
+                        <span class="icon">📏</span> Calibrate
+                        <small>Auto Sweep</small>
+                    </button>
+                </div>
+            </div>
+            <div class="panel">
+                <button class="btn btn-stop" onclick="sendCmd('stop_all')" style="width: 100%;">
+                    <span class="icon">⏹️</span> STOP GLITCHER
+                </button>
+            </div>
+        </section>
+
+        <!-- TOOLS SECTION -->
+        <section id="sec-tools" class="section">
+            <div class="panel">
+                <h2 class="panel-title"><span class="icon">🛠️</span> System Tools</h2>
+                <div class="attack-grid">
+                    <button class="btn" onclick="sendCmd('scan_wifi')">
+                        <span class="icon">🔍</span> Scan WiFi
+                    </button>
+                    <button class="btn" onclick="sendCmd('scan_ble')">
+                        <span class="icon">🔍</span> Scan BLE
+                    </button>
+                    <button class="btn" onclick="sendCmd('list_sd')">
+                        <span class="icon">📂</span> SD Files
+                    </button>
+                    <button class="btn" onclick="sendCmd('reboot')">
+                        <span class="icon">🔄</span> Reboot
+                    </button>
+                </div>
+            </div>
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--neon-red);"><span class="icon">⚠️</span> Danger Zone</h2>
+                <div class="attack-grid">
+                    <button class="btn btn-danger" onclick="sendCmd('format_sd')">
+                        <span class="icon">🗑️</span> Format SD
+                    </button>
+                    <button class="btn btn-danger" onclick="if(confirm('SELF DESTRUCT?')) sendCmd('self_destruct')">
+                        <span class="icon">🔥</span> Self Destruct
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SETTINGS SECTION - Complete Configuration -->
+        <section id="sec-settings" class="section">
+            <!-- System Settings -->
+            <div class="panel">
+                <h2 class="panel-title"><span class="icon">⚙️</span> System Settings</h2>
+                <div class="config-grid">
+                    <div class="config-item">
+                        <label>WiFi Module</label>
+                        <label class="switch"><input type="checkbox" id="cfg-wifi" checked
+                                onchange="updateConfig('wifi_enabled', this.checked)"><span
+                                class="slider"></span></label>
+                    </div>
+                    <div class="config-item">
+                        <label>BLE Module</label>
+                        <label class="switch"><input type="checkbox" id="cfg-ble" checked
+                                onchange="updateConfig('ble_enabled', this.checked)"><span
+                                class="slider"></span></label>
+                    </div>
+                    <div class="config-item">
+                        <label>GPS Module</label>
+                        <label class="switch"><input type="checkbox" id="cfg-gps" checked
+                                onchange="updateConfig('gps_enabled', this.checked)"><span
+                                class="slider"></span></label>
+                    </div>
+                    <div class="config-item">
+                        <label>Voice/TTS</label>
+                        <label class="switch"><input type="checkbox" id="cfg-voice"
+                                onchange="updateConfig('voice_enabled', this.checked)"><span
+                                class="slider"></span></label>
+                    </div>
+                    <div class="config-item">
+                        <label>Auto Sleep</label>
+                        <label class="switch"><input type="checkbox" id="cfg-autosleep" checked
+                                onchange="updateConfig('auto_sleep_enabled', this.checked)"><span
+                                class="slider"></span></label>
+                    </div>
+                    <div class="config-item">
+                        <label>Debug Serial</label>
+                        <label class="switch"><input type="checkbox" id="cfg-debug" checked
+                                onchange="updateConfig('debug_serial', this.checked)"><span
+                                class="slider"></span></label>
+                    </div>
+                </div>
+                <div class="config-row">
+                    <label>CPU Frequency</label>
+                    <select id="cfg-cpu" onchange="updateConfig('cpu_freq_mhz', parseInt(this.value))">
+                        <option value="80">80 MHz (Power Save)</option>
+                        <option value="160">160 MHz (Balanced)</option>
+                        <option value="240" selected>240 MHz (Performance)</option>
+                    </select>
+                </div>
+                <div class="config-row">
+                    <label>Display Brightness: <span id="cfg-brightness-val">200</span></label>
+                    <input type="range" min="0" max="255" value="200" id="cfg-brightness"
+                        oninput="updateSliderVal('cfg-brightness')"
+                        onchange="updateConfig('display_brightness', parseInt(this.value))">
+                </div>
+                <div class="config-row">
+                    <label>Sleep Timeout: <span id="cfg-sleep-val">120</span>s</label>
+                    <input type="range" min="30" max="600" value="120" step="30" id="cfg-sleep"
+                        oninput="updateSliderVal('cfg-sleep', 's')"
+                        onchange="updateConfig('sleep_timeout_sec', parseInt(this.value))">
+                </div>
+            </div>
+
+            <!-- Network Settings -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--neon-cyan);"><span class="icon">🌐</span> Network / AP
+                    Settings</h2>
+                <div class="config-row">
+                    <label>AP SSID</label>
+                    <input type="text" id="cfg-ssid" value="Monster_S3_AP" maxlength="31" class="config-input">
+                </div>
+                <div class="config-row">
+                    <label>AP Password</label>
+                    <input type="password" id="cfg-appass" value="lele2025" maxlength="63" class="config-input">
+                </div>
+                <div class="config-grid">
+                    <div class="config-item">
+                        <label>Hidden AP</label>
+                        <label class="switch"><input type="checkbox" id="cfg-hidden" checked
+                                onchange="updateConfig('ap_hidden', this.checked)"><span class="slider"></span></label>
+                    </div>
+                    <div class="config-item">
+                        <label>Require Auth</label>
+                        <label class="switch"><input type="checkbox" id="cfg-auth" checked
+                                onchange="updateConfig('require_auth', this.checked)"><span
+                                class="slider"></span></label>
+                    </div>
+                </div>
+                <div class="config-row">
+                    <label>AP Channel</label>
+                    <select id="cfg-channel" onchange="updateConfig('ap_channel', parseInt(this.value))">
+                        <option value="1" selected>Channel 1</option>
+                        <option value="6">Channel 6</option>
+                        <option value="11">Channel 11</option>
+                    </select>
+                </div>
+                <div class="config-row">
+                    <label>Web Username</label>
+                    <input type="text" id="cfg-webuser" value="admin" maxlength="31" class="config-input">
+                </div>
+                <div class="config-row">
+                    <label>Web Password</label>
+                    <input type="password" id="cfg-webpass" value="lele2025" maxlength="63" class="config-input">
+                </div>
+                <div class="config-row">
+                    <label>Attacker IP (for WAX/BadUSB)</label>
+                    <input type="text" id="cfg-attackerip" value="192.168.1.100" placeholder="192.168.x.x"
+                        maxlength="15" class="config-input" onchange="updateConfig('attacker_ip', this.value)">
+                </div>
+            </div>
+
+            <!-- RF SubGHz Settings -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--neon-purple);"><span class="icon">📻</span> RF SubGHz
+                    Settings</h2>
+                <div class="config-row">
+                    <label>Frequency</label>
+                    <select id="cfg-rffreq" onchange="updateConfig('rf_frequency', parseFloat(this.value))">
+                        <option value="315.00">315.00 MHz (US Garage)</option>
+                        <option value="433.92" selected>433.92 MHz (EU/BR Standard)</option>
+                        <option value="868.35">868.35 MHz (EU ISM)</option>
+                        <option value="915.00">915.00 MHz (US ISM)</option>
+                    </select>
+                </div>
+                <div class="config-row">
+                    <label>TX Power: <span id="cfg-rfpower-val">10</span> dBm</label>
+                    <input type="range" min="-30" max="10" value="10" id="cfg-rfpower"
+                        oninput="updateSliderVal('cfg-rfpower', ' dBm')"
+                        onchange="updateConfig('rf_power_dbm', parseInt(this.value))">
+                </div>
+                <div class="config-row">
+                    <label>Modulation</label>
+                    <select id="cfg-rfmod" onchange="updateConfig('rf_modulation', parseInt(this.value))">
+                        <option value="0">2-FSK</option>
+                        <option value="1">GFSK</option>
+                        <option value="2" selected>ASK/OOK</option>
+                        <option value="3">4-FSK</option>
+                        <option value="4">MSK</option>
+                    </select>
+                </div>
+                <div class="config-row">
+                    <label>Bandwidth: <span id="cfg-rfbw-val">200.0</span> kHz</label>
+                    <input type="range" min="58" max="812" value="200" id="cfg-rfbw"
+                        oninput="updateSliderVal('cfg-rfbw', ' kHz')"
+                        onchange="updateConfig('rf_bandwidth_khz', parseFloat(this.value))">
+                </div>
+                <div class="config-row">
+                    <label>Deviation: <span id="cfg-rfdev-val">47.6</span> kHz</label>
+                    <input type="range" min="1" max="380" value="47" step="0.5" id="cfg-rfdev"
+                        oninput="updateSliderVal('cfg-rfdev', ' kHz')"
+                        onchange="updateConfig('rf_deviation_khz', parseFloat(this.value))">
+                </div>
+                <div class="config-row">
+                    <label>Data Rate: <span id="cfg-rfrate-val">4.8</span> kbps</label>
+                    <input type="range" min="1" max="600" value="5" id="cfg-rfrate"
+                        oninput="updateSliderVal('cfg-rfrate', ' kbps')"
+                        onchange="updateConfig('rf_datarate_kbps', parseFloat(this.value))">
+                </div>
+            </div>
+
+            <!-- BLE Attack Settings -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--neon-magenta);"><span class="icon">📶</span> BLE Attack
+                    Settings</h2>
+                <div class="config-row">
+                    <label>Spam Mode</label>
+                    <select id="cfg-blespam" onchange="updateConfig('ble_spam_mode', parseInt(this.value))">
+                        <option value="0" selected>All Devices</option>
+                        <option value="1">Apple Only (iOS)</option>
+                        <option value="2">Samsung Only</option>
+                        <option value="3">Xiaomi Only</option>
+                    </select>
+                </div>
+                <div class="config-row">
+                    <label>Spam Interval: <span id="cfg-bleint-val">100</span> ms</label>
+                    <input type="range" min="20" max="500" value="100" id="cfg-bleint"
+                        oninput="updateSliderVal('cfg-bleint', ' ms')"
+                        onchange="updateConfig('ble_spam_interval_ms', parseInt(this.value))">
+                </div>
+                <div class="config-grid">
+                    <div class="config-item">
+                        <label>Random MAC</label>
+                        <label class="switch"><input type="checkbox" id="cfg-blemac" checked
+                                onchange="updateConfig('ble_random_mac', this.checked)"><span
+                                class="slider"></span></label>
+                    </div>
+                </div>
+                <div class="config-row">
+                    <label>Name Prefix (optional)</label>
+                    <input type="text" id="cfg-bleprefix" value="" placeholder="Custom prefix" maxlength="15"
+                        class="config-input">
+                </div>
+            </div>
+
+            <!-- WiFi Attack Settings -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--neon-cyan);"><span class="icon">📡</span> WiFi Attack
+                    Settings</h2>
+                <div class="config-row">
+                    <label>Deauth Reason</label>
+                    <select id="cfg-wifireason" onchange="updateConfig('wifi_deauth_reason', parseInt(this.value))">
+                        <option value="1">1 - Unspecified</option>
+                        <option value="2">2 - Auth no longer valid</option>
+                        <option value="3">3 - Leaving BSS</option>
+                        <option value="4">4 - Inactivity</option>
+                        <option value="5">5 - Too many STAs</option>
+                        <option value="6">6 - Class 2 error</option>
+                        <option value="7" selected>7 - Class 3 error</option>
+                    </select>
+                </div>
+                <div class="config-row">
+                    <label>Beacon Count: <span id="cfg-wifibeacon-val">20</span> networks</label>
+                    <input type="range" min="1" max="100" value="20" id="cfg-wifibeacon"
+                        oninput="updateSliderVal('cfg-wifibeacon', ' networks')"
+                        onchange="updateConfig('wifi_beacon_count', parseInt(this.value))">
+                </div>
+                <div class="config-row">
+                    <label>Beacon Interval: <span id="cfg-wifibeaconint-val">100</span> ms</label>
+                    <input type="range" min="20" max="500" value="100" id="cfg-wifibeaconint"
+                        oninput="updateSliderVal('cfg-wifibeaconint', ' ms')"
+                        onchange="updateConfig('wifi_beacon_interval_ms', parseInt(this.value))">
+                </div>
+                <div class="config-grid">
+                    <div class="config-item">
+                        <label>Auto Target Strongest</label>
+                        <label class="switch"><input type="checkbox" id="cfg-wifiauto" checked
+                                onchange="updateConfig('wifi_auto_target_strongest', this.checked)"><span
+                                class="slider"></span></label>
+                    </div>
+                    <div class="config-item">
+                        <label>Capture PMKID</label>
+                        <label class="switch"><input type="checkbox" id="cfg-wifipmkid" checked
+                                onchange="updateConfig('wifi_capture_pmkid', this.checked)"><span
+                                class="slider"></span></label>
+                    </div>
+                    <div class="config-item">
+                        <label>Capture Handshake</label>
+                        <label class="switch"><input type="checkbox" id="cfg-wifihs" checked
+                                onchange="updateConfig('wifi_capture_handshake', this.checked)"><span
+                                class="slider"></span></label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NFC Settings -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--neon-yellow);"><span class="icon">💳</span> NFC Settings
+                </h2>
+                <div class="config-row">
+                    <label>Protocol</label>
+                    <select id="cfg-nfcproto" onchange="updateConfig('nfc_protocol', parseInt(this.value))">
+                        <option value="0" selected>Auto Detect</option>
+                        <option value="1">MiFare Classic</option>
+                        <option value="2">MiFare Ultralight</option>
+                        <option value="3">NTAG21x</option>
+                    </select>
+                </div>
+                <div class="config-grid">
+                    <div class="config-item">
+                        <label>Auto Read</label>
+                        <label class="switch"><input type="checkbox" id="cfg-nfcauto" checked
+                                onchange="updateConfig('nfc_auto_read', this.checked)"><span
+                                class="slider"></span></label>
+                    </div>
+                    <div class="config-item">
+                        <label>Beep On Read</label>
+                        <label class="switch"><input type="checkbox" id="cfg-nfcbeep" checked
+                                onchange="updateConfig('nfc_beep_on_read', this.checked)"><span
+                                class="slider"></span></label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- IR Settings -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--neon-orange);"><span class="icon">📺</span> IR Settings</h2>
+                <div class="config-row">
+                    <label>Protocol</label>
+                    <select id="cfg-irproto" onchange="updateConfig('ir_protocol', parseInt(this.value))">
+                        <option value="0" selected>NEC</option>
+                        <option value="1">RC5</option>
+                        <option value="2">RC6</option>
+                        <option value="3">Sony</option>
+                        <option value="4">Samsung</option>
+                        <option value="5">LG</option>
+                    </select>
+                </div>
+                <div class="config-grid">
+                    <div class="config-item">
+                        <label>Repeat Enabled</label>
+                        <label class="switch"><input type="checkbox" id="cfg-irrep" checked
+                                onchange="updateConfig('ir_repeat_enabled', this.checked)"><span
+                                class="slider"></span></label>
+                    </div>
+                </div>
+                <div class="config-row">
+                    <label>Repeat Count: <span id="cfg-ircount-val">3</span>x</label>
+                    <input type="range" min="1" max="10" value="3" id="cfg-ircount"
+                        oninput="updateSliderVal('cfg-ircount', 'x')"
+                        onchange="updateConfig('ir_repeat_count', parseInt(this.value))">
+                </div>
+                <div class="config-row">
+                    <label>Repeat Delay: <span id="cfg-irdelay-val">100</span> ms</label>
+                    <input type="range" min="50" max="500" value="100" id="cfg-irdelay"
+                        oninput="updateSliderVal('cfg-irdelay', ' ms')"
+                        onchange="updateConfig('ir_repeat_delay_ms', parseInt(this.value))">
+                </div>
+            </div>
+
+            <!-- AI Q-Learning Settings -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--neon-green);"><span class="icon">🤖</span> AI Q-Learning
+                    Settings</h2>
+                <div class="config-row">
+                    <label>Exploration (ε): <span id="cfg-aieps-val">0.15</span></label>
+                    <input type="range" min="0" max="100" value="15" id="cfg-aieps"
+                        oninput="updateSliderVal('cfg-aieps', '', 0.01)"
+                        onchange="updateConfig('ai_epsilon', parseFloat(this.value) / 100)">
+                </div>
+                <div class="config-row">
+                    <label>Learning Rate (α): <span id="cfg-ailr-val">0.10</span></label>
+                    <input type="range" min="1" max="100" value="10" id="cfg-ailr"
+                        oninput="updateSliderVal('cfg-ailr', '', 0.01)"
+                        onchange="updateConfig('ai_learning_rate', parseFloat(this.value) / 100)">
+                </div>
+                <div class="config-row">
+                    <label>Discount (γ): <span id="cfg-aidf-val">0.95</span></label>
+                    <input type="range" min="0" max="100" value="95" id="cfg-aidf"
+                        oninput="updateSliderVal('cfg-aidf', '', 0.01)"
+                        onchange="updateConfig('ai_discount_factor', parseFloat(this.value) / 100)">
+                </div>
+                <div class="config-grid">
+                    <div class="config-item">
+                        <label>Auto Learn</label>
+                        <label class="switch"><input type="checkbox" id="cfg-aiauto" checked
+                                onchange="updateConfig('ai_auto_learn', this.checked)"><span
+                                class="slider"></span></label>
+                    </div>
+                    <div class="config-item">
+                        <label>Voice Feedback</label>
+                        <label class="switch"><input type="checkbox" id="cfg-aivoice"
+                                onchange="updateConfig('ai_voice_feedback', this.checked)"><span
+                                class="slider"></span></label>
+                    </div>
+                </div>
+                <div class="attack-grid">
+                    <button class="btn" onclick="sendCmd('ai_reset_qtable')">
+                        <span class="icon">🔄</span> Reset Q-Table
+                    </button>
+                    <button class="btn" onclick="sendCmd('ai_export')">
+                        <span class="icon">📤</span> Export Brain
+                    </button>
+                </div>
+            </div>
+
+            <!-- Data Management -->
+            <div class="panel">
+                <h2 class="panel-title"><span class="icon">💾</span> Data Management</h2>
+                <div class="config-grid">
+                    <div class="config-item">
+                        <label>Auto Save Captures</label>
+                        <label class="switch"><input type="checkbox" id="cfg-autosave" checked
+                                onchange="updateConfig('auto_save_captures', this.checked)"><span
+                                class="slider"></span></label>
+                    </div>
+                    <div class="config-item">
+                        <label>Auto Log Attacks</label>
+                        <label class="switch"><input type="checkbox" id="cfg-autolog" checked
+                                onchange="updateConfig('auto_log_attacks', this.checked)"><span
+                                class="slider"></span></label>
+                    </div>
+                </div>
+                <div class="attack-grid">
+                    <button class="btn btn-cyan" onclick="exportConfig()">
+                        <span class="icon">📥</span> Export Config
+                    </button>
+                    <button class="btn btn-cyan" onclick="importConfig()">
+                        <span class="icon">📤</span> Import Config
+                    </button>
+                    <button class="btn" onclick="sendCmd('config_save')">
+                        <span class="icon">💾</span> Save to SD
+                    </button>
+                    <button class="btn" onclick="sendCmd('config_load')">
+                        <span class="icon">📂</span> Load from SD
+                    </button>
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--neon-red);"><span class="icon">⚠️</span> Danger Zone</h2>
+                <div class="attack-grid">
+                    <button class="btn"
+                        onclick="if(confirm('Reset ALL settings to defaults?')) sendCmd('config_reset')">
+                        <span class="icon">🔄</span> Reset Defaults
+                    </button>
+                    <button class="btn btn-danger" onclick="sendCmd('stealth_toggle')">
+                        <span class="icon">👁️</span> Stealth Mode
+                    </button>
+                    <button class="btn btn-danger"
+                        onclick="if(confirm('Clear ALL captured data?')) sendCmd('clear_captures')">
+                        <span class="icon">🗑️</span> Clear Data
+                    </button>
+                    <button class="btn btn-danger"
+                        onclick="if(confirm('SELF DESTRUCT? All data will be erased!') && confirm('ARE YOU ABSOLUTELY SURE?')) sendCmd('self_destruct')">
+                        <span class="icon">🔥</span> Self Destruct
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- DOCUMENTATION SECTION -->
+        <section id="sec-docs" class="section">
+            <div class="panel">
+                <h2 class="panel-title"><span class="icon">📖</span> User Manual</h2>
+
+                <div class="docs-item">
+                    <h3 style="color:var(--neon-cyan)">📡 WiFi Attacks</h3>
+                    <p><strong>Deauth:</strong> Sends de-authentication frames to disconnect clients from an AP.</p>
+                    <p><strong>Beacon Spam:</strong> Floods the air with fake AP beacons to confuse devices.</p>
+                    <p><strong>PMKID:</strong> Captures the RSN PMKID from routers for offline cracking.</p>
+                </div>
+                <hr style="border-color: #333">
+
+                <div class="docs-item">
+                    <h3 style="color:var(--neon-magenta)">📶 BLE Attacks</h3>
+                    <p><strong>Spam:</strong> Floods BLE advertisements to annoy nearby devices (iOS/Samsung/Windows).
+                    </p>
+                    <p><strong>Sour Apple:</strong> Specifically targets iOS popups.</p>
+                </div>
+                <hr style="border-color: #333">
+
+                <div class="docs-item">
+                    <h3 style="color:var(--neon-green)">💻 USB Attacks</h3>
+                    <p><strong>BadUSB:</strong> Emulates a keyboard to inject keystrokes.</p>
+                    <p><strong>WAX Attack:</strong> Injects a payload to open a malicious .wax file, capturing NTLM
+                        hashes.</p>
+                </div>
+                <hr style="border-color: #333">
+
+                <div class="docs-item">
+                    <h3 style="color:var(--neon-orange)">🖱️ NRF24 Attacks</h3>
+                    <p><strong>MouseJack:</strong> Scans for vulnerable wireless mice/keyboards and injects keystrokes.
+                    </p>
+                    <p><strong>Sniffer:</strong> Passive monitoring of keystrokes from vulnerable keyboards.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- HELP SECTION -->
+        <section id="sec-help" class="section">
+            <div class="panel">
+                <h2 class="panel-title"><span class="icon">❓</span> User Manual</h2>
+                <div style="color: #ccc; font-size: 0.8rem; line-height: 1.4;">
+                    <h3 style="color: var(--neon-cyan); margin-top: 10px;">📶 BLE Attacks</h3>
+                    <p><strong>Spam BR:</strong> Confuse nearby devices with Brazilian names.</p>
+                    <p><strong>Sour Apple/Swift/Fast Pair:</strong> Send fake pairing popups to iOS/Windows/Android.</p>
+
+                    <h3 style="color: var(--neon-cyan); margin-top: 10px;">📡 WiFi Attacks</h3>
+                    <p><strong>Deauth:</strong> Disconnect devices from networks.</p>
+                    <p><strong>Beacon Spam:</strong> Create fake networks.</p>
+                    <p><strong>Evil Twin:</strong> Clone AP to deceive users.</p>
+                    <p><strong>PMKID/Wardrive:</strong> Capture hashes or map networks (GPS).</p>
+
+                    <h3 style="color: var(--neon-cyan); margin-top: 10px;">📻 RF SubGHz</h3>
+                    <p><strong>Jammers:</strong> Block 433/315/868 MHz signals.</p>
+                    <p><strong>Rolljam/Rollback:</strong> Advanced attacks against rolling codes.</p>
+                    <p><strong>Capture/Replay:</strong> Record and retransmit signals.</p>
+
+                    <h3 style="color: var(--neon-cyan); margin-top: 10px;">💳 NFC</h3>
+                    <p><strong>Clone:</strong> Copy Mifare cards.</p>
+                    <p><strong>Fault:</strong> Glitch readers.</p>
+
+                    <h3 style="color: var(--neon-cyan); margin-top: 10px;">💻 USB & NRF24</h3>
+                    <p><strong>BadUSB:</strong> Inject DuckyScript payloads.</p>
+                    <p><strong>WAX:</strong> Capture NTLM hashes.</p>
+                    <p><strong>MouseJack:</strong> Inject keystrokes via NRF24.</p>
+
+                    <h3 style="color: var(--neon-cyan); margin-top: 10px;">⚡ Hardware</h3>
+                    <p><strong>Glitcher:</strong> Voltage fault injection via MOSFET.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
 
     <script>
-        /**
-         * LELE DASHBOARD 3.0 - CORE LOGIC
-         * Complete implementation with local preview support
-         */
-        const app = {
-            ws: null,
-            isPreview: false,
-            currentView: 'dashboard',
-            scene: null,
-            camera: null,
-            renderer: null,
+        // WebSocket connection
+        let ws = null;
+        let isPreview = false;
 
-            init: function () {
-                this.log("[SYS] Initializing LELE Dashboard...", "success");
-                this.init3D();
-                this.initWS();
-                this.initSliders();
+        // Initialize
+        document.addEventListener('DOMContentLoaded', init);
 
-                // Simulate data in preview mode
-                if (this.isPreview) {
-                    this.startPreviewSimulation();
-                }
-            },
+        function init() {
+            log('[SYS] Monster S3 Attack Center v2.0', 'success');
+            initWebSocket();
+            startStatusSimulation();
+        }
 
-            // ========== 3D ENGINE ==========
-            init3D: function () {
-                if (typeof THREE === 'undefined') {
-                    this.log("[3D] Three.js not loaded - 3D disabled", "warn");
-                    return;
-                }
+        function initWebSocket() {
+            const host = window.location.hostname || '192.168.4.1';
 
-                const container = document.getElementById('canvas-container');
-                this.scene = new THREE.Scene();
-                this.scene.fog = new THREE.FogExp2(0x050510, 0.0015);
+            if (window.location.protocol === 'file:' || host === '' || host === 'localhost') {
+                isPreview = true;
+                log('[NET] Preview mode - no ESP32', 'warn');
+                document.getElementById('conn-status').innerText = 'PREVIEW';
+                return;
+            }
 
-                this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-                this.camera.position.z = 6;
+            try {
+                ws = new WebSocket(`ws://${host}/ws`);
 
-                this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-                this.renderer.setSize(window.innerWidth, window.innerHeight);
-                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-                container.appendChild(this.renderer.domElement);
-
-                // PARTICLES
-                const starGeo = new THREE.BufferGeometry();
-                const starCount = 1500;
-                const positions = new Float32Array(starCount * 3);
-                for (let i = 0; i < starCount * 3; i++) {
-                    positions[i] = (Math.random() - 0.5) * 100;
-                }
-                starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-                const starMat = new THREE.PointsMaterial({ color: 0x00f3ff, size: 0.15, transparent: true, opacity: 0.8 });
-                const stars = new THREE.Points(starGeo, starMat);
-                this.scene.add(stars);
-
-                // HOLOGRAM
-                const chipGroup = new THREE.Group();
-
-                const boardGeo = new THREE.BoxGeometry(2.5, 0.1, 3.5);
-                const boardEdge = new THREE.EdgesGeometry(boardGeo);
-                const board = new THREE.LineSegments(boardEdge, new THREE.LineBasicMaterial({ color: 0x00f3ff, transparent: true, opacity: 0.6 }));
-                chipGroup.add(board);
-
-                const shieldGeo = new THREE.BoxGeometry(1.4, 0.25, 1.4);
-                const shieldEdge = new THREE.EdgesGeometry(shieldGeo);
-                const shield = new THREE.LineSegments(shieldEdge, new THREE.LineBasicMaterial({ color: 0xff00ff, transparent: true, opacity: 0.8 }));
-                shield.position.set(0, 0.18, -0.5);
-                chipGroup.add(shield);
-
-                // Antenna
-                const antGeo = new THREE.BoxGeometry(1.2, 0.05, 0.6);
-                const ant = new THREE.Mesh(antGeo, new THREE.MeshBasicMaterial({ color: 0xffff00, wireframe: true }));
-                ant.position.z = 1.8;
-                chipGroup.add(ant);
-
-                this.scene.add(chipGroup);
-
-                // Animation
-                const animate = () => {
-                    requestAnimationFrame(animate);
-
-                    chipGroup.rotation.y += 0.004;
-                    chipGroup.rotation.x = Math.sin(Date.now() * 0.0008) * 0.08;
-
-                    const pos = stars.geometry.attributes.position.array;
-                    for (let i = 2; i < pos.length; i += 3) {
-                        pos[i] += 0.03;
-                        if (pos[i] > 15) pos[i] = -50;
-                    }
-                    stars.geometry.attributes.position.needsUpdate = true;
-
-                    this.renderer.render(this.scene, this.camera);
+                ws.onopen = () => {
+                    log('[NET] Connected to ESP32', 'success');
+                    document.getElementById('conn-dot').classList.remove('offline');
+                    document.getElementById('conn-status').innerText = 'ONLINE';
                 };
-                animate();
 
-                window.addEventListener('resize', () => {
-                    this.camera.aspect = window.innerWidth / window.innerHeight;
-                    this.camera.updateProjectionMatrix();
-                    this.renderer.setSize(window.innerWidth, window.innerHeight);
-                });
+                ws.onclose = () => {
+                    log('[NET] Disconnected - reconnecting...', 'err');
+                    document.getElementById('conn-dot').classList.add('offline');
+                    document.getElementById('conn-status').innerText = 'OFFLINE';
+                    setTimeout(initWebSocket, 3000);
+                };
 
-                this.log("[3D] Engine started - 1500 particles", "success");
-            },
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        handleMessage(data);
+                    } catch (e) { }
+                };
+            } catch (e) {
+                isPreview = true;
+                log('[NET] WebSocket failed - preview mode', 'warn');
+            }
+        }
 
-            // ========== WEBSOCKET ==========
-            initWS: function () {
-                const host = window.location.hostname || '192.168.4.1';
-                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-
-                // Check if we're in local file preview mode
-                if (window.location.protocol === 'file:' || host === '' || host === 'localhost') {
-                    this.isPreview = true;
-                    document.getElementById('preview-badge').classList.add('active');
-                    this.log("[NET] PREVIEW MODE - No ESP32 connection", "warn");
-                    document.getElementById('conn-status').innerText = "PREVIEW";
-                    return;
-                }
-
-                try {
-                    this.ws = new WebSocket(`${protocol}//${host}/ws`);
-
-                    this.ws.onopen = () => {
-                        this.log("[NET] WebSocket CONNECTED", "success");
-                        document.getElementById('conn-dot').classList.remove('offline');
-                        document.getElementById('conn-status').innerText = "ONLINE";
-                    };
-
-                    this.ws.onclose = () => {
-                        this.log("[NET] Connection lost - reconnecting...", "err");
-                        document.getElementById('conn-dot').classList.add('offline');
-                        document.getElementById('conn-status').innerText = "OFFLINE";
-                        setTimeout(() => this.initWS(), 3000);
-                    };
-
-                    this.ws.onerror = (e) => {
-                        this.log("[NET] WebSocket error", "err");
-                    };
-
-                    this.ws.onmessage = (event) => {
-                        try {
-                            const data = JSON.parse(event.data);
-                            this.handleData(data);
-                        } catch (e) {
-                            console.error("Parse error:", e);
-                        }
-                    };
-                } catch (e) {
-                    this.isPreview = true;
-                    document.getElementById('preview-badge').classList.add('active');
-                    this.log("[NET] WebSocket failed - PREVIEW MODE", "warn");
-                }
-            },
-
-            handleData: function (data) {
-                if (data.type === 'status') {
-                    if (data.bat !== undefined) document.getElementById('bat-val').innerText = data.bat;
-                    if (data.temp !== undefined) document.getElementById('temp-val').innerText = data.temp;
-                    if (data.pps !== undefined) document.getElementById('pps-val').innerText = data.pps;
-                }
-                else if (data.type === 'wifi_scan') {
-                    this.renderWifiList(data.networks);
-                }
-                else if (data.type === 'ble_scan') {
-                    this.renderBleDevices(data.devices);
-                }
-                else if (data.type === 'log') {
-                    this.log(data.msg, data.level || 'info');
-                }
-            },
-
-            // ========== COMMANDS ==========
-            cmd: function (command, param = null) {
-                this.log(`> CMD: ${command} ${param || ''}`, "info");
-
-                if (this.isPreview) {
-                    this.log(`[PREVIEW] Command simulated: ${command}`, "warn");
-                    this.simulateCommand(command, param);
-                    return;
-                }
-
-                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-                    this.ws.send(JSON.stringify({ cmd: command, value: param }));
-                } else {
-                    this.log("[ERR] Not connected to device", "err");
-                }
-            },
-
-            // ========== NAVIGATION ==========
-            nav: function (viewId) {
-                document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-                const target = document.getElementById('view-' + viewId);
-                if (target) {
-                    target.classList.add('active');
-                    this.currentView = viewId;
-                    this.log(`[NAV] Switched to ${viewId.toUpperCase()}`);
-                }
-            },
-
-            // ========== UI HELPERS ==========
-            log: function (msg, type = 'info') {
-                const term = document.getElementById('console-output');
+        function handleMessage(data) {
+            if (data.type === 'status') {
+                if (data.bat) document.getElementById('bat-val').innerText = data.bat;
+                if (data.temp) document.getElementById('temp-val').innerText = data.temp;
+                if (data.pps) document.getElementById('pps-val').innerText = data.pps;
+            } else if (data.type === 'log') {
+                log(data.msg, data.level);
+            } else if (data.type === 'hoax_payload') {
+                copyToClipboard(data.payload);
+                log('[HOAX] Payload copied to clipboard', 'success');
+                alert("Payload Generated & Copied to Clipboard!");
+            } else if (data.type === 'hoax_output') {
+                const out = document.getElementById('hoax-output');
                 const div = document.createElement('div');
-                div.className = `log-line ${type}`;
-                div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
-                term.prepend(div);
-                if (term.children.length > 100) term.lastChild.remove();
-            },
+                div.style.borderTop = "1px solid #333";
+                div.style.marginTop = "5px";
+                div.style.paddingTop = "5px";
+                div.innerText = data.data;
+                out.appendChild(div);
+                out.scrollTop = out.scrollHeight;
+                if (data.sessions) updateHoaxSessions(JSON.parse(data.sessions));
+            }
+        }
 
-            renderWifiList: function (networks) {
-                const tbody = document.getElementById('wifi-list');
-                tbody.innerHTML = '';
+        function sendCmd(cmd) {
+            log(`> CMD: ${cmd}`, 'info');
 
-                if (!networks || networks.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#666;">No networks found</td></tr>';
-                    return;
-                }
+            if (isPreview) {
+                log(`[PREVIEW] ${cmd} simulated`, 'warn');
+                return;
+            }
 
-                networks.forEach(net => {
-                    const tr = document.createElement('tr');
-                    const pwrColor = net.rssi > -50 ? 'var(--neon-green)' : net.rssi > -70 ? 'var(--neon-yellow)' : 'var(--neon-red)';
-                    tr.innerHTML = `
-                    <td style="color:var(--neon-cyan); font-weight:bold;">${net.ssid || '(Hidden)'}</td>
-                    <td style="font-family:monospace; color:#888; font-size:0.65rem;">${net.bssid}</td>
-                    <td style="color:${pwrColor};">${net.rssi}</td>
-                    <td>${net.ch}</td>
-                    <td><button class="btn" style="padding:4px 8px; font-size:0.65rem;" onclick="app.cmd('deauth','${net.bssid}')">⚡</button></td>
-                `;
-                    tbody.appendChild(tr);
-                });
-            },
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ cmd: cmd }));
+            } else {
+                log('[ERR] Not connected', 'err');
+            }
+        }
 
-            renderBleDevices: function (devices) {
-                const container = document.getElementById('ble-devices');
-                if (!devices || devices.length === 0) {
-                    container.innerHTML = 'No devices found...';
-                    return;
-                }
-                container.innerHTML = devices.map(d => `<div>📱 ${d.name || 'Unknown'} [${d.rssi}dBm]</div>`).join('');
-            },
+        function showSection(id) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            // Show target
+            const target = document.getElementById('sec-' + id);
+            if (target) target.classList.add('active');
+            // Update tabs
+            document.querySelectorAll('.nav-tab').forEach((t, i) => {
+                t.classList.toggle('active', t.innerText.toLowerCase().includes(id) ||
+                    (id === 'home' && i === 0));
+            });
+        }
 
-            initSliders: function () {
-                const cpuSlider = document.getElementById('cpu-slider');
-                const cpuVal = document.getElementById('cpu-val');
-                if (cpuSlider) {
-                    cpuSlider.oninput = function () {
-                        cpuVal.innerText = this.value + ' MHz';
-                    };
-                    cpuSlider.onchange = () => {
-                        this.cmd('clock', cpuSlider.value);
-                    };
-                }
-            },
+        function log(msg, type = 'info') {
+            const term = document.getElementById('terminal');
+            const div = document.createElement('div');
+            div.className = `log-line ${type}`;
+            const time = new Date().toLocaleTimeString();
+            div.innerText = `[${time}] ${msg}`;
+            term.prepend(div);
+            if (term.children.length > 100) term.lastChild.remove();
+        }
 
-            // ========== PREVIEW SIMULATION ==========
-            startPreviewSimulation: function () {
-                this.log("[PREVIEW] Simulation started", "warn");
+        function startStatusSimulation() {
+            if (!isPreview) return;
+            setInterval(() => {
+                document.getElementById('bat-val').innerText = Math.floor(70 + Math.random() * 30);
+                document.getElementById('temp-val').innerText = Math.floor(35 + Math.random() * 10);
+                document.getElementById('pps-val').innerText = Math.floor(Math.random() * 500);
 
-                // Simulate status updates
-                setInterval(() => {
-                    document.getElementById('bat-val').innerText = Math.floor(70 + Math.random() * 30);
-                    document.getElementById('temp-val').innerText = Math.floor(35 + Math.random() * 10);
-                    document.getElementById('pps-val').innerText = Math.floor(Math.random() * 500);
-                }, 2000);
-            },
+                // Update stat cards
+                const statWifi = document.getElementById('stat-wifi');
+                const statBle = document.getElementById('stat-ble');
+                const statAttacks = document.getElementById('stat-attacks');
+                const statUptime = document.getElementById('stat-uptime');
 
-            simulateCommand: function (cmd, param) {
-                // Simulate responses for preview mode
-                if (cmd === 'scan_wifi') {
-                    setTimeout(() => {
-                        this.renderWifiList([
-                            { ssid: 'CafeDelMal', bssid: 'AA:BB:CC:DD:EE:01', rssi: -45, ch: 6 },
-                            { ssid: 'VirusNet_5G', bssid: 'AA:BB:CC:DD:EE:02', rssi: -62, ch: 11 },
-                            { ssid: 'FBI_Surveillance_Van', bssid: 'AA:BB:CC:DD:EE:03', rssi: -78, ch: 1 },
-                            { ssid: '', bssid: 'AA:BB:CC:DD:EE:04', rssi: -55, ch: 3 },
-                        ]);
-                        this.log("[SCAN] Found 4 networks", "success");
-                    }, 1000);
-                }
-                else if (cmd === 'scan_ble') {
-                    setTimeout(() => {
-                        this.renderBleDevices([
-                            { name: 'iPhone de João', rssi: -45 },
-                            { name: 'Galaxy Buds Pro', rssi: -62 },
-                            { name: null, rssi: -78 },
-                        ]);
-                        this.log("[BLE] Found 3 devices", "success");
-                    }, 1000);
-                }
-                else if (cmd === 'deauth' || cmd === 'deauth_all') {
-                    this.log("[ATTACK] Deauth packets sent!", "success");
+                if (statWifi) statWifi.innerText = Math.floor(5 + Math.random() * 15);
+                if (statBle) statBle.innerText = Math.floor(3 + Math.random() * 10);
+                if (statAttacks) statAttacks.innerText = Math.floor(parseInt(statAttacks.innerText || 0) + (Math.random() > 0.7 ? 1 : 0));
+                if (statUptime) statUptime.innerText = Math.floor((Date.now() - window.startTime) / 60000);
+            }, 2000);
+        }
+
+        // ===== CONFIGURATION HELPERS =====
+
+        // Current config cache
+        let currentConfig = {};
+
+        // Update slider value display
+        function updateSliderVal(id, suffix = '', multiplier = 1) {
+            const slider = document.getElementById(id);
+            const valSpan = document.getElementById(id + '-val');
+            if (slider && valSpan) {
+                let val = parseFloat(slider.value) * multiplier;
+                valSpan.innerText = val.toFixed(multiplier < 1 ? 2 : 0) + suffix;
+            }
+        }
+
+        // Send config update to device
+        function updateConfig(key, value) {
+            currentConfig[key] = value;
+            log(`[CFG] ${key} = ${value}`, 'info');
+
+            if (isPreview) {
+                log('[PREVIEW] Config change simulated', 'warn');
+                return;
+            }
+
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    cmd: 'config_set',
+                    key: key,
+                    value: value
+                }));
+            }
+        }
+
+        // Export config as JSON file
+        function exportConfig() {
+            if (isPreview) {
+                // In preview mode, export current UI state
+                const config = collectCurrentConfig();
+                downloadJSON(config, 'monster_s3_config.json');
+                log('[CFG] Config exported (preview data)', 'success');
+                return;
+            }
+
+            // Request config from device
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ cmd: 'config_export' }));
+            }
+        }
+
+        // Import config from file
+        function importConfig() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try {
+                        const config = JSON.parse(ev.target.result);
+                        applyConfigToUI(config);
+
+                        if (!isPreview && ws && ws.readyState === WebSocket.OPEN) {
+                            ws.send(JSON.stringify({
+                                cmd: 'config_import',
+                                data: config
+                            }));
+                        }
+
+                        log('[CFG] Config imported successfully', 'success');
+                    } catch (err) {
+                        log('[CFG] Invalid config file: ' + err.message, 'err');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        // Helper to download JSON
+        function downloadJSON(data, filename) {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Collect current config from UI
+        function collectCurrentConfig() {
+            return {
+                wifi_enabled: document.getElementById('cfg-wifi')?.checked ?? true,
+                ble_enabled: document.getElementById('cfg-ble')?.checked ?? true,
+                gps_enabled: document.getElementById('cfg-gps')?.checked ?? true,
+                voice_enabled: document.getElementById('cfg-voice')?.checked ?? false,
+                auto_sleep_enabled: document.getElementById('cfg-autosleep')?.checked ?? true,
+                debug_serial: document.getElementById('cfg-debug')?.checked ?? true,
+                cpu_freq_mhz: parseInt(document.getElementById('cfg-cpu')?.value ?? 240),
+                display_brightness: parseInt(document.getElementById('cfg-brightness')?.value ?? 200),
+                sleep_timeout_sec: parseInt(document.getElementById('cfg-sleep')?.value ?? 120),
+                ap_ssid: document.getElementById('cfg-ssid')?.value ?? 'Monster_S3_AP',
+                ap_password: document.getElementById('cfg-appass')?.value ?? 'lele2025',
+                ap_hidden: document.getElementById('cfg-hidden')?.checked ?? true,
+                require_auth: document.getElementById('cfg-auth')?.checked ?? true,
+                ap_channel: parseInt(document.getElementById('cfg-channel')?.value ?? 1),
+                web_username: document.getElementById('cfg-webuser')?.value ?? 'admin',
+                web_password: document.getElementById('cfg-webpass')?.value ?? 'lele2025',
+                rf_frequency: parseFloat(document.getElementById('cfg-rffreq')?.value ?? 433.92),
+                rf_power_dbm: parseInt(document.getElementById('cfg-rfpower')?.value ?? 10),
+                rf_modulation: parseInt(document.getElementById('cfg-rfmod')?.value ?? 2),
+                rf_bandwidth_khz: parseFloat(document.getElementById('cfg-rfbw')?.value ?? 200),
+                rf_deviation_khz: parseFloat(document.getElementById('cfg-rfdev')?.value ?? 47),
+                rf_datarate_kbps: parseFloat(document.getElementById('cfg-rfrate')?.value ?? 5),
+                ble_spam_mode: parseInt(document.getElementById('cfg-blespam')?.value ?? 0),
+                ble_spam_interval_ms: parseInt(document.getElementById('cfg-bleint')?.value ?? 100),
+                ble_random_mac: document.getElementById('cfg-blemac')?.checked ?? true,
+                ble_name_prefix: document.getElementById('cfg-bleprefix')?.value ?? '',
+                attacker_ip: document.getElementById('cfg-attackerip')?.value ?? '192.168.1.100',
+                wifi_deauth_reason: parseInt(document.getElementById('cfg-wifireason')?.value ?? 7),
+                wifi_beacon_count: parseInt(document.getElementById('cfg-wifibeacon')?.value ?? 20),
+                wifi_beacon_interval_ms: parseInt(document.getElementById('cfg-wifibeaconint')?.value ?? 100),
+                wifi_auto_target_strongest: document.getElementById('cfg-wifiauto')?.checked ?? true,
+                wifi_capture_pmkid: document.getElementById('cfg-wifipmkid')?.checked ?? true,
+                wifi_capture_handshake: document.getElementById('cfg-wifihs')?.checked ?? true,
+                nfc_protocol: parseInt(document.getElementById('cfg-nfcproto')?.value ?? 0),
+                nfc_auto_read: document.getElementById('cfg-nfcauto')?.checked ?? true,
+                nfc_beep_on_read: document.getElementById('cfg-nfcbeep')?.checked ?? true,
+                ir_protocol: parseInt(document.getElementById('cfg-irproto')?.value ?? 0),
+                ir_repeat_enabled: document.getElementById('cfg-irrep')?.checked ?? true,
+                ir_repeat_count: parseInt(document.getElementById('cfg-ircount')?.value ?? 3),
+                ir_repeat_delay_ms: parseInt(document.getElementById('cfg-irdelay')?.value ?? 100),
+                ai_epsilon: parseFloat(document.getElementById('cfg-aieps')?.value ?? 15) / 100,
+                ai_learning_rate: parseFloat(document.getElementById('cfg-ailr')?.value ?? 10) / 100,
+                ai_discount_factor: parseFloat(document.getElementById('cfg-aidf')?.value ?? 95) / 100,
+                ai_auto_learn: document.getElementById('cfg-aiauto')?.checked ?? true,
+                ai_voice_feedback: document.getElementById('cfg-aivoice')?.checked ?? false,
+                auto_save_captures: document.getElementById('cfg-autosave')?.checked ?? true,
+                auto_log_attacks: document.getElementById('cfg-autolog')?.checked ?? true
+            };
+        }
+
+        // Apply config to UI controls
+        function applyConfigToUI(cfg) {
+            if (!cfg) return;
+
+            // System
+            if (cfg.wifi_enabled !== undefined) document.getElementById('cfg-wifi').checked = cfg.wifi_enabled;
+            if (cfg.ble_enabled !== undefined) document.getElementById('cfg-ble').checked = cfg.ble_enabled;
+            if (cfg.gps_enabled !== undefined) document.getElementById('cfg-gps').checked = cfg.gps_enabled;
+            if (cfg.voice_enabled !== undefined) document.getElementById('cfg-voice').checked = cfg.voice_enabled;
+            if (cfg.auto_sleep_enabled !== undefined) document.getElementById('cfg-autosleep').checked = cfg.auto_sleep_enabled;
+            if (cfg.debug_serial !== undefined) document.getElementById('cfg-debug').checked = cfg.debug_serial;
+            if (cfg.cpu_freq_mhz !== undefined) document.getElementById('cfg-cpu').value = cfg.cpu_freq_mhz;
+            if (cfg.display_brightness !== undefined) {
+                document.getElementById('cfg-brightness').value = cfg.display_brightness;
+                updateSliderVal('cfg-brightness');
+            }
+            if (cfg.sleep_timeout_sec !== undefined) {
+                document.getElementById('cfg-sleep').value = cfg.sleep_timeout_sec;
+                updateSliderVal('cfg-sleep', 's');
+            }
+
+            // Network
+            if (cfg.ap_ssid !== undefined) document.getElementById('cfg-ssid').value = cfg.ap_ssid;
+            if (cfg.ap_password !== undefined) document.getElementById('cfg-appass').value = cfg.ap_password;
+            if (cfg.ap_hidden !== undefined) document.getElementById('cfg-hidden').checked = cfg.ap_hidden;
+            if (cfg.require_auth !== undefined) document.getElementById('cfg-auth').checked = cfg.require_auth;
+            if (cfg.ap_channel !== undefined) document.getElementById('cfg-channel').value = cfg.ap_channel;
+            if (cfg.web_username !== undefined) document.getElementById('cfg-webuser').value = cfg.web_username;
+            if (cfg.web_password !== undefined) document.getElementById('cfg-webpass').value = cfg.web_password;
+
+            // RF
+            if (cfg.rf_frequency !== undefined) document.getElementById('cfg-rffreq').value = cfg.rf_frequency;
+            if (cfg.rf_power_dbm !== undefined) {
+                document.getElementById('cfg-rfpower').value = cfg.rf_power_dbm;
+                updateSliderVal('cfg-rfpower', ' dBm');
+            }
+            if (cfg.rf_modulation !== undefined) document.getElementById('cfg-rfmod').value = cfg.rf_modulation;
+            if (cfg.rf_bandwidth_khz !== undefined) {
+                document.getElementById('cfg-rfbw').value = cfg.rf_bandwidth_khz;
+                updateSliderVal('cfg-rfbw', ' kHz');
+            }
+            if (cfg.rf_deviation_khz !== undefined) {
+                document.getElementById('cfg-rfdev').value = cfg.rf_deviation_khz;
+                updateSliderVal('cfg-rfdev', ' kHz');
+            }
+            if (cfg.rf_datarate_kbps !== undefined) {
+                document.getElementById('cfg-rfrate').value = cfg.rf_datarate_kbps;
+                updateSliderVal('cfg-rfrate', ' kbps');
+            }
+
+            // BLE
+            if (cfg.ble_spam_mode !== undefined) document.getElementById('cfg-blespam').value = cfg.ble_spam_mode;
+            if (cfg.ble_spam_interval_ms !== undefined) {
+                document.getElementById('cfg-bleint').value = cfg.ble_spam_interval_ms;
+                updateSliderVal('cfg-bleint', ' ms');
+            }
+            if (cfg.ble_random_mac !== undefined) document.getElementById('cfg-blemac').checked = cfg.ble_random_mac;
+            if (cfg.ble_name_prefix !== undefined) document.getElementById('cfg-bleprefix').value = cfg.ble_name_prefix;
+
+            // WiFi
+            if (cfg.wifi_deauth_reason !== undefined) document.getElementById('cfg-wifireason').value = cfg.wifi_deauth_reason;
+            if (cfg.wifi_beacon_count !== undefined) {
+                document.getElementById('cfg-wifibeacon').value = cfg.wifi_beacon_count;
+                updateSliderVal('cfg-wifibeacon', ' networks');
+            }
+            if (cfg.wifi_beacon_interval_ms !== undefined) {
+                document.getElementById('cfg-wifibeaconint').value = cfg.wifi_beacon_interval_ms;
+                updateSliderVal('cfg-wifibeaconint', ' ms');
+            }
+            if (cfg.wifi_auto_target_strongest !== undefined) document.getElementById('cfg-wifiauto').checked = cfg.wifi_auto_target_strongest;
+            if (cfg.wifi_capture_pmkid !== undefined) document.getElementById('cfg-wifipmkid').checked = cfg.wifi_capture_pmkid;
+            if (cfg.wifi_capture_handshake !== undefined) document.getElementById('cfg-wifihs').checked = cfg.wifi_capture_handshake;
+
+            // NFC
+            if (cfg.nfc_protocol !== undefined) document.getElementById('cfg-nfcproto').value = cfg.nfc_protocol;
+            if (cfg.nfc_auto_read !== undefined) document.getElementById('cfg-nfcauto').checked = cfg.nfc_auto_read;
+            if (cfg.nfc_beep_on_read !== undefined) document.getElementById('cfg-nfcbeep').checked = cfg.nfc_beep_on_read;
+
+            // IR
+            if (cfg.ir_protocol !== undefined) document.getElementById('cfg-irproto').value = cfg.ir_protocol;
+            if (cfg.ir_repeat_enabled !== undefined) document.getElementById('cfg-irrep').checked = cfg.ir_repeat_enabled;
+            if (cfg.ir_repeat_count !== undefined) {
+                document.getElementById('cfg-ircount').value = cfg.ir_repeat_count;
+                updateSliderVal('cfg-ircount', 'x');
+            }
+            if (cfg.ir_repeat_delay_ms !== undefined) {
+                document.getElementById('cfg-irdelay').value = cfg.ir_repeat_delay_ms;
+                updateSliderVal('cfg-irdelay', ' ms');
+            }
+
+            // AI
+            if (cfg.ai_epsilon !== undefined) {
+                document.getElementById('cfg-aieps').value = cfg.ai_epsilon * 100;
+                updateSliderVal('cfg-aieps', '', 0.01);
+            }
+            if (cfg.ai_learning_rate !== undefined) {
+                document.getElementById('cfg-ailr').value = cfg.ai_learning_rate * 100;
+                updateSliderVal('cfg-ailr', '', 0.01);
+            }
+            if (cfg.ai_discount_factor !== undefined) {
+                document.getElementById('cfg-aidf').value = cfg.ai_discount_factor * 100;
+                updateSliderVal('cfg-aidf', '', 0.01);
+            }
+            if (cfg.ai_auto_learn !== undefined) document.getElementById('cfg-aiauto').checked = cfg.ai_auto_learn;
+            if (cfg.ai_voice_feedback !== undefined) document.getElementById('cfg-aivoice').checked = cfg.ai_voice_feedback;
+
+            // Data
+            if (cfg.auto_save_captures !== undefined) document.getElementById('cfg-autosave').checked = cfg.auto_save_captures;
+            if (cfg.auto_log_attacks !== undefined) document.getElementById('cfg-autolog').checked = cfg.auto_log_attacks;
+
+            currentConfig = cfg;
+        }
+
+        // Load config from device on connect
+        function loadConfigFromDevice() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ cmd: 'config_get' }));
+            }
+        }
+
+        window.startTime = Date.now();
+        window.startTime = Date.now();
+
+        // HOAXSHELL LOGIC
+        let activeHoaxSession = 'ALL';
+
+        function hoaxGeneratePayload() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ cmd: 'hoax_get_payload' }));
+            } else {
+                log('[ERR] WebSocket not connected', 'err');
+            }
+        }
+
+        function copyToClipboard(text) {
+            const el = document.createElement('textarea');
+            el.value = text;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+        }
+
+        function hoaxSelectSession(sid) {
+            activeHoaxSession = sid;
+            document.querySelectorAll('.hoax-session').forEach(el => {
+                const isAll = (sid === 'ALL' && el.innerText === 'ALL SESSIONS');
+                const isSid = el.getAttribute('data-sid') === sid;
+                const isActive = isAll || isSid;
+                el.classList.toggle('active', isActive);
+            });
+            document.getElementById('hoax-prompt-str').innerText = `PS ${sid} >`;
+            log(`[HOAX] Selected session: ${sid}`);
+        }
+
+        function updateHoaxSessions(sessionsList) {
+            const container = document.getElementById('hoax-sessions');
+            // Keep "ALL"
+            container.innerHTML = '<div class="hoax-session ' + (activeHoaxSession === 'ALL' ? 'active' : '') + '" onclick="hoaxSelectSession(\'ALL\')">ALL SESSIONS</div>';
+
+            sessionsList.forEach(s => {
+                const div = document.createElement('div');
+                div.className = 'hoax-session ' + (activeHoaxSession === s.id ? 'active' : '');
+                div.setAttribute('data-sid', s.id);
+                div.onclick = () => hoaxSelectSession(s.id);
+
+                // Format: ID (User@PC)
+                let label = s.id.substring(0, 4);
+                if (s.user) label += ` (${s.user})`;
+                div.innerText = label;
+                div.title = `ID: ${s.id}\nUser: ${s.user}\nPC: ${s.pc}\nLast Seen: ${s.last_seen}ms ago`;
+
+                container.appendChild(div);
+            });
+        }
+
+        function hoaxInputKey(e) {
+            if (e.key === 'Enter') {
+                const input = document.getElementById('hoax-input');
+                const cmd = input.value.trim();
+                if (cmd) {
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({
+                            cmd: 'hoax_cmd',
+                            sid: activeHoaxSession,
+                            command: cmd
+                        }));
+
+                        // Local echo
+                        const out = document.getElementById('hoax-output');
+                        const line = document.createElement('div');
+                        line.style.color = '#fff';
+                        line.style.opacity = '0.7';
+                        line.innerText = `[CMD] ${cmd}`;
+                        out.appendChild(line);
+                        out.scrollTop = out.scrollHeight;
+                    } else {
+                        log('[ERR] Not connected', 'err');
+                    }
+                    input.value = '';
                 }
             }
-        };
-
-        // START
-        window.onload = () => app.init();
+        }
     </script>
+
+    <!-- Chart.js from CDN -->
+    <script src="js/chart.umd.min.js" onerror="
+        var c = document.createElement('script');
+        c.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+        c.onload = function() { if(typeof DashboardStats !== 'undefined') DashboardStats.init(); };
+        document.head.appendChild(c);
+    "></script>
+
+    <!-- Dashboard Modules -->
+    <script src="js/dashboard-stats.js"></script>
+    <script src="js/rf-module.js"></script>
+    <script src="js/nfc-module.js"></script>
+    <script src="js/hw-module.js"></script>
+
+    <!-- Dashboard Widgets CSS -->
+    <link rel="stylesheet" href="css/dashboard-widgets.css">
 </body>
 
 </html>

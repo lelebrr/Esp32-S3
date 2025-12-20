@@ -64,6 +64,12 @@
 #define PIN_SD_MISO     42     // SD MISO (Data from SD)
 
 // ========================================
+// SUBGHZ - NRF24L01 (SPI B - Shares with SD)
+// ========================================
+#define PIN_NRF24_CSN   33     // NRF24 Chip Select
+#define PIN_NRF24_CE    34     // NRF24 Chip Enable
+
+// ========================================
 // SUBGHZ - CC1101 (SPI B - Shares with SD)
 // ========================================
 #define PIN_CC1101_CS   46     // CC1101 Chip Select
