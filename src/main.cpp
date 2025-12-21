@@ -180,7 +180,7 @@ void handleGestureAction(GestureAction action) {
                 Serial.println("[GESTURE] All attacks stopped via WAVE gesture!");
             }
             // Also wake screen if dimmed
-            digitalWrite(PIN_TFT_BL, HIGH);
+            ledcWrite(1, 255);
             break;
 
         default: break;
@@ -190,7 +190,7 @@ void handleGestureAction(GestureAction action) {
 void setup() {
     // --- EARLY SERIAL INIT FOR USB CDC ---
     Serial.begin(115200);
-    
+
     // USB CDC needs time to enumerate after reset
     // Wait up to 3 seconds for serial connection
     unsigned long start = millis();
@@ -198,6 +198,10 @@ void setup() {
         delay(10);
     }
     delay(500); // Additional stabilization
+
+    // Setup backlight PWM
+    ledcSetup(1, 2000, 8);
+    ledcAttachPin(PIN_TFT_BL, 1);
     
     Serial.println("\n\n========================================");
     Serial.println("     MONSTER S3 EARLY BOOT DEBUG");

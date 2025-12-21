@@ -233,9 +233,8 @@ void setup_lvgl_menu() {
     digitalWrite(PIN_TFT_RST, HIGH);
     delay(150);
 
-    // Backlight ON (use digitalWrite, not PWM initially)
-    pinMode(PIN_TFT_BL, OUTPUT);
-    digitalWrite(PIN_TFT_BL, HIGH);
+    // Backlight ON (PWM via LEDC)
+    ledcWrite(1, 255);
     Serial.println("[DISPLAY] Backlight ON");
 
     // TFT_eSPI handles SPI initialization internally via USE_HSPI_PORT
