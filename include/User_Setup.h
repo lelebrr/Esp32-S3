@@ -19,7 +19,7 @@
 // ESP32-S3 PIN DEFINITIONS (SPI A - FSPI for Display)
 // Synced with pin_config.h
 // ========================================
-#define TFT_MISO -1 // Not used for ILI9341
+#define TFT_MISO 16 // Touch XPT2046 T_DO (IMPORTANT: Connect T_DO to GPIO 16!)
 #define TFT_MOSI 13 // Display MOSI
 #define TFT_SCLK 14 // Display Clock
 #define TFT_CS 10   // Display Chip Select

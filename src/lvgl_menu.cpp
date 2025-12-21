@@ -58,9 +58,13 @@ void my_touch_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data) {
     if (tft.getTouch(&tx, &ty)) {
         Serial.printf("[TOUCH] Raw: x=%d y=%d | ", tx, ty);
 
-        // Basic mapping logic for rotation 1
+        // Map touch to screen (rotation 1 = landscape 320x240)
         data->point.x = tx;
         data->point.y = ty;
+        
+        // Clamp to screen bounds (320x240 in landscape)
+        if (data->point.x >= SCR_H) data->point.x = SCR_H - 1;
+        if (data->point.y >= SCR_W) data->point.y = SCR_W - 1;
 
         Serial.printf("LVGL: x=%d y=%d\n", data->point.x, data->point.y);
         data->state = LV_INDEV_STATE_PR;
@@ -234,8 +238,12 @@ void setup_lvgl_menu() {
     digitalWrite(PIN_TFT_BL, HIGH);
     Serial.println("[DISPLAY] Backlight ON");
 
-    // Now initialize TFT_eSPI (it will init SPI internally with USE_HSPI_PORT)
+    // TFT_eSPI handles SPI initialization internally via USE_HSPI_PORT
+    // Do NOT call SPI.begin() manually - it conflicts with TFT_eSPI
+
+    // Now initialize TFT_eSPI
     tft.init();
+    Serial.println("[DISPLAY] tft.init() completed");
     tft.setRotation(1); // Landscape mode
     // NOTE: Do NOT call tft.invertDisplay() here - let User_Setup.h TFT_INVERSION_ON handle it
 
@@ -265,7 +273,7 @@ void setup_lvgl_menu() {
 
     // Test touch is working
     Serial.println("[TOUCH] XPT2046 calibrated");
-    Serial.printf("[TOUCH] CS Pin: GPIO%d, IRQ Pin: GPIO%d\n", PIN_TOUCH_CS, PIN_TOUCH_IRQ);
+    Serial.printf("[TOUCH] CS Pin: GPIO%d, IRQ Pin: GPIO%d\n", PIN_TOUCH_CS, PIN_TOUCH_DO);
 
     // Initialize LVGL
     lv_init();
@@ -274,8 +282,8 @@ void setup_lvgl_menu() {
     main_group = lv_group_create();
     lv_group_set_default(main_group);
 
-    // Allocate buffer in PSRAM (40 lines)
-    size_t buf_size = SCR_W * 40;
+    // Allocate buffer in PSRAM (80 lines for better rendering)
+    size_t buf_size = SCR_W * 80;
     buf = (lv_color_t *)ps_malloc(buf_size * sizeof(lv_color_t));
     if (!buf) {
         Serial.println("[LVGL] PSRAM failed, using heap");

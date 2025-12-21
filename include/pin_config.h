@@ -32,8 +32,9 @@
 // ========================================
 // TOUCH - XPT2046 (Shares SPI A bus)
 // ========================================
-#define PIN_TOUCH_CS 15  // Touch Chip Select
-#define PIN_TOUCH_IRQ 16 // Touch Interrupt
+#define PIN_TOUCH_CS 15   // Touch Chip Select
+#define PIN_TOUCH_IRQ -1  // Touch Interrupt (not used - polling mode)
+#define PIN_TOUCH_DO 16   // Touch Data Out (T_DO) - MISO for touch
 
 // ========================================
 // JOYSTICK SHIELD (Funduino V1.A)
