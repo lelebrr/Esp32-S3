@@ -17,14 +17,16 @@ SDStatus AggressiveSD::init() {
     Serial.println("[SD] Aggressive SD Boot Init...");
     
     // Initialize HSPI with our custom pins
-    _spi.begin(PIN_SD_SCK, PIN_SD_MISO, PIN_SD_MOSI, PIN_SD_CS);
-    
+    _spi.begin(40, 42, 41, 39);
+    _spi.setFrequency(20000000);
+
     // Configure CS pin as output and set high (inactive)
     pinMode(PIN_SD_CS, OUTPUT);
     digitalWrite(PIN_SD_CS, HIGH);
-    
+
     // Try to mount SD card with 40MHz clock
-    if (!SD.begin(PIN_SD_CS, _spi, 40000000)) {
+    if (!SD.begin(39, _spi)) {
+        _spi.setFrequency(40000000);
         Serial.println("[SD] Mount FAILED!");
         _ready = false;
         return SD_STATUS_MOUNT_FAILED;

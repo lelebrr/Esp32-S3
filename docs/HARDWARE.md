@@ -37,8 +37,11 @@
 | T_CLK | Touch Clock | GPIO 14 (shared) |
 | T_CS | Touch Chip Select | GPIO 15 |
 | T_DIN | Touch Data In | GPIO 13 (shared) |
-| T_DO | Touch Data Out | -1 (not used) |
-| T_IRQ | Touch Interrupt | GPIO 16 |
+| T_DO | Touch Data Out | GPIO 16 |
+| T_IRQ | Touch Interrupt | -1 (not used) |
+
+> [!IMPORTANT]
+> Ensure `-D USE_FSPI_PORT` is included in build_flags in platformio.ini to prevent StoreProhibited errors on ESP32-S3.
 
 ---
 
@@ -194,6 +197,9 @@
 > [!IMPORTANT]
 > **Button F was removed** - GPIO 20 reassigned to Piezo Buzzer for audible feedback.
 
+> [!WARNING]
+> GPIO 19 is used for Button E. Although it does not currently conflict with I2C SDA (GPIO 8), avoid using GPIO 19 for external I2C devices to prevent potential future conflicts.
+
 ### Conectores Externos
 
 | Connector | Pinos Shield | ESP32-S3 GPIOs |
@@ -236,6 +242,21 @@
 | SQW/INT | -1 (não usado) |
 | I2C Address | 0x68 |
 | EEPROM Addr | 0x57 (AT24C32) |
+
+---
+
+## Module Enable Flags
+
+The following modules can be enabled/disabled via flags in `pin_config.h`:
+
+| Module | Flag | Description |
+|--------|------|-------------|
+| CC1101 SubGHz | `CC1101_ENABLED` | Enables CC1101 RF module for Sub-1GHz attacks |
+| I2S Audio | `AUDIO_ENABLED` | Enables I2S audio output for TTS and sound |
+| Microphone | `MIC_ENABLED` | Enables I2S microphone input for audio capture |
+| Piezo Buzzer | `PIEZO_ENABLED` | Enables piezo buzzer for audible feedback |
+
+Set flags to `1` to enable, `0` to disable. Disabled modules will not initialize and save resources.
 
 ---
 

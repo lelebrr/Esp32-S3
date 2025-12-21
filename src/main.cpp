@@ -2,6 +2,7 @@
 #include "core/aggressive_sd.h"
 #include "gesture_sensor.h"
 #include "gps_driver.h"
+#include "hardware/audio_driver.h"
 #include "lvgl_menu.h"
 #include "pin_config.h"
 #include "s3_driver.h"
@@ -187,13 +188,34 @@ void handleGestureAction(GestureAction action) {
 }
 
 void setup() {
-    // --- AGGRESSIVE SD BOOT - FIRST PRIORITY ---
+    // --- EARLY SERIAL INIT FOR USB CDC ---
     Serial.begin(115200);
-    delay(100);
+    
+    // USB CDC needs time to enumerate after reset
+    // Wait up to 3 seconds for serial connection
+    unsigned long start = millis();
+    while (!Serial && (millis() - start < 3000)) {
+        delay(10);
+    }
+    delay(500); // Additional stabilization
+    
+    Serial.println("\n\n========================================");
+    Serial.println("     MONSTER S3 EARLY BOOT DEBUG");
+    Serial.println("========================================");
+    Serial.printf("Free Heap: %d bytes\n", ESP.getFreeHeap());
+    Serial.printf("PSRAM: %s\n", psramFound() ? "FOUND" : "NOT FOUND");
+    
+    // --- AGGRESSIVE SD BOOT ---
+    Serial.println("[BOOT] Starting SD init...");
     aggressive_boot_logic();
 
     // --- Standard Driver Init ---
+    Serial.println("[BOOT] Starting MonsterDriver init...");
     MonsterDriver::init();
+
+    // --- Audio Driver Init ---
+    Serial.println("[BOOT] Starting Audio driver init...");
+    AudioDriver::init();
 
     // Check if we woke up from gesture
     if (GestureSensor::wasWakeupByGesture()) {

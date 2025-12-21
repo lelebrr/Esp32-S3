@@ -52,7 +52,7 @@
 
 // Auxiliary Buttons (On GPIO 19/20 - clear of GPS UART2)
 #define PIN_BTN_E 19 // Button E (Center-Left)
-// #define PIN_BTN_F       20  // Button F (Center-Right) - REMOVED for Piezo
+#undef PIN_BTN_F
 #define PIN_PIEZO 20 // Piezo Positive Pin
 
 // ========================================
@@ -144,5 +144,13 @@
 #define PIN_I2S_MIC_SCK 28 // I2S Bit Clock (BCLK)
 #define PIN_I2S_MIC_WS 29  // I2S Word Select (LRCK)
 #define PIN_I2S_MIC_SD 30  // I2S Serial Data (DIN)
+
+// ========================================
+// MODULE ENABLE FLAGS
+// ========================================
+#define CC1101_ENABLED 1     // Enable CC1101 SubGHz module
+#define AUDIO_ENABLED 1      // Enable I2S audio output
+#define MIC_ENABLED 1        // Enable I2S microphone input
+#define PIEZO_ENABLED 1      // Enable Piezo buzzer
 
 #endif // PIN_CONFIG_H

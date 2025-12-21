@@ -49,6 +49,10 @@ uint8_t RFCore::_scanIndex = 0;
 // ============================================================================
 bool RFCore::init() {
     if (_initialized) return true;
+    if (!CC1101_ENABLED) {
+        Serial.println("[RF] CC1101 disabled in config");
+        return false;
+    }
 
     Serial.println("[RF] Initializing CC1101...");
 

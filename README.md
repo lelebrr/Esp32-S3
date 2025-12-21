@@ -128,7 +128,7 @@ pio device monitor
 | **Display SPI** | CS=10, DC=12, RST=11, MOSI=13, SCK=14, BL=21 |
 | **Touch** | CS=15, IRQ=16 |
 | **SD Card (HSPI)** | CS=39, SCK=40, MOSI=41, MISO=42 |
-| **CC1101** | CS=46, GDO0=47, EN=48 |
+| **CC1101** | CS=37, GDO0=47, EN=48 |
 | **I2C** | SDA=8, SCL=9 |
 | **GPS UART2** | RX=17, TX=18 |
 | **IR YS-IRTM** | TX=3, RX=27 |
@@ -148,4 +148,3 @@ Distribuído sob licença **AGPL**. Use por sua conta e risco.
 
 **Versão:** Monster S3 v1.0  
 **Data:** 2025-12-21
-

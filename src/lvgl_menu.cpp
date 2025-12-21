@@ -242,9 +242,8 @@ void setup_lvgl_menu() {
     // Do NOT call SPI.begin() manually - it conflicts with TFT_eSPI
 
     // Now initialize TFT_eSPI
-    tft.init();
-    Serial.println("[DISPLAY] tft.init() completed");
-    tft.setRotation(1); // Landscape mode
+    Serial.println("[DISPLAY] tft.init() skipped");
+    tft.setRotation(3); // Landscape mode
     // NOTE: Do NOT call tft.invertDisplay() here - let User_Setup.h TFT_INVERSION_ON handle it
 
     tft.fillScreen(TFT_BLACK);

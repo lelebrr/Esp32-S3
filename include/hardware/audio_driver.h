@@ -9,11 +9,12 @@
 
 #include <Arduino.h>
 
-// Audio driver class for I2S audio output
+// Audio driver class for I2S audio output and piezo buzzer
 class AudioDriver {
 public:
     static void init();
     static void playTone(int frequency, int duration);
+    static void playPiezoTone(int frequency, int duration);
     static void stopAudio();
 
 private:
