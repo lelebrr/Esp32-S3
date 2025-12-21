@@ -34,14 +34,23 @@
 // Touch uses same SPI bus as display
 
 // ========================================
+// COLOR CORRECTION
+// ========================================
+#define TFT_INVERSION_ON // Fix washed-out colors on some displays
+// #define TFT_RGB_ORDER TFT_BGR    // Uncomment if red/blue are swapped
+
+// ========================================
 // SPI SETTINGS
 // ========================================
-#define SPI_FREQUENCY 40000000      // 40 MHz
+#define SPI_FREQUENCY 27000000      // 27 MHz (more stable for generic displays)
 #define SPI_READ_FREQUENCY 20000000 // 20 MHz
 #define SPI_TOUCH_FREQUENCY 2500000 // 2.5 MHz (slower for touch accuracy)
 
-// Do NOT use FSPI/HSPI port - use software-assigned pins instead
-// #define USE_FSPI_PORT  // Commented: our pins (13,14) are not native FSPI pins
+// ========================================
+// ESP32-S3 SPI BUS CONFIGURATION
+// ========================================
+// Use HSPI for ESP32-S3 with custom pins (TFT_eSPI will call spi.begin internally)
+#define USE_HSPI_PORT
 
 // ========================================
 // FONTS

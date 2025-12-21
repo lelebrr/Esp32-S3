@@ -259,9 +259,39 @@ struct GlobalState {
     bool auto_attack_favorites = false;
     bool insane_mode_enabled = false;
     int current_theme = 0;
-    bool mascot_enabled = false;  // Mascot desabilitado por padrão (economiza memória)
+    bool mascot_enabled = false; // Mascot desabilitado por padrão (economiza memória)
 };
 
 extern GlobalState g_state;
+
+// Missing types for UI screens
+struct HandshakeData {
+    String ssid;
+    String bssid;
+    int rssi;
+    uint8_t *pmkid;
+    uint8_t *handshake;
+    size_t handshake_len;
+};
+
+struct PwnNetwork {
+    String ssid;
+    String bssid;
+    int channel;
+    int rssi;
+    bool has_password;
+    String password;
+};
+
+// Mesh networking callback types
+extern void (*meshChatCallback)(const uint8_t *mac, const char *sender, const char *text);
+
+// Audio driver external declarations
+extern bool audioInitialized;
+
+// UI screen functions (stub declarations)
+extern void ui_chat_screen_init();
+extern void keyboard_event_cb(lv_event_t *e);
+extern void ir_tv_nuke();
 
 #endif

@@ -37,7 +37,7 @@
 | T_CLK | Touch Clock | GPIO 14 (shared) |
 | T_CS | Touch Chip Select | GPIO 15 |
 | T_DIN | Touch Data In | GPIO 13 (shared) |
-| T_DO | Touch Data Out | GPIO 13 (shared) |
+| T_DO | Touch Data Out | -1 (not used) |
 | T_IRQ | Touch Interrupt | GPIO 16 |
 
 ---
@@ -51,10 +51,13 @@
 |--------|----------|:-------------:|
 | CS | Chip Select | GPIO 39 |
 | SCK | Clock | GPIO 40 |
-| MOSI | Data Out | GPIO 41 |
-| MISO | Data In | GPIO 42 |
+| MOSI | Master Out Slave In | GPIO 41 |
+| MISO | Master In Slave Out | GPIO 42 |
 | VCC | Power | 3.3V / 5V |
 | GND | Ground | GND |
+
+> [!NOTE]
+> HSPI dedicated bus provides 40MHz+ throughput for aggressive boot and fast logging.
 
 ---
 
@@ -84,7 +87,7 @@
 
 | Function | ESP32-S3 GPIO |
 |----------|---------------|
-| CS | GPIO 46 |
+| CS | GPIO 37 |
 | GDO0 | GPIO 47 |
 | Power Enable | GPIO 48 |
 | MOSI/MISO/SCK | SD Card bus (shared) |
@@ -186,7 +189,10 @@
 | Button | ESP32-S3 GPIO | Position |
 |--------|---------------|----------|
 | E | GPIO 19 | Centro-Esq |
-| F | GPIO 20 | Centro-Dir |
+| ~~F~~ | ~~GPIO 20~~ | Removido → Piezo |
+
+> [!IMPORTANT]
+> **Button F was removed** - GPIO 20 reassigned to Piezo Buzzer for audible feedback.
 
 ### Conectores Externos
 
@@ -202,9 +208,9 @@
 
 | Function | ESP32-S3 GPIO |
 |----------|---------------|
-| Attack Active (High) | GPIO 45 |
-| Attack Standby (Low) | GPIO 46 |
-| AI Processing | GPIO 48 |
+| Attack Active (High) | RGB_BUILTIN |
+| Attack Standby (Low) | RGB_BUILTIN |
+| AI Processing | RGB_BUILTIN |
 | Deep Sleep | RGB_BUILTIN |
 
 ---
@@ -213,7 +219,7 @@
 
 | Function | ESP32-S3 GPIO |
 |----------|---------------|
-| MOSFET Gate | GPIO 40 |
+| MOSFET Gate | -1 (not used) |
 
 ---
 
@@ -260,4 +266,4 @@
 
 ---
 
-**Last Updated:** 2025-12-19
+**Last Updated:** 2025-12-21

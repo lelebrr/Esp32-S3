@@ -56,10 +56,13 @@ void my_touch_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data) {
     uint16_t tx, ty;
 
     if (tft.getTouch(&tx, &ty)) {
-        Serial.printf("[TOUCH] x=%d y=%d\n", tx, ty);
-        // Map touch coordinates
+        Serial.printf("[TOUCH] Raw: x=%d y=%d | ", tx, ty);
+
+        // Basic mapping logic for rotation 1
         data->point.x = tx;
         data->point.y = ty;
+
+        Serial.printf("LVGL: x=%d y=%d\n", data->point.x, data->point.y);
         data->state = LV_INDEV_STATE_PR;
     } else {
         data->state = LV_INDEV_STATE_REL;
@@ -210,31 +213,32 @@ void create_menu_ui() {
 void setup_lvgl_menu() {
     Serial.println("[DISPLAY] Initializing TFT_eSPI...");
 
-    // CRITICAL: Initialize SPI FSPI bus BEFORE TFT_eSPI
-    // Without this, TFT_eSPI crashes with StoreProhibited
-    SPI.begin(TFT_SCLK, -1, TFT_MOSI, TFT_CS);
-    Serial.println("[SPI] FSPI bus initialized");
+    // Initialize GPIO pins for Display BEFORE tft.init()
+    pinMode(PIN_TFT_CS, OUTPUT);
+    digitalWrite(PIN_TFT_CS, HIGH); // Deselect TFT
 
-    // Initialize GPIO pins
-    pinMode(TFT_CS, OUTPUT);
-    digitalWrite(TFT_CS, HIGH); // Deselect TFT
+    pinMode(PIN_TOUCH_CS, OUTPUT);
+    digitalWrite(PIN_TOUCH_CS, HIGH); // Deselect Touch
+    
+    pinMode(PIN_TFT_DC, OUTPUT);
+    pinMode(PIN_TFT_RST, OUTPUT);
 
-    pinMode(TFT_DC, OUTPUT);
-    pinMode(TFT_RST, OUTPUT);
+    // Reset the display properly
+    digitalWrite(PIN_TFT_RST, LOW);
+    delay(50);
+    digitalWrite(PIN_TFT_RST, HIGH);
+    delay(150);
 
-    // Reset the display
-    digitalWrite(TFT_RST, LOW);
-    delay(10);
-    digitalWrite(TFT_RST, HIGH);
-    delay(120);
-
-    // Backlight ON first (helps with debugging)
+    // Backlight ON (use digitalWrite, not PWM initially)
     pinMode(PIN_TFT_BL, OUTPUT);
     digitalWrite(PIN_TFT_BL, HIGH);
+    Serial.println("[DISPLAY] Backlight ON");
 
-    // Now initialize TFT_eSPI
+    // Now initialize TFT_eSPI (it will init SPI internally with USE_HSPI_PORT)
     tft.init();
-    tft.setRotation(2); // Try rotation 2 (inverted portrait)
+    tft.setRotation(1); // Landscape mode
+    // NOTE: Do NOT call tft.invertDisplay() here - let User_Setup.h TFT_INVERSION_ON handle it
+
     tft.fillScreen(TFT_BLACK);
 
     // Quick test - draw colored rectangles
@@ -253,10 +257,15 @@ void setup_lvgl_menu() {
 
     Serial.println("[DISPLAY] ILI9341 initialized");
 
-    // Touch calibration (adjust if needed)
-    uint16_t calData[5] = {275, 3620, 264, 3532, 1};
+    // Touch calibration for XPT2046 (ILI9341 2.8" module)
+    // Format: {x_min, x_max, y_min, y_max, rotation_mode}
+    // Calibration values for rotation 1 (landscape)
+    uint16_t calData[5] = {300, 3600, 300, 3600, 1};
     tft.setTouch(calData);
+
+    // Test touch is working
     Serial.println("[TOUCH] XPT2046 calibrated");
+    Serial.printf("[TOUCH] CS Pin: GPIO%d, IRQ Pin: GPIO%d\n", PIN_TOUCH_CS, PIN_TOUCH_IRQ);
 
     // Initialize LVGL
     lv_init();

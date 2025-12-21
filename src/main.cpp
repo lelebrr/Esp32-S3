@@ -208,7 +208,9 @@ void setup() {
     xTaskCreatePinnedToCore(taskNetworkManager, "Net", 4096, NULL, 1, &hNetTask, 1);
     xTaskCreatePinnedToCore(taskAttackEngine, "Attacks", 8192, NULL, 5, &hAttackTask, 0);
     xTaskCreatePinnedToCore(taskGestureSensor, "Gesture", 4096, NULL, 3, &hGestureTask, 1);
-    xTaskCreatePinnedToCore(taskGPS, "GPS", 4096, NULL, 2, &hGPSTask, 0);
+    // xTaskCreatePinnedToCore(taskGPS, "GPS", 4096, NULL, 1, &hGPSTask, 1);
+
+    Serial.println("[SYSTEM] Boot sequence complete.");
 }
 
 void loop() { vTaskDelay(1000 / portTICK_PERIOD_MS); }
