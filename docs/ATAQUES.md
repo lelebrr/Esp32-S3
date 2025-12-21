@@ -1,7 +1,7 @@
 ﻿# ⚔️ Ataques e Funcionalidades Avançadas
 
-Doc> **Explicação técnica de como cada ataque funciona.**
-> Última atualização: 2025-12-19
+> **Explicação técnica de como cada ataque funciona.**  
+> Última atualização: 2025-12-21
 
 ---
 

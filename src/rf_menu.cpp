@@ -117,11 +117,6 @@ bool loadCapturedFile(const char* filename) {
             Serial.printf("[RF_MENU] Loaded Flipper file: %s\n", filename);
             return true;
         }
-        // Try Flipper RAW format
-        if (RFCore::loadFlipperRawFormat(fullPath, &sig)) {
-            Serial.printf("[RF_MENU] Loaded Flipper RAW file: %s\n", filename);
-            return true;
-        }
     }
     
     // Try native format

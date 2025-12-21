@@ -1,15 +1,3 @@
-/**
- * @file rf_core.h
- * @brief Sub-GHz RF Core and Attack Implementation
- * 
- * Low-level driver and attack logic for the CC1101 transceiver.
- * Handles frequency management, modulation, jamming, and signal capture.
- * 
- * @author Monster S3 Team
- * @version 2.0
- * @date 2025
- */
-
 #ifndef RF_CORE_H
 #define RF_CORE_H
 
@@ -76,9 +64,7 @@ typedef enum {
     RF_ATTACK_SCAN_PROTOCOL,
     RF_ATTACK_SPECTRUM_ANALYZER,
     RF_ATTACK_BRUTE_FORCE,
-    RF_ATTACK_DEBRUIJN,
-    RF_ATTACK_ROLLJAM,           // Jam + Capture rolling code
-    RF_ATTACK_ROLLBACK           // Rolling code resync exploit
+    RF_ATTACK_DEBRUIJN
 } RFAttackType;
 
 // ============================
@@ -123,49 +109,86 @@ typedef struct {
     uint8_t numSamples;
 } SpectrumData;
 
-// ============================
-// ROLLING CODE BUFFER (for Rolljam/Rollback)
-// ============================
-#define ROLLING_CODE_BUFFER_SIZE 16
-
-typedef struct {
-    uint8_t rawCodes[ROLLING_CODE_BUFFER_SIZE][REPLAY_BUFFER_SIZE];  // Raw captured codes
-    uint16_t codeLengths[ROLLING_CODE_BUFFER_SIZE];                   // Length of each code
-    uint32_t timestamps[ROLLING_CODE_BUFFER_SIZE];                    // Capture timestamps
-    int8_t rssiValues[ROLLING_CODE_BUFFER_SIZE];                      // RSSI at capture
-    RFProtocol protocols[ROLLING_CODE_BUFFER_SIZE];                   // Protocol of each code
-    uint8_t codeCount;                                                // Number of codes captured
-    uint8_t usedCodes;                                                // Codes already replayed
-    float frequency;                                                  // Capture frequency
-    int8_t targetRssi;                                                // Minimum RSSI to capture
-    bool valid;
-} RollingCodeBuffer;
-
 // ============================================================================
 // RF CORE CLASS
 // ============================================================================
 class RFCore {
 public:
-    // ... (previous methods) ...
-
-    /**
-     * @brief Execute the Rollback sequence (replay captured codes)
-     * @return true if started
-     */
-    static bool executeRollbackAttack();       // Execute rollback sequence
+    // ============================
+    // INITIALIZATION
+    // ============================
+    static bool init();
+    static void stop();
+    static bool isInitialized();
     
-    /**
-     * @brief Start "Smart" Rollback Capture
-     * @param freq Frequency to listen on
-     * @param minRssi Minimum RSSI to trigger capture (filter noise)
-     */
-    static void startRollbackSmart(float freq, int8_t minRssi);
-
+    // ============================
+    // CONFIGURATION
+    // ============================
+    static void setFrequency(float freq);
+    static float getFrequency();
+    static void setTxPower(int dbm);
+    static void setModulation(int mod);
+    static void setDataRate(float kbps);
+    static void setBandwidth(float khz);
+    static void setDeviation(float khz);
+    static void setSyncWord(uint16_t sync);
     
-    /**
-     * @brief Get buffer containing captured rolling codes
-     */
-    static RollingCodeBuffer* getRollingCodeBuffer();
+    // ============================
+    // JAMMER ATTACKS
+    // ============================
+    static void startJammerContinuous(float freq);
+    static void startJammerBurst(float freq, uint16_t burstMs, uint16_t pauseMs);
+    static void startJammerSmart(float freq);  // Detect & jam only active transmissions
+    static void stopJammer();
+    static bool isJamming();
+    static void updateJammer();  // Call in loop
+    
+    // ============================
+    // CAPTURE / RECEIVE
+    // ============================
+    static bool startReceive(float freq);
+    static void stopReceive();
+    static bool hasSignal();
+    static CapturedSignal getLastCapture();
+    static int8_t getRSSI();
+    static bool isReceiving();
+    
+    // ============================
+    // REPLAY / TRANSMIT
+    // ============================
+    static bool transmitRaw(uint8_t* data, uint16_t len);
+    static bool transmitCode(uint32_t code, uint8_t bits, RFProtocol proto);
+    static bool replayLast();
+    static void startGhostReplay(uint16_t minDelayMs, uint16_t maxDelayMs, uint8_t repeats);
+    static void stopGhostReplay();
+    static bool isGhostActive();
+    
+    // ============================
+    // SCANNER / SPECTRUM
+    // ============================
+    static void startFrequencyScan(float startFreq, float endFreq, float step);
+    static void stopFrequencyScan();
+    static SpectrumData getSpectrumData();
+    static float findStrongestFrequency();
+    static void updateScanner();
+    
+    // ============================
+    // PROTOCOL DETECTION
+    // ============================
+    static RFProtocol detectProtocol(uint8_t* data, uint16_t len);
+    static bool decodeProtocol(CapturedSignal* signal);
+    static const char* getProtocolName(RFProtocol proto);
+    
+    // ============================
+    // BRUTE FORCE ATTACKS
+    // ============================
+    static void startBruteForce(float freq, uint8_t bits, RFProtocol proto);
+    static void startDeBruijn(float freq, uint8_t bits);
+    static void stopBruteForce();
+    static bool isBruteForcing();
+    static uint32_t getBruteProgress();
+    static uint32_t getBruteTotal();
+    static void updateBruteForce();
     
     // ============================
     // STATUS & DIAGNOSTICS
@@ -182,7 +205,6 @@ public:
     static bool loadSignal(const char* filename, CapturedSignal* sig);
     static bool saveFlipperFormat(const char* filename, CapturedSignal* sig);
     static bool loadFlipperFormat(const char* filename, CapturedSignal* sig);
-    static bool loadFlipperRawFormat(const char* filename, CapturedSignal* sig);  // RAW_Data support
 
 private:
     static bool _initialized;
@@ -229,13 +251,6 @@ private:
     // Internal helpers
     static void sendNoise(uint16_t bytes);
     static void encodeProtocol(uint32_t code, uint8_t bits, RFProtocol proto, uint8_t* out, uint16_t* outLen);
-    
-    // Rolljam/Rollback state
-    static bool _rolljamActive;
-    static bool _rollbackActive;
-    static RollingCodeBuffer _rollingCodes;
-    static uint32_t _rolljamJamStart;
-    static bool _rolljamPhaseCapture;    // true = capturing, false = jamming
 };
 
 #endif // RF_CORE_H

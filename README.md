@@ -1,165 +1,151 @@
-﻿# 🦎 Lele Origin 1.0 - Arsenal Completo de Pentesting
+﻿# 🦎 Monster S3 - Arsenal Completo de Pentesting
 
 <p align="center">
-  <strong>Firmware ESP32-S3 com arsenal completo de ferramentas de segurança ofensiva</strong>
+  <strong>Firmware ESP32-S3 com arsenal completo de ferramentas de segurança ofensiva</strong><br>
+  <em>Atualizado: 2025-12-21</em>
 </p>
 
 ---
 
 ## 📋 Sobre
 
-O **Lele Origin** é um firmware ESP32-S3 com arsenal completo para operações de segurança ofensiva, incluindo ferramentas avançadas de pentesting. Badge Black Hat completo em um dispositivo ESP32-S3.
+O **Monster S3** é um firmware ESP32-S3 com arsenal completo para operações de segurança ofensiva, incluindo ferramentas avançadas de pentesting. Badge Black Hat completo em um dispositivo ESP32-S3.
 
-### 🔧 Hardware Principal: ESP32-S3-WROOM-1 N16R8
+### 🔧 Hardware Principal: ESP32-S3-WROOM-1 N8R8
 
 | Recurso | Especificação |
 |---------|---------------|
 | **MCU** | ESP32-S3 Dual-Core 240MHz Xtensa LX7 |
-| **Flash** | 16MB QIO 80MHz |
+| **Flash** | 8MB QIO 80MHz |
 | **PSRAM** | 8MB Octal SPI 120MHz |
 | **Display** | ILI9341 2.8" 320x240 TFT + Touch XPT2046 |
-| **Áudio** | PCM5102A DAC I2S + PAM8403 Amp + Speaker 4Ω 3W |
+| **Áudio** | PCM5102A DAC I2S |
 | **RTC** | DS3231 com bateria CR2032 |
-| **Sensores** | PAJ7620U2 (gestos), DS18B20 (temperatura) |
-| **RF** | CC1101 (433MHz), NRF24L01+PA+LNA (2.4GHz) |
-| **NFC** | PN532 I2C (MIFARE, NTAG, FeliCa) |
-| **IR** | Multi-zone: 5x TSOP38238 RX + TX via YS-IRTM |
-| **GPS** | NEO-6M com antena externa |
-| **Bateria** | 4x 18650 via Shield V3 (35h autonomia) |
-| **Deep Sleep** | <5µA com wake por gesto ou timer |
+| **Sensores** | PAJ7620U2 (gestos 9 direções) |
+| **RF** | CC1101 (315/433/868MHz) |
+| **NFC** | PN532 I2C (MIFARE, NTAG) |
+| **IR** | YS-IRTM UART (NEC Protocol) |
+| **GPS** | NEO-6M UART2 |
 
 ---
 
-### ✨ Arsenal Completo de Pentesting
+## ✨ Arsenal de Ataques
 
-| Módulo | Recursos | Ataques |
-|--------|----------|---------|
-| 📡 **WiFi Evil Twin + Deauth** | Scan redes, AP fake SSID igual, deauth floods bursts 10pkts/100ms | Evil Twin + Deauth |
-| 📶 **BLE Keyboard Inject** | ESP32-S3 como HID via NimBLE, injeta payloads | Rubber Ducky BLE |
-| 🔌 **UART Keylogger** | Buffer circular 1K IRAM, AES criptografado SD | Hardware Keylogger |
-| 💳 **NFC Skimmer** | PN532 I2C, lê MIFARE 1K (nested attack), copia UID + setores | RFID Cloning |
-| 🔀 **Persistence** | DNS poisoning, HTTPS POST logs, ICMP tunneling | Backdoor Implants |
-| 🛡️ **Stealth Total** | Deep sleep 90%, MAC spoof random 5min, no serial debug | Zero Detection |
-| 🚀 **Performance** | 240MHz dual-core, PSRAM 120MHz, DMA para I2S/SPI/UART | High-Speed Attacks |
-| 🤖 **IA Local** | Q-Learning + TensorFlow Lite, aprende ataques automaticamente | Adaptive Attacks |
+| Categoria | Ataques Disponíveis |
+|-----------|---------------------|
+| 📡 **WiFi** | Deauth, Beacon Spam, Evil Twin, Wardriving |
+| 📶 **BLE** | Spam, Sour Apple, Swift Pair, Fast Pair |
+| 🔀 **RF SubGHz** | Jammer (433/315/868), Capture, Replay, Ghost Replay, Brute Force, Spectrum Analyzer |
+| 💳 **NFC** | Clone, Phishing, Fault Injection |
+| 🔴 **IR** | TV-B-Gone (NEC), Clone |
+| 🔌 **USB** | BadUSB, Exfiltration |
 
-**Total: 41+ vetores de ataque em 9 tecnologias + IA adaptativa**
+**Total: 30+ vetores de ataque**
 
 ---
 
-### 🔒 Segurança & Core
+## 📂 Estrutura do Projeto
 
-- **Aggressive SD Boot:** Wipe automático do flash interno a cada boot. Operação 100% via SD.
-- **Secure Boot (Paranoid Mode):** Verificação CRC32, monitoramento térmico/voltagem.
-- **Thermal Throttling:** 240MHz → 160MHz quando temperatura > 70°C (DS18B20).
-- **Power Gating:** IRF520 MOSFET desliga módulos inativos (CC1101, NRF24, GPS, Audio).
-- **Gesture Wake:** PAJ7620U2 acorda de deep sleep com gesto.
-- **Battery Modes:** Economy (14d), Balanced (5d), Force (8h).
+```
+src/
+├── main.cpp              # Ponto de entrada, FreeRTOS tasks
+├── attacks_manager.cpp   # Gerenciador central de ataques
+├── rf_core.cpp           # CC1101 RF completo (783 linhas)
+├── gesture_sensor.cpp    # PAJ7620U2 9 gestos
+├── gps_driver.cpp        # GPS NEO-6M + wardriving
+├── lvgl_menu.cpp         # Interface LVGL com touch + gestos
+├── s3_driver.cpp         # HAL do hardware
+├── rf_menu.cpp           # Menu RF com seleção de frequência
+├── gps_menu.cpp          # Interface GPS LVGL
+├── wardriving.cpp        # Logger WiFi/BLE com GPS
+├── q_learn_ia.cpp        # Q-Learning IA adaptativa
+├── rtc_driver.cpp        # DS3231 RTC
+├── YsIrtm.cpp            # Driver IR NEC
+├── web_dashboard.cpp     # Dashboard HTTP
+├── core/
+│   └── aggressive_sd.cpp # Boot SD prioritário via HSPI
+└── modules/
+    └── piezo_driver.cpp  # Buzzer e sons
+
+include/
+├── pin_config.h          # Definições de pinos GPIO
+├── rf_core.h             # API RF (jammers, capture, replay, brute)
+├── gesture_sensor.h      # API gestos 9 direções + cursor mode
+├── gps_driver.h          # API GPS + exportação KML
+├── attacks_manager.h     # Enum AttackType com 30+ ataques
+├── s3_driver.h           # HAL class MonsterDriver
+├── globals.h             # Estado global e structs
+├── precompiler_flags.h   # Flags de compilação
+└── lv_conf.h             # Configuração LVGL
+```
 
 ---
 
 ## 🔧 Instalação
 
-### Gravando o Firmware (ESP32-S3-N16R8)
+### Compilando com PlatformIO
 
 ```bash
-# Via esptool
-esptool.py --port COM3 --chip esp32s3 write_flash 0x0 Lele-S3-N16R8.bin
+# Instalar PlatformIO
+pip install platformio
 
-# Ou compile via PlatformIO
-pio run -e CYD-S3-N16R8 -t upload
+# Compilar
+cd "Esp32-S3"
+pio run
+
+# Upload
+pio run -t upload
+
+# Monitor Serial
+pio device monitor
 ```
 
-### Monitorando
+### Ambiente: `Monster_S3` (platformio.ini)
 
-```bash
-pio device monitor -e CYD-S3-N16R8
-```
+- **Board:** `esp32-s3-devkitc-1`
+- **Partition:** `custom_8Mb_S3.csv`
+- **PSRAM:** Octal 8MB
+- **USB CDC:** Habilitado
 
 ---
 
 ## 📚 Documentação
 
-A documentação completa está na pasta [docs/](docs/):
-
-- [Início Rápido](docs/INICIO_RAPIDO.md)
-- [Hardware ESP32-S3](docs/HARDWARE.md)
-- [Pinout Completo](docs/ESP32_S3_COMPLETE_PINOUT.md)
-- [Funcionalidades](docs/FUNCIONALIDADES.md)
-- [Compilação](docs/COMPILACAO.md)
-- [Thermal/Power Management](docs/THERMAL_POWER_MANAGEMENT.md)
-- [🤖 IA Local - Aprendizado Contínuo](docs/IA_LOCAL_APRENDIZADO.md)
+| Documento | Descrição |
+|-----------|-----------|
+| [HARDWARE.md](docs/HARDWARE.md) | Diagrama de hardware |
+| [ESP32_S3_COMPLETE_PINOUT.md](docs/ESP32_S3_COMPLETE_PINOUT.md) | Pinout completo |
+| [FUNCIONALIDADES.md](docs/FUNCIONALIDADES.md) | Lista de funcionalidades |
+| [GPS_MODULE.md](docs/GPS_MODULE.md) | Módulo GPS |
+| [CC1101_MODULE.md](docs/CC1101_MODULE.md) | Módulo RF SubGHz |
 
 ---
 
-## 🤖 IA Local - Aprendizado Adaptativo
+## 🔌 Pinos GPIO (Resumo)
 
-### Sistema de IA Integrado
-
-O **Lele Origin** inclui **IA local completa** baseada em Q-Learning + TensorFlow Lite Micro:
-
-#### **Funcionalidades IA**
-
-- **Q-Learning Table:** 64 estados x 8 ações (2KB em PSRAM)
-- **Brute Force Brasil:** 🇧🇷 Lista inteligente de PINs brasileiros (CVE, Exploit-DB, Reclame Aqui)
-- **Aprendizado Contextual:** GPS, temperatura, bateria, gestos
-- **Atualização Automática:** CVEs do Exploit-DB, NIST NVD + fontes brasileiras
-- **Geração Inteligente:** Cria variantes de ataques funcionais
-- **Feedback Manual:** Botões GPIO34/35 para treinamento
-- **Modo Stealth:** Ativação automática por condições
-
-#### **Como Usar**
-
-1. Menu > "IA Aprendiz" > "Atualizar CVEs"
-2. Execute ataques e dê feedback "Certo/Errado"
-3. Menu > "Gerar Novo Ataque" para variantes inteligentes
-4. IA aprende e otimiza automaticamente
-
-#### **Arquivos IA Criados**
-
-```
-src/core/ai_attack_learner.*     # Core Q-Learning + TFLite
-src/core/menu_items/AIMenu.*    # Interface touchscreen
-sd_files/ai_example/             # Templates Q-table e modelo
-```
-
-**🎯 IA evolui com você - roda 100% offline após primeira atualização!**
-
-## 🔌 Hardware Suportado
-
-| Placa | Status | Notas |
-|-------|--------|-------|
-| **ESP32-S3-WROOM-1 N16R8** | ✅ Principal | 16MB Flash + 8MB PSRAM |
-| CYD-2USB | ⚠️ Legacy | 4MB Flash, sem PSRAM |
-
-### Módulos Externos Integrados
-
-| Módulo | Interface | Função |
-|--------|-----------|--------|
-| CC1101 | SPI3 (CS=5) | SubGHz RF 433MHz |
-| NRF24L01+PA+LNA | SPI3 (CS=7) | 2.4GHz RF longo alcance |
-| PN532 | I2C (0x24) | RFID/NFC Read/Write |
-| DS3231 | I2C (0x68) | RTC com bateria |
-| PAJ7620U2 | I2C (0x73) | Sensor de gestos |
-| PCM5102A | I2S | DAC áudio hi-fi |
-| DS18B20 | 1-Wire | Sensor temperatura |
-| NEO-6M | UART1 | GPS |
-| YS-IRTM | UART2 | IR transceiver |
-
----
-
-## 🙏 Créditos
-
-Baseado no projeto [Lele](https://github.com/pr3y/Lele) - agradecimentos especiais a toda a comunidade.
-
-Veja [CONTRIBUIDORES](docs/CONTRIBUIDORES.md) para a lista completa.
+| Função | Pinos |
+|--------|-------|
+| **Display SPI** | CS=10, DC=12, RST=11, MOSI=13, SCK=14, BL=21 |
+| **Touch** | CS=15, IRQ=16 |
+| **SD Card (HSPI)** | CS=39, SCK=40, MOSI=41, MISO=42 |
+| **CC1101** | CS=46, GDO0=47, EN=48 |
+| **I2C** | SDA=8, SCL=9 |
+| **GPS UART2** | RX=17, TX=18 |
+| **IR YS-IRTM** | TX=3, RX=27 |
+| **I2S Audio** | BCK=43, WS=44, DOUT=38 |
+| **Joystick** | X=4, Y=5, SW=6 |
 
 ---
 
 ## ⚠️ Aviso Legal
 
-O Lele Origin é uma ferramenta para **testes de segurança autorizados**.
-
+O Monster S3 é uma ferramenta para **testes de segurança autorizados**.
 O uso para atividades maliciosas ou não autorizadas é **estritamente proibido**.
 
 Distribuído sob licença **AGPL**. Use por sua conta e risco.
+
+---
+
+**Versão:** Monster S3 v1.0  
+**Data:** 2025-12-21
+
