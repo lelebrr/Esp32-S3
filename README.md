@@ -1,150 +1,80 @@
-﻿# 🦎 Monster S3 - Arsenal Completo de Pentesting
+﻿# Monster S3 Firmware
 
-<p align="center">
-  <strong>Firmware ESP32-S3 com arsenal completo de ferramentas de segurança ofensiva</strong><br>
-  <em>Atualizado: 2025-12-21</em>
-</p>
+## ESP32-S3-DevKitC-1 N8R2 Pentest Device
 
----
-
-## 📋 Sobre
-
-O **Monster S3** é um firmware ESP32-S3 com arsenal completo para operações de segurança ofensiva, incluindo ferramentas avançadas de pentesting. Badge Black Hat completo em um dispositivo ESP32-S3.
-
-### 🔧 Hardware Principal: ESP32-S3-WROOM-1 N8R8
-
-| Recurso | Especificação |
-|---------|---------------|
-| **MCU** | ESP32-S3 Dual-Core 240MHz Xtensa LX7 |
-| **Flash** | 8MB QIO 80MHz |
-| **PSRAM** | 8MB Octal SPI 120MHz |
-| **Display** | ILI9341 2.8" 320x240 TFT + Touch XPT2046 |
-| **Áudio** | PCM5102A DAC I2S |
-| **RTC** | DS3231 com bateria CR2032 |
-| **Sensores** | PAJ7620U2 (gestos 9 direções) |
-| **RF** | CC1101 (315/433/868MHz) |
-| **NFC** | PN532 I2C (MIFARE, NTAG) |
-| **IR** | YS-IRTM UART (NEC Protocol) |
-| **GPS** | NEO-6M UART2 |
+Complete firmware for offensive security toolkit supporting 27+ attack vectors.
 
 ---
 
-## ✨ Arsenal de Ataques
-
-| Categoria | Ataques Disponíveis |
-|-----------|---------------------|
-| 📡 **WiFi** | Deauth, Beacon Spam, Evil Twin, Wardriving |
-| 📶 **BLE** | Spam, Sour Apple, Swift Pair, Fast Pair |
-| 🔀 **RF SubGHz** | Jammer (433/315/868), Capture, Replay, Ghost Replay, Brute Force, Spectrum Analyzer |
-| 💳 **NFC** | Clone, Phishing, Fault Injection |
-| 🔴 **IR** | TV-B-Gone (NEC), Clone |
-| 🔌 **USB** | BadUSB, Exfiltration |
-
-**Total: 30+ vetores de ataque**
-
----
-
-## 📂 Estrutura do Projeto
-
-```
-src/
-├── main.cpp              # Ponto de entrada, FreeRTOS tasks
-├── attacks_manager.cpp   # Gerenciador central de ataques
-├── rf_core.cpp           # CC1101 RF completo (783 linhas)
-├── gesture_sensor.cpp    # PAJ7620U2 9 gestos
-├── gps_driver.cpp        # GPS NEO-6M + wardriving
-├── lvgl_menu.cpp         # Interface LVGL com touch + gestos
-├── s3_driver.cpp         # HAL do hardware
-├── rf_menu.cpp           # Menu RF com seleção de frequência
-├── gps_menu.cpp          # Interface GPS LVGL
-├── wardriving.cpp        # Logger WiFi/BLE com GPS
-├── q_learn_ia.cpp        # Q-Learning IA adaptativa
-├── rtc_driver.cpp        # DS3231 RTC
-├── YsIrtm.cpp            # Driver IR NEC
-├── web_dashboard.cpp     # Dashboard HTTP
-├── core/
-│   └── aggressive_sd.cpp # Boot SD prioritário via HSPI
-└── modules/
-    └── piezo_driver.cpp  # Buzzer e sons
-
-include/
-├── pin_config.h          # Definições de pinos GPIO
-├── rf_core.h             # API RF (jammers, capture, replay, brute)
-├── gesture_sensor.h      # API gestos 9 direções + cursor mode
-├── gps_driver.h          # API GPS + exportação KML
-├── attacks_manager.h     # Enum AttackType com 30+ ataques
-├── s3_driver.h           # HAL class MonsterDriver
-├── globals.h             # Estado global e structs
-├── precompiler_flags.h   # Flags de compilação
-└── lv_conf.h             # Configuração LVGL
-```
-
----
-
-## 🔧 Instalação
-
-### Compilando com PlatformIO
+## Quick Start
 
 ```bash
-# Instalar PlatformIO
-pip install platformio
-
-# Compilar
-cd "Esp32-S3"
+# Clone and build
 pio run
 
-# Upload
+# Upload to device
 pio run -t upload
 
-# Monitor Serial
+# Monitor serial output
 pio device monitor
 ```
 
-### Ambiente: `Monster_S3` (platformio.ini)
+---
 
-- **Board:** `esp32-s3-devkitc-1`
-- **Partition:** `custom_8Mb_S3.csv`
-- **PSRAM:** Octal 8MB
-- **USB CDC:** Habilitado
+## Hardware
+
+| Component | Model | Interface |
+|-----------|-------|-----------|
+| MCU | ESP32-S3-WROOM-1 | - |
+| Display | MSP2402 ILI9341 2.4" | SPI (FSPI) |
+| Touch | XPT2046 | SPI (shared) |
+| NFC | PN532 | I2C |
+| RF | CC1101 | SPI (HSPI) |
+| IR | YS-IRTM | UART |
+| GPS | GY-NEO6MV2 | UART2 |
+| RTC | DS3231 | I2C |
+| Audio | PCM5102A | I2S |
+| Gesture | PAJ7620U2 | I2C |
 
 ---
 
-## 📚 Documentação
+## Attack Categories
 
-| Documento | Descrição |
-|-----------|-----------|
-| [HARDWARE.md](docs/HARDWARE.md) | Diagrama de hardware |
-| [ESP32_S3_COMPLETE_PINOUT.md](docs/ESP32_S3_COMPLETE_PINOUT.md) | Pinout completo |
-| [FUNCIONALIDADES.md](docs/FUNCIONALIDADES.md) | Lista de funcionalidades |
-| [GPS_MODULE.md](docs/GPS_MODULE.md) | Módulo GPS |
-| [CC1101_MODULE.md](docs/CC1101_MODULE.md) | Módulo RF SubGHz |
-
----
-
-## 🔌 Pinos GPIO (Resumo)
-
-| Função | Pinos |
-|--------|-------|
-| **Display SPI** | CS=10, DC=12, RST=11, MOSI=13, SCK=14, BL=21 |
-| **Touch** | CS=15, IRQ=16 |
-| **SD Card (HSPI)** | CS=39, SCK=40, MOSI=41, MISO=42 |
-| **CC1101** | CS=37, GDO0=47, EN=48 |
-| **I2C** | SDA=8, SCL=9 |
-| **GPS UART2** | RX=17, TX=18 |
-| **IR YS-IRTM** | TX=3, RX=27 |
-| **I2S Audio** | BCK=43, WS=44, DOUT=38 |
-| **Joystick** | X=4, Y=5, SW=6 |
+| Category | Count | Status |
+|----------|-------|--------|
+| BLE | 4 | ✅ Working |
+| WiFi | 5 | ✅ Working |
+| RF SubGHz | 10 | ⚠️ Stub (CC1101 conflict) |
+| NFC | 3 | ✅ Real PN532 |
+| IR | 3 | ✅ YS-IRTM |
+| USB | 2 | ✅ Real HID |
 
 ---
 
-## ⚠️ Aviso Legal
+## Web Dashboard
 
-O Monster S3 é uma ferramenta para **testes de segurança autorizados**.
-O uso para atividades maliciosas ou não autorizadas é **estritamente proibido**.
+- **SSID**: `Monster_S3` (hidden)
+- **Password**: `lele2025`
+- **URL**: http://192.168.4.1
 
-Distribuído sob licença **AGPL**. Use por sua conta e risco.
+### API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/status` | System status |
+| `GET /api/attack/{type}` | Start attack |
+| `GET /api/stop` | Stop all attacks |
+| `GET /api/nfc/read` | Read NFC card |
+| `POST /api/usb/payload` | Execute USB script |
 
 ---
 
-**Versão:** Monster S3 v1.0  
-**Data:** 2025-12-21
+## Pin Configuration
+
+See [pin_config.h](include/pin_config.h) for complete pinout.
+
+---
+
+## License
+
+Educational use only. Use responsibly.

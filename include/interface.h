@@ -1,68 +1,60 @@
+/**
+ * @file interface.h
+ * @brief Hardware Interface Abstraction - Monster S3 Firmware
+ * 
+ * Provides stubs for interface functions.
+ * The main firmware uses pin_config.h and lvgl_menu for UI.
+ */
+
 #pragma once
 #include <Arduino.h>
-#include <vector>
 
-/***************************************************************************************
-** Function name: _setup_gpio()
-** Location: main.cpp
-** Description:   initial setup for the device
-***************************************************************************************/
+// ============================================================================
+// INTERFACE FUNCTION DECLARATIONS
+// ============================================================================
+
+/**
+ * @brief Initial GPIO setup for the device
+ */
 void _setup_gpio();
 
-/***************************************************************************************
-** Function name: _post_setup_gpio()
-** Location: main.cpp
-** Description:   second stage gpio setup to make a few functions work
-***************************************************************************************/
+/**
+ * @brief Second stage GPIO setup
+ */
 void _post_setup_gpio();
 
-/***************************************************************************************
-** Function name: getBattery()
-** location: display.cpp
-** Description:   Delivers the battery value from 1-100
-***************************************************************************************/
+/**
+ * @brief Get battery percentage (0-100)
+ */
 int getBattery();
 
-
-/*********************************************************************
-** Function: setBrightness
-** location: settings.cpp
-** set brightness value
-**********************************************************************/
+/**
+ * @brief Set display brightness
+ * @param brightval Brightness value (0-255)
+ */
 void _setBrightness(uint8_t brightval);
 
-
-/*********************************************************************
-** Function: InputHandler
-** Handles the variables PrevPress, NextPress, SelPress, AnyKeyPress and EscPress
-**********************************************************************/
+/**
+ * @brief Handle input buttons/touch events
+ */
 void InputHandler(void);
 
-
-/*********************************************************************
-** Function: powerOff
-** location: mykeyboard.cpp
-** Turns off the device (or try to)
-**********************************************************************/
+/**
+ * @brief Power off the device
+ */
 void powerOff();
 
-/*********************************************************************
-** Function: goToDeepSleep
-** location: mykeyboard.cpp
-** Puts the device into DeepSleep
-**********************************************************************/
+/**
+ * @brief Put device into deep sleep
+ */
 void goToDeepSleep();
 
-/*********************************************************************
-** Function: checkReboot
-** location: mykeyboard.cpp
-** Btn logic to turnoff the device (name is odd btw)
-**********************************************************************/
+/**
+ * @brief Check if reboot is requested
+ */
 void checkReboot();
 
-/***************************************************************************************
-** Function name: isCharging()
-** location: interface.cpp
-** Description:   Determines if the device is charging
-***************************************************************************************/
+/**
+ * @brief Check if device is charging
+ */
 bool isCharging();

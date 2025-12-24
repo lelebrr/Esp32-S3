@@ -1,0 +1,65 @@
+{
+    "version": "2.0",
+    "board": "ESP32-S3-WROOM-1 N16R8",
+    "display": {
+        "type": "ST7789",
+        "cs": 10,
+        "dc": 12,
+        "rst": 11,
+        "bl": 21,
+        "sclk": 14,
+        "mosi": 13
+    },
+    "touch": {
+        "type": "XPT2046",
+        "cs": 15,
+        "irq": -1
+    },
+    "sd_card": {
+        "bus": "HSPI",
+        "cs": 39,
+        "sclk": 40,
+        "mosi": 41,
+        "miso": 42
+    },
+    "nfc": {
+        "type": "PN532",
+        "mode": "I2C",
+        "sda": 8,
+        "scl": 9,
+        "irq": 16
+    },
+    "cc1101": {
+        "cs": 17,
+        "gdo0": 4,
+        "gdo2": 5
+    },
+    "ir": {
+        "tx": 18,
+        "rx": [
+            19,
+            20,
+            35,
+            36,
+            37
+        ]
+    },
+    "audio": {
+        "i2s_bclk": 26,
+        "i2s_lrc": 25,
+        "i2s_dout": 27
+    },
+    "rtc": {
+        "type": "DS3231",
+        "sda": 8,
+        "scl": 9
+    },
+    "gps": {
+        "type": "NEO-6M",
+        "rx": 44,
+        "tx": 43
+    },
+    "fault_mosfet": 38,
+    "buzzer": 48,
+    "led_ws2812": 47
+}

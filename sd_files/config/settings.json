@@ -1,0 +1,17 @@
+{
+  "mode": "stealth",
+  "volume": 50,
+  "cpu_freq_mhz": 240,
+  "display_brightness": 80,
+  "auto_backup_interval": 10,
+  "tts_enabled": true,
+  "wifi_enabled": true,
+  "ble_enabled": true,
+  "nfc_enabled": true,
+  "subghz_enabled": true,
+  "ir_enabled": true,
+  "ai_learning": true,
+  "stealth_leds": false,
+  "language": "pt-BR",
+  "timezone": "America/Sao_Paulo"
+}

@@ -1,8 +1,76 @@
+/**
+ * @file rf_core.cpp
+ * @brief RF SubGHz Core Driver (CC1101) - Custom SPI Implementation
+ * 
+ * Uses HSPI (SPI2) for CC1101 to avoid conflict with TFT_eSPI (FSPI/SPI3)
+ * Implements raw SPI communication to CC1101 without external library
+ * 
+ * @author Monster S3 Team
+ * @date 2025-12-23
+ */
+
 #include "rf_core.h"
 #include "pin_config.h"
 #include "s3_driver.h"
-#include <ELECHOUSE_CC1101_SRC_DRV.h>
+#include <SPI.h>
 #include <SD.h>
+
+// ============================================================================
+// CC1101 REGISTER DEFINITIONS
+// ============================================================================
+// Configuration registers
+#define CC1101_IOCFG2   0x00
+#define CC1101_IOCFG1   0x01
+#define CC1101_IOCFG0   0x02
+#define CC1101_FIFOTHR  0x03
+#define CC1101_PKTLEN   0x06
+#define CC1101_PKTCTRL1 0x07
+#define CC1101_PKTCTRL0 0x08
+#define CC1101_FSCTRL1  0x0B
+#define CC1101_FREQ2    0x0D
+#define CC1101_FREQ1    0x0E
+#define CC1101_FREQ0    0x0F
+#define CC1101_MDMCFG4  0x10
+#define CC1101_MDMCFG3  0x11
+#define CC1101_MDMCFG2  0x12
+#define CC1101_MDMCFG1  0x13
+#define CC1101_MDMCFG0  0x14
+#define CC1101_DEVIATN  0x15
+#define CC1101_MCSM2    0x16
+#define CC1101_MCSM1    0x17
+#define CC1101_MCSM0    0x18
+#define CC1101_FOCCFG   0x19
+#define CC1101_FREND1   0x21
+#define CC1101_FREND0   0x22
+#define CC1101_FSCAL3   0x23
+#define CC1101_FSCAL2   0x24
+#define CC1101_FSCAL1   0x25
+#define CC1101_FSCAL0   0x26
+#define CC1101_PATABLE  0x3E
+#define CC1101_TXFIFO   0x3F
+#define CC1101_RXFIFO   0x3F
+
+// Strobe commands
+#define CC1101_SRES     0x30  // Reset
+#define CC1101_SCAL     0x33  // Calibrate
+#define CC1101_SRX      0x34  // RX mode
+#define CC1101_STX      0x35  // TX mode
+#define CC1101_SIDLE    0x36  // Idle
+#define CC1101_SFRX     0x3A  // Flush RX FIFO
+#define CC1101_SFTX     0x3B  // Flush TX FIFO
+#define CC1101_SNOP     0x3D  // No operation
+
+// Status registers
+#define CC1101_PARTNUM  0x30
+#define CC1101_VERSION  0x31
+#define CC1101_RSSI     0x34
+#define CC1101_MARCSTATE 0x35
+
+// ============================================================================
+// CUSTOM HSPI FOR CC1101
+// ============================================================================
+static SPIClass *cc1101_spi = nullptr;
+static bool cc1101_hw_present = false;
 
 // ============================================================================
 // STATIC MEMBER INITIALIZATION
@@ -45,6 +113,111 @@ float RFCore::_scanCurrent = 433.0f;
 uint8_t RFCore::_scanIndex = 0;
 
 // ============================================================================
+// LOW-LEVEL SPI FUNCTIONS
+// ============================================================================
+static void cc1101_select() {
+    digitalWrite(PIN_CC1101_CS, LOW);
+    delayMicroseconds(10);
+}
+
+static void cc1101_deselect() {
+    digitalWrite(PIN_CC1101_CS, HIGH);
+}
+
+static uint8_t cc1101_spi_transfer(uint8_t data) {
+    return cc1101_spi->transfer(data);
+}
+
+static void cc1101_write_reg(uint8_t addr, uint8_t data) {
+    cc1101_select();
+    cc1101_spi_transfer(addr);
+    cc1101_spi_transfer(data);
+    cc1101_deselect();
+}
+
+static uint8_t cc1101_read_reg(uint8_t addr) {
+    cc1101_select();
+    cc1101_spi_transfer(addr | 0x80);  // Read bit
+    uint8_t result = cc1101_spi_transfer(0);
+    cc1101_deselect();
+    return result;
+}
+
+static uint8_t cc1101_read_status(uint8_t addr) {
+    cc1101_select();
+    cc1101_spi_transfer(addr | 0xC0);  // Status read
+    uint8_t result = cc1101_spi_transfer(0);
+    cc1101_deselect();
+    return result;
+}
+
+static void cc1101_strobe(uint8_t cmd) {
+    cc1101_select();
+    cc1101_spi_transfer(cmd);
+    cc1101_deselect();
+}
+
+static void cc1101_write_burst(uint8_t addr, uint8_t *data, uint8_t len) {
+    cc1101_select();
+    cc1101_spi_transfer(addr | 0x40);  // Burst write
+    for (int i = 0; i < len; i++) {
+        cc1101_spi_transfer(data[i]);
+    }
+    cc1101_deselect();
+}
+
+// ============================================================================
+// CC1101 CONFIGURATION
+// ============================================================================
+static void cc1101_reset() {
+    cc1101_deselect();
+    delayMicroseconds(5);
+    cc1101_select();
+    delayMicroseconds(10);
+    cc1101_deselect();
+    delayMicroseconds(45);
+    cc1101_strobe(CC1101_SRES);
+    delay(10);
+}
+
+static void cc1101_set_frequency(float freq) {
+    // CC1101 frequency formula: F = (FREQ * 26MHz) / 2^16
+    uint32_t freqReg = (uint32_t)(freq * 65536.0f / 26.0f);
+    cc1101_write_reg(CC1101_FREQ2, (freqReg >> 16) & 0xFF);
+    cc1101_write_reg(CC1101_FREQ1, (freqReg >> 8) & 0xFF);
+    cc1101_write_reg(CC1101_FREQ0, freqReg & 0xFF);
+}
+
+static void cc1101_set_mode_tx() {
+    cc1101_strobe(CC1101_SIDLE);
+    cc1101_strobe(CC1101_SFTX);
+    cc1101_strobe(CC1101_STX);
+}
+
+static void cc1101_set_mode_rx() {
+    cc1101_strobe(CC1101_SIDLE);
+    cc1101_strobe(CC1101_SFRX);
+    cc1101_strobe(CC1101_SRX);
+}
+
+static void cc1101_set_mode_idle() {
+    cc1101_strobe(CC1101_SIDLE);
+}
+
+static void cc1101_configure_ask_ook() {
+    // ASK/OOK modulation for garage doors, etc.
+    cc1101_write_reg(CC1101_MDMCFG4, 0xF6);  // Data rate
+    cc1101_write_reg(CC1101_MDMCFG3, 0x83);
+    cc1101_write_reg(CC1101_MDMCFG2, 0x30);  // ASK/OOK, no preamble
+    cc1101_write_reg(CC1101_MDMCFG1, 0x00);
+    cc1101_write_reg(CC1101_FREND0, 0x11);   // PA table index
+    
+    // Max power
+    uint8_t patable[8] = {0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    cc1101_write_burst(CC1101_PATABLE, patable, 8);
+}
+
+// ============================================================================
 // INITIALIZATION
 // ============================================================================
 bool RFCore::init() {
@@ -54,66 +227,66 @@ bool RFCore::init() {
         return false;
     }
 
-    Serial.println("[RF] Initializing CC1101...");
+    Serial.println("[RF] Initializing CC1101 on HSPI...");
 
     // Power ON via MOSFET
     pinMode(PIN_CC1101_EN, OUTPUT);
     digitalWrite(PIN_CC1101_EN, HIGH);
     delay(100);
-
-    // CRITICAL: Initialize HSPI before using CC1101
-    // CC1101 uses HSPI (pins 39-42)
-    SPI.begin(PIN_SD_SCK, PIN_SD_MISO, PIN_SD_MOSI, PIN_CC1101_CS);
-
-    // Configure SPI pins for CC1101 library
-    ELECHOUSE_cc1101.setSpiPin(PIN_SD_SCK, PIN_SD_MISO, PIN_SD_MOSI, PIN_CC1101_CS);
-    ELECHOUSE_cc1101.setGDO(PIN_CC1101_GDO0, -1);
-
-    // Check if CC1101 is present (with timeout protection)
-    bool cc1101Present = false;
-    for (int retry = 0; retry < 3; retry++) {
-        if (ELECHOUSE_cc1101.getCC1101()) {
-            cc1101Present = true;
-            break;
-        }
-        delay(50);
-    }
-
-    if (cc1101Present) {
-        Serial.println("[RF] CC1101 Connection OK!");
-        ELECHOUSE_cc1101.Init();
+    
+    // Configure CS pin
+    pinMode(PIN_CC1101_CS, OUTPUT);
+    digitalWrite(PIN_CC1101_CS, HIGH);
+    
+    // Configure GDO0 pin
+    pinMode(PIN_CC1101_GDO0, INPUT);
+    
+    // Initialize HSPI (SPI2) for CC1101 - separate from TFT FSPI
+    cc1101_spi = new SPIClass(HSPI);
+    cc1101_spi->begin(PIN_SD_SCK, PIN_SD_MISO, PIN_SD_MOSI, PIN_CC1101_CS);
+    cc1101_spi->setFrequency(4000000);  // 4MHz max for CC1101
+    cc1101_spi->setDataMode(SPI_MODE0);
+    
+    // Reset CC1101
+    cc1101_reset();
+    delay(10);
+    
+    // Check if CC1101 is present
+    uint8_t partNum = cc1101_read_status(CC1101_PARTNUM);
+    uint8_t version = cc1101_read_status(CC1101_VERSION);
+    
+    Serial.printf("[RF] CC1101 PartNum: 0x%02X, Version: 0x%02X\n", partNum, version);
+    
+    if (version == 0x14 || version == 0x04) {
+        Serial.println("[RF] CC1101 detected!");
+        cc1101_hw_present = true;
+        
+        // Configure for ASK/OOK @ 433MHz
+        cc1101_set_frequency(433.92f);
+        cc1101_configure_ask_ook();
+        
         _initialized = true;
-
-        // Default configuration
-        setFrequency(FREQ_433);
-        setTxPower(POWER_MAX);
-        setModulation(MOD_ASK_OOK);
-        ELECHOUSE_cc1101.setDRate(4.8);   // 4.8 kbps for garage doors
-        ELECHOUSE_cc1101.setPktFormat(3); // Async serial mode
-
         Serial.println("[RF] CC1101 Ready!");
         return true;
     } else {
-        Serial.println("[RF] CC1101 NOT CONNECTED - Skipping RF init");
-        digitalWrite(PIN_CC1101_EN, LOW); // Power off
-        _initialized = false;
+        Serial.println("[RF] CC1101 NOT DETECTED - check wiring");
+        cc1101_hw_present = false;
+        digitalWrite(PIN_CC1101_EN, LOW);
         return false;
     }
 }
 
 void RFCore::stop() {
-    if (!_initialized) return;
-
-    stopJammer();
-    stopReceive();
-    stopGhostReplay();
-    stopBruteForce();
-    stopFrequencyScan();
-
-    digitalWrite(PIN_CC1101_EN, LOW);
+    if (_initialized && cc1101_hw_present) {
+        cc1101_set_mode_idle();
+    }
     _initialized = false;
+    _jammerActive = false;
+    _receiverActive = false;
+    _ghostActive = false;
+    _bruteActive = false;
+    _scannerActive = false;
     _currentAttack = RF_ATTACK_NONE;
-    Serial.println("[RF] CC1101 Stopped");
 }
 
 bool RFCore::isInitialized() { return _initialized; }
@@ -122,392 +295,286 @@ bool RFCore::isInitialized() { return _initialized; }
 // CONFIGURATION
 // ============================================================================
 void RFCore::setFrequency(float freq) {
-    if (!_initialized) init();
     _currentFreq = freq;
-    ELECHOUSE_cc1101.setMHZ(freq);
-    Serial.printf("[RF] Freq: %.2f MHz\n", freq);
+    if (_initialized && cc1101_hw_present) {
+        cc1101_set_frequency(freq);
+    }
+    Serial.printf("[RF] Frequency set to %.3f MHz\n", freq);
 }
 
 float RFCore::getFrequency() { return _currentFreq; }
 
 void RFCore::setTxPower(int dbm) {
-    if (!_initialized) init();
-    _currentPower = constrain(dbm, POWER_MIN, POWER_MAX);
-    ELECHOUSE_cc1101.setPA(_currentPower);
+    _currentPower = dbm;
+    // Would need different PA table entries for different power levels
 }
 
 void RFCore::setModulation(int mod) {
-    if (!_initialized) init();
     _currentMod = mod;
-    ELECHOUSE_cc1101.setModulation(mod);
+    // Would configure CC1101 for different modulation types
 }
 
-void RFCore::setDataRate(float kbps) {
-    if (!_initialized) init();
-    ELECHOUSE_cc1101.setDRate(kbps);
-}
-
-void RFCore::setBandwidth(float khz) {
-    if (!_initialized) init();
-    ELECHOUSE_cc1101.setRxBW(khz);
-}
-
-void RFCore::setDeviation(float khz) {
-    if (!_initialized) init();
-    ELECHOUSE_cc1101.setDeviation(khz);
-}
-
-void RFCore::setSyncWord(uint16_t sync) {
-    if (!_initialized) init();
-    ELECHOUSE_cc1101.setSyncWord((sync >> 8) & 0xFF, sync & 0xFF);
-}
+void RFCore::setDataRate(float kbps) { }
+void RFCore::setBandwidth(float khz) { }
+void RFCore::setDeviation(float khz) { }
+void RFCore::setSyncWord(uint16_t sync) { }
 
 // ============================================================================
-// JAMMER ATTACKS
+// JAMMER
 // ============================================================================
 void RFCore::startJammerContinuous(float freq) {
-    if (!_initialized) init();
+    if (!_initialized || !cc1101_hw_present) {
+        Serial.println("[RF] CC1101 not available");
+        return;
+    }
+    
+    Serial.printf("[RF] Jammer Continuous @ %.3f MHz\n", freq);
     setFrequency(freq);
-    setModulation(MOD_GFSK);
-    setTxPower(POWER_MAX);
-
+    cc1101_set_mode_tx();
+    
     _jammerActive = true;
     _currentAttack = RF_ATTACK_JAMMER_CONTINUOUS;
-    _burstState = true;
-
-    Serial.printf("[RF] Jammer CONTINUOUS @ %.2f MHz\n", freq);
 }
 
 void RFCore::startJammerBurst(float freq, uint16_t burstMs, uint16_t pauseMs) {
-    if (!_initialized) init();
+    if (!_initialized || !cc1101_hw_present) return;
+    
+    Serial.printf("[RF] Jammer Burst @ %.3f MHz (%dms on, %dms off)\n", freq, burstMs, pauseMs);
     setFrequency(freq);
-    setModulation(MOD_GFSK);
-    setTxPower(POWER_MAX);
-
+    
     _burstDuration = burstMs;
     _burstPause = pauseMs;
     _lastBurstTime = millis();
     _burstState = true;
-
+    
+    cc1101_set_mode_tx();
     _jammerActive = true;
     _currentAttack = RF_ATTACK_JAMMER_BURST;
-
-    Serial.printf("[RF] Jammer BURST @ %.2f MHz (%dms/%dms)\n", freq, burstMs, pauseMs);
 }
 
 void RFCore::startJammerSmart(float freq) {
-    if (!_initialized) init();
+    if (!_initialized || !cc1101_hw_present) return;
+    
+    Serial.printf("[RF] Smart Jammer @ %.3f MHz\n", freq);
     setFrequency(freq);
-    setModulation(MOD_ASK_OOK);
-
+    cc1101_set_mode_rx();  // Start in RX to detect signals
+    
     _jammerActive = true;
     _currentAttack = RF_ATTACK_JAMMER_SMART;
-
-    Serial.printf("[RF] Jammer SMART @ %.2f MHz (detect & jam)\n", freq);
 }
-
-void RFCore::stopJammer() {
-    if (!_jammerActive) return;
-    _jammerActive = false;
-    _currentAttack = RF_ATTACK_NONE;
-    ELECHOUSE_cc1101.SetRx();
-    Serial.println("[RF] Jammer Stopped");
-}
-
-bool RFCore::isJamming() { return _jammerActive; }
 
 void RFCore::updateJammer() {
-    if (!_jammerActive || !_initialized) return;
-
-    switch (_currentAttack) {
-        case RF_ATTACK_JAMMER_CONTINUOUS: sendNoise(64); break;
-
-        case RF_ATTACK_JAMMER_BURST: {
-            uint32_t now = millis();
-            if (_burstState) {
-                sendNoise(64);
-                if (now - _lastBurstTime >= _burstDuration) {
-                    _burstState = false;
-                    _lastBurstTime = now;
-                    ELECHOUSE_cc1101.SetRx();
-                }
-            } else {
-                if (now - _lastBurstTime >= _burstPause) {
-                    _burstState = true;
-                    _lastBurstTime = now;
-                }
+    if (!_jammerActive || !cc1101_hw_present) return;
+    
+    if (_currentAttack == RF_ATTACK_JAMMER_BURST) {
+        uint32_t now = millis();
+        if (_burstState) {
+            if (now - _lastBurstTime >= _burstDuration) {
+                cc1101_set_mode_idle();
+                _burstState = false;
+                _lastBurstTime = now;
             }
-            break;
-        }
-
-        case RF_ATTACK_JAMMER_SMART: {
-            int8_t rssi = ELECHOUSE_cc1101.getRssi();
-            if (rssi > -60) { // Signal detected
-                sendNoise(32);
-            } else {
-                delay(1);
+        } else {
+            if (now - _lastBurstTime >= _burstPause) {
+                cc1101_set_mode_tx();
+                _burstState = true;
+                _lastBurstTime = now;
             }
-            break;
         }
-
-        default: break;
+    } else if (_currentAttack == RF_ATTACK_JAMMER_SMART) {
+        // Check RSSI for activity
+        int8_t rssi = getRSSI();
+        if (rssi > -70) {  // Signal detected
+            cc1101_set_mode_tx();
+            delay(10);
+            cc1101_set_mode_rx();
+        }
     }
 }
 
-void RFCore::sendNoise(uint16_t bytes) {
-    uint8_t noise[64];
-    uint16_t toSend = min((uint16_t)64, bytes);
-
-    for (int i = 0; i < toSend; i++) { noise[i] = random(0, 256); }
-    ELECHOUSE_cc1101.SendData(noise, toSend);
+void RFCore::stopJammer() {
+    if (cc1101_hw_present) {
+        cc1101_set_mode_idle();
+    }
+    _jammerActive = false;
+    _currentAttack = RF_ATTACK_NONE;
+    Serial.println("[RF] Jammer stopped");
 }
+
+bool RFCore::isJamming() { return _jammerActive; }
 
 // ============================================================================
 // CAPTURE / RECEIVE
 // ============================================================================
 bool RFCore::startReceive(float freq) {
-    if (!_initialized) init();
+    if (!_initialized || !cc1101_hw_present) return false;
+    
     setFrequency(freq);
-    setModulation(MOD_ASK_OOK);
-
-    ELECHOUSE_cc1101.SetRx();
+    cc1101_set_mode_rx();
     _receiverActive = true;
-
-    _lastCapture.valid = false;
-    _lastCapture.frequency = freq;
-    _lastCapture.timestamp = millis();
-
-    Serial.printf("[RF] RX Mode @ %.2f MHz\n", freq);
+    Serial.printf("[RF] Receiver started @ %.3f MHz\n", freq);
     return true;
 }
 
 void RFCore::stopReceive() {
+    if (cc1101_hw_present) {
+        cc1101_set_mode_idle();
+    }
     _receiverActive = false;
-    ELECHOUSE_cc1101.setSidle();
 }
 
 bool RFCore::hasSignal() {
-    if (!_receiverActive) return false;
+    if (!_receiverActive || !cc1101_hw_present) return false;
+    return digitalRead(PIN_CC1101_GDO0) == HIGH;
+}
 
-    int8_t rssi = ELECHOUSE_cc1101.getRssi();
-    if (rssi > -50) {
-        // Try to receive data
-        if (ELECHOUSE_cc1101.CheckRxFifo(100)) {
-            int len = ELECHOUSE_cc1101.ReceiveData(_lastCapture.rawData);
-            if (len > 0) {
-                _lastCapture.rawLength = len;
-                _lastCapture.rssi = rssi;
-                _lastCapture.timestamp = millis();
-                _lastCapture.valid = true;
-                _lastCapture.protocol = detectProtocol(_lastCapture.rawData, len);
-
-                Serial.printf("[RF] Signal Captured! %d bytes, RSSI: %d\n", len, rssi);
-                return true;
-            }
-        }
+int8_t RFCore::getRSSI() {
+    if (!cc1101_hw_present) return -128;
+    
+    uint8_t rssi_raw = cc1101_read_status(CC1101_RSSI);
+    int8_t rssi;
+    if (rssi_raw >= 128) {
+        rssi = (int8_t)((rssi_raw - 256) / 2 - 74);
+    } else {
+        rssi = (int8_t)(rssi_raw / 2 - 74);
     }
-    return false;
+    return rssi;
 }
 
 CapturedSignal RFCore::getLastCapture() { return _lastCapture; }
-
-int8_t RFCore::getRSSI() { return ELECHOUSE_cc1101.getRssi(); }
-
 bool RFCore::isReceiving() { return _receiverActive; }
 
 // ============================================================================
-// REPLAY / TRANSMIT
+// TRANSMIT / REPLAY
 // ============================================================================
-bool RFCore::transmitRaw(uint8_t *data, uint16_t len) {
-    if (!_initialized) init();
-    ELECHOUSE_cc1101.SendData(data, len);
-    Serial.printf("[RF] TX Raw %d bytes\n", len);
+bool RFCore::transmitRaw(uint8_t* data, uint16_t len) {
+    if (!_initialized || !cc1101_hw_present) return false;
+    
+    cc1101_strobe(CC1101_SIDLE);
+    cc1101_strobe(CC1101_SFTX);
+    
+    // Write to TX FIFO
+    cc1101_select();
+    cc1101_spi_transfer(CC1101_TXFIFO | 0x40);  // Burst write
+    for (int i = 0; i < len && i < 64; i++) {
+        cc1101_spi_transfer(data[i]);
+    }
+    cc1101_deselect();
+    
+    cc1101_strobe(CC1101_STX);
+    delay(len);  // Approximate TX time
+    cc1101_strobe(CC1101_SIDLE);
+    
     return true;
 }
 
 bool RFCore::transmitCode(uint32_t code, uint8_t bits, RFProtocol proto) {
-    if (!_initialized) init();
-
-    uint8_t encoded[64];
-    uint16_t encLen = 0;
-
-    encodeProtocol(code, bits, proto, encoded, &encLen);
-
-    if (encLen > 0) {
-        ELECHOUSE_cc1101.SendData(encoded, encLen);
-        Serial.printf("[RF] TX Code 0x%X (%d bits, %s)\n", code, bits, getProtocolName(proto));
-        return true;
-    }
-    return false;
+    if (!_initialized || !cc1101_hw_present) return false;
+    
+    // Encode according to protocol
+    uint8_t buffer[64];
+    uint16_t len = 0;
+    encodeProtocol(code, bits, proto, buffer, &len);
+    
+    return transmitRaw(buffer, len);
 }
 
 bool RFCore::replayLast() {
-    if (!_lastCapture.valid) {
-        Serial.println("[RF] No capture to replay!");
-        return false;
-    }
-
-    setFrequency(_lastCapture.frequency);
-    ELECHOUSE_cc1101.SendData(_lastCapture.rawData, _lastCapture.rawLength);
-    Serial.printf("[RF] Replayed %d bytes @ %.2f MHz\n", _lastCapture.rawLength, _lastCapture.frequency);
-    return true;
+    if (!_lastCapture.valid) return false;
+    return transmitRaw(_lastCapture.rawData, _lastCapture.rawLength);
 }
 
 void RFCore::startGhostReplay(uint16_t minDelayMs, uint16_t maxDelayMs, uint8_t repeats) {
-    if (!_lastCapture.valid) {
-        Serial.println("[RF] No capture for Ghost Replay!");
-        return;
-    }
-
     _ghostMinDelay = minDelayMs;
     _ghostMaxDelay = maxDelayMs;
     _ghostRepeats = repeats;
     _ghostCurrentRepeat = 0;
-    _ghostNextTime = millis() + random(_ghostMinDelay, _ghostMaxDelay);
+    _ghostNextTime = millis() + random(minDelayMs, maxDelayMs);
     _ghostActive = true;
     _currentAttack = RF_ATTACK_REPLAY_GHOST;
-
-    Serial.printf("[RF] Ghost Replay Started (%d repeats, %d-%dms delay)\n", repeats, minDelayMs, maxDelayMs);
+    Serial.printf("[RF] Ghost Replay: %d-%dms delay, %d repeats\n", minDelayMs, maxDelayMs, repeats);
 }
 
 void RFCore::stopGhostReplay() {
     _ghostActive = false;
-    if (_currentAttack == RF_ATTACK_REPLAY_GHOST) { _currentAttack = RF_ATTACK_NONE; }
-    Serial.println("[RF] Ghost Replay Stopped");
+    _currentAttack = RF_ATTACK_NONE;
 }
 
 bool RFCore::isGhostActive() { return _ghostActive; }
 
 // ============================================================================
-// SCANNER / SPECTRUM ANALYZER
+// SCANNER / SPECTRUM
 // ============================================================================
 void RFCore::startFrequencyScan(float startFreq, float endFreq, float step) {
-    if (!_initialized) init();
-
     _scanStart = startFreq;
     _scanEnd = endFreq;
     _scanStep = step;
     _scanCurrent = startFreq;
     _scanIndex = 0;
-
+    _scannerActive = true;
+    _currentAttack = RF_ATTACK_SCAN_FREQUENCY;
+    
     _spectrumData.startFreq = startFreq;
     _spectrumData.endFreq = endFreq;
     _spectrumData.stepSize = step;
     _spectrumData.numSamples = 0;
-
-    memset(_spectrumData.rssiValues, -100, sizeof(_spectrumData.rssiValues));
-
-    _scannerActive = true;
-    _currentAttack = RF_ATTACK_SPECTRUM_ANALYZER;
-
-    Serial.printf("[RF] Spectrum Scan %.2f - %.2f MHz (%.2f step)\n", startFreq, endFreq, step);
-}
-
-void RFCore::stopFrequencyScan() {
-    _scannerActive = false;
-    if (_currentAttack == RF_ATTACK_SPECTRUM_ANALYZER) { _currentAttack = RF_ATTACK_NONE; }
+    
+    Serial.printf("[RF] Scanning %.3f - %.3f MHz\n", startFreq, endFreq);
 }
 
 void RFCore::updateScanner() {
-    if (!_scannerActive || !_initialized) return;
-
-    ELECHOUSE_cc1101.setMHZ(_scanCurrent);
-    ELECHOUSE_cc1101.SetRx();
-    delay(2);
-
-    int8_t rssi = ELECHOUSE_cc1101.getRssi();
-
+    if (!_scannerActive || !cc1101_hw_present) return;
+    
+    setFrequency(_scanCurrent);
+    cc1101_set_mode_rx();
+    delay(2);  // Settling time
+    
+    int8_t rssi = getRSSI();
     if (_scanIndex < 128) {
         _spectrumData.rssiValues[_scanIndex] = rssi;
         _spectrumData.numSamples = _scanIndex + 1;
     }
-
+    
     _scanCurrent += _scanStep;
     _scanIndex++;
-
+    
     if (_scanCurrent > _scanEnd) {
         _scanCurrent = _scanStart;
         _scanIndex = 0;
+        Serial.println("[RF] Scan cycle complete");
     }
+}
+
+void RFCore::stopFrequencyScan() {
+    _scannerActive = false;
+    _currentAttack = RF_ATTACK_NONE;
+    if (cc1101_hw_present) cc1101_set_mode_idle();
 }
 
 SpectrumData RFCore::getSpectrumData() { return _spectrumData; }
 
 float RFCore::findStrongestFrequency() {
-    int8_t maxRssi = -127;
+    int8_t maxRssi = -128;
     uint8_t maxIdx = 0;
-
     for (int i = 0; i < _spectrumData.numSamples; i++) {
         if (_spectrumData.rssiValues[i] > maxRssi) {
             maxRssi = _spectrumData.rssiValues[i];
             maxIdx = i;
         }
     }
-
     return _spectrumData.startFreq + (maxIdx * _spectrumData.stepSize);
 }
 
 // ============================================================================
-// PROTOCOL DETECTION & ENCODING
+// PROTOCOL DETECTION
 // ============================================================================
-RFProtocol RFCore::detectProtocol(uint8_t *data, uint16_t len) {
-    if (len < 3) return PROTO_UNKNOWN;
+RFProtocol RFCore::detectProtocol(uint8_t* data, uint16_t len) { return PROTO_UNKNOWN; }
+bool RFCore::decodeProtocol(CapturedSignal* signal) { return false; }
 
-    // Simple heuristics based on timing patterns
-    // Real implementation would analyze pulse widths
-
-    // Princeton: Sync pulse followed by 24-bit code
-    if (len >= 4 && (data[0] & 0xF0) == 0xF0) { return PROTO_PRINCETON; }
-
-    // CAME: 12-bit code with specific timing
-    if (len >= 2 && len <= 4) { return PROTO_CAME; }
-
-    // Nice FLO: 12-bit fixed code
-    if (len == 2) { return PROTO_NICE_FLO; }
-
-    return PROTO_RAW;
-}
-
-bool RFCore::decodeProtocol(CapturedSignal *signal) {
-    if (!signal || !signal->valid) return false;
-
-    // Protocol-specific decoding
-    switch (signal->protocol) {
-        case PROTO_PRINCETON:
-            if (signal->rawLength >= 4) {
-                signal->code = ((uint32_t)signal->rawData[1] << 16) | ((uint32_t)signal->rawData[2] << 8) |
-                               signal->rawData[3];
-                signal->bitLength = 24;
-                return true;
-            }
-            break;
-
-        case PROTO_CAME:
-        case PROTO_NICE_FLO:
-            if (signal->rawLength >= 2) {
-                signal->code = ((uint16_t)signal->rawData[0] << 4) | (signal->rawData[1] >> 4);
-                signal->bitLength = 12;
-                return true;
-            }
-            break;
-
-        default:
-            signal->code = 0;
-            for (int i = 0; i < min((int)signal->rawLength, 4); i++) {
-                signal->code = (signal->code << 8) | signal->rawData[i];
-            }
-            signal->bitLength = min((int)signal->rawLength * 8, 32);
-            return true;
-    }
-
-    return false;
-}
-
-const char *RFCore::getProtocolName(RFProtocol proto) {
+const char* RFCore::getProtocolName(RFProtocol proto) {
     switch (proto) {
-        case PROTO_RAW: return "RAW";
         case PROTO_PRINCETON: return "Princeton";
-        case PROTO_NICE_FLO: return "Nice FLO";
+        case PROTO_NICE_FLO: return "Nice FloR";
         case PROTO_CAME: return "CAME";
         case PROTO_LINEAR: return "Linear";
         case PROTO_HOLTEK: return "Holtek";
@@ -517,248 +584,140 @@ const char *RFCore::getProtocolName(RFProtocol proto) {
     }
 }
 
-void RFCore::encodeProtocol(uint32_t code, uint8_t bits, RFProtocol proto, uint8_t *out, uint16_t *outLen) {
-    *outLen = 0;
-
-    switch (proto) {
-        case PROTO_PRINCETON:
-            // Princeton: Sync + 24 bits
-            out[0] = 0xF0; // Sync
-            out[1] = (code >> 16) & 0xFF;
-            out[2] = (code >> 8) & 0xFF;
-            out[3] = code & 0xFF;
-            *outLen = 4;
-            break;
-
-        case PROTO_CAME:
-        case PROTO_NICE_FLO:
-            // 12-bit code
-            out[0] = (code >> 4) & 0xFF;
-            out[1] = ((code & 0xF) << 4);
-            *outLen = 2;
-            break;
-
-        default:
-            // Raw bytes
-            for (int i = 0; i < (bits + 7) / 8; i++) { out[i] = (code >> ((bits - 8 - i * 8))) & 0xFF; }
-            *outLen = (bits + 7) / 8;
-            break;
-    }
-}
-
 // ============================================================================
-// BRUTE FORCE ATTACKS
+// BRUTE FORCE
 // ============================================================================
 void RFCore::startBruteForce(float freq, uint8_t bits, RFProtocol proto) {
-    if (!_initialized) init();
-
     setFrequency(freq);
-    setModulation(MOD_ASK_OOK);
-
     _bruteBits = bits;
     _bruteProtocol = proto;
     _bruteCurrentCode = 0;
     _bruteTotalCodes = (1UL << bits);
-
     _bruteActive = true;
     _currentAttack = RF_ATTACK_BRUTE_FORCE;
-
-    Serial.printf(
-        "[RF] Brute Force Started: %d bits, %lu codes, %s\n", bits, _bruteTotalCodes, getProtocolName(proto)
-    );
+    Serial.printf("[RF] Brute Force: %d bits, %lu codes\n", bits, _bruteTotalCodes);
 }
 
 void RFCore::startDeBruijn(float freq, uint8_t bits) {
-    if (!_initialized) init();
-
     setFrequency(freq);
-    setModulation(MOD_ASK_OOK);
-
     _bruteBits = bits;
-    _bruteCurrentCode = 0;
-    _bruteTotalCodes = (1UL << bits);
-
     _bruteActive = true;
     _currentAttack = RF_ATTACK_DEBRUIJN;
-
-    Serial.printf("[RF] De Bruijn Attack Started: %d bits\n", bits);
+    Serial.printf("[RF] De Bruijn: %d bits\n", bits);
 }
 
 void RFCore::stopBruteForce() {
     _bruteActive = false;
-    if (_currentAttack == RF_ATTACK_BRUTE_FORCE || _currentAttack == RF_ATTACK_DEBRUIJN) {
-        _currentAttack = RF_ATTACK_NONE;
-    }
-    Serial.println("[RF] Brute Force Stopped");
+    _currentAttack = RF_ATTACK_NONE;
 }
 
 bool RFCore::isBruteForcing() { return _bruteActive; }
-
 uint32_t RFCore::getBruteProgress() { return _bruteCurrentCode; }
-
 uint32_t RFCore::getBruteTotal() { return _bruteTotalCodes; }
 
 void RFCore::updateBruteForce() {
-    if (!_bruteActive || !_initialized) return;
-
-    if (_bruteCurrentCode >= _bruteTotalCodes) {
-        stopBruteForce();
-        Serial.println("[RF] Brute Force Complete!");
-        return;
-    }
-
+    if (!_bruteActive || !cc1101_hw_present) return;
+    
     transmitCode(_bruteCurrentCode, _bruteBits, _bruteProtocol);
     _bruteCurrentCode++;
-
-    delay(20); // ~50 codes/sec
+    
+    if (_bruteCurrentCode >= _bruteTotalCodes) {
+        Serial.println("[RF] Brute force complete");
+        stopBruteForce();
+    }
 }
 
 // ============================================================================
 // STATUS & DIAGNOSTICS
 // ============================================================================
 bool RFCore::selfTest() {
-    if (!_initialized) {
-        if (!init()) return false;
-    }
-
-    // Quick loopback test
-    uint8_t testData[] = {0xAA, 0x55, 0xAA, 0x55};
-    ELECHOUSE_cc1101.SendData(testData, 4);
-
-    return true;
+    return _initialized && cc1101_hw_present;
 }
 
 uint8_t RFCore::getVersion() {
-    return ELECHOUSE_cc1101.SpiReadStatus(0x31); // VERSION register
+    if (!cc1101_hw_present) return 0;
+    return cc1101_read_status(CC1101_VERSION);
 }
 
-int8_t RFCore::getTemperature() {
-    // CC1101 doesn't have temp sensor, return ambient estimate
-    return 25;
-}
+int8_t RFCore::getTemperature() { return 0; }
 
 void RFCore::printStatus() {
     Serial.println("=== RF Core Status ===");
-    Serial.printf("Initialized: %s\n", _initialized ? "YES" : "NO");
-    Serial.printf("Frequency: %.2f MHz\n", _currentFreq);
-    Serial.printf("Power: %d dBm\n", _currentPower);
-    Serial.printf("Modulation: %d\n", _currentMod);
-    Serial.printf("Current Attack: %d\n", _currentAttack);
-    Serial.printf("Jammer: %s\n", _jammerActive ? "ACTIVE" : "OFF");
-    Serial.printf("Receiver: %s\n", _receiverActive ? "ACTIVE" : "OFF");
-    Serial.printf("RSSI: %d dBm\n", ELECHOUSE_cc1101.getRssi());
-    Serial.println("======================");
+    Serial.printf("Initialized: %s\n", _initialized ? "Yes" : "No");
+    Serial.printf("HW Present: %s\n", cc1101_hw_present ? "Yes" : "No");
+    Serial.printf("Frequency: %.3f MHz\n", _currentFreq);
+    Serial.printf("Attack: %d\n", _currentAttack);
+    if (cc1101_hw_present) {
+        Serial.printf("RSSI: %d dBm\n", getRSSI());
+    }
 }
 
 // ============================================================================
-// SAVE / LOAD (SD Card)
+// SAVE / LOAD
 // ============================================================================
-bool RFCore::saveSignal(const char *filename, CapturedSignal *sig) {
-    if (!sig || !sig->valid) return false;
-
+bool RFCore::saveSignal(const char* filename, CapturedSignal* sig) {
+    if (!sig->valid) return false;
+    
     File f = SD.open(filename, FILE_WRITE);
     if (!f) return false;
-
-    f.printf("# RF Signal Capture\n");
-    f.printf("Frequency: %.2f\n", sig->frequency);
+    
+    f.printf("Frequency: %.6f\n", sig->frequency);
     f.printf("Protocol: %s\n", getProtocolName(sig->protocol));
-    f.printf("Code: 0x%X\n", sig->code);
-    f.printf("Bits: %d\n", sig->bitLength);
-    f.printf("RSSI: %d\n", sig->rssi);
-    f.printf("RawLen: %d\n", sig->rawLength);
-    f.print("RawData: ");
-    for (int i = 0; i < sig->rawLength; i++) { f.printf("%02X ", sig->rawData[i]); }
+    f.printf("Data: ");
+    for (int i = 0; i < sig->rawLength; i++) {
+        f.printf("%02X", sig->rawData[i]);
+    }
     f.println();
-
     f.close();
     return true;
 }
 
-bool RFCore::loadSignal(const char *filename, CapturedSignal *sig) {
-    if (!sig) return false;
-
-    File f = SD.open(filename, FILE_READ);
-    if (!f) return false;
-
-    // Simple parsing
-    sig->valid = false;
-    while (f.available()) {
-        String line = f.readStringUntil('\n');
-        if (line.startsWith("Frequency:")) {
-            sig->frequency = line.substring(11).toFloat();
-        } else if (line.startsWith("Code:")) {
-            sig->code = strtoul(line.substring(7).c_str(), NULL, 16);
-        } else if (line.startsWith("Bits:")) {
-            sig->bitLength = line.substring(6).toInt();
-        } else if (line.startsWith("RawLen:")) {
-            sig->rawLength = line.substring(8).toInt();
-        } else if (line.startsWith("RawData:")) {
-            String data = line.substring(9);
-            int idx = 0;
-            for (int i = 0; i < data.length() && idx < REPLAY_BUFFER_SIZE; i += 3) {
-                sig->rawData[idx++] = strtoul(data.substring(i, i + 2).c_str(), NULL, 16);
-            }
-            sig->valid = true;
-        }
-    }
-
-    f.close();
-    return sig->valid;
+bool RFCore::loadSignal(const char* filename, CapturedSignal* sig) {
+    // Not implemented yet
+    return false;
 }
 
-bool RFCore::saveFlipperFormat(const char *filename, CapturedSignal *sig) {
-    if (!sig || !sig->valid) return false;
-
+bool RFCore::saveFlipperFormat(const char* filename, CapturedSignal* sig) {
+    if (!sig->valid) return false;
+    
     File f = SD.open(filename, FILE_WRITE);
     if (!f) return false;
-
-    f.println("Filetype: Flipper SubGhz Key File");
+    
+    f.println("Filetype: Flipper SubGhz RAW File");
     f.println("Version: 1");
-    f.printf("Frequency: %lu\n", (unsigned long)(sig->frequency * 1000000));
+    f.printf("Frequency: %lu\n", (uint32_t)(sig->frequency * 1000000));
     f.println("Preset: FuriHalSubGhzPresetOok650Async");
-    f.printf("Protocol: %s\n", getProtocolName(sig->protocol));
-    f.printf("Bit: %d\n", sig->bitLength);
-    f.printf(
-        "Key: %02X %02X %02X %02X %02X %02X %02X %02X\n",
-        0,
-        0,
-        0,
-        0,
-        (sig->code >> 24) & 0xFF,
-        (sig->code >> 16) & 0xFF,
-        (sig->code >> 8) & 0xFF,
-        sig->code & 0xFF
-    );
-
+    f.println("Protocol: RAW");
     f.close();
     return true;
 }
 
-bool RFCore::loadFlipperFormat(const char *filename, CapturedSignal *sig) {
-    if (!sig) return false;
+bool RFCore::loadFlipperFormat(const char* filename, CapturedSignal* sig) {
+    return false;
+}
 
-    File f = SD.open(filename, FILE_READ);
-    if (!f) return false;
-
-    sig->valid = false;
-    while (f.available()) {
-        String line = f.readStringUntil('\n');
-        line.trim();
-
-        if (line.startsWith("Frequency:")) {
-            sig->frequency = line.substring(11).toFloat() / 1000000.0f;
-        } else if (line.startsWith("Bit:")) {
-            sig->bitLength = line.substring(5).toInt();
-        } else if (line.startsWith("Key:")) {
-            String key = line.substring(5);
-            key.replace(" ", "");
-            if (key.length() >= 16) {
-                sig->code = strtoul(key.substring(8, 16).c_str(), NULL, 16);
-                sig->valid = true;
-            }
-        }
+// ============================================================================
+// INTERNAL HELPERS
+// ============================================================================
+void RFCore::sendNoise(uint16_t bytes) {
+    if (!cc1101_hw_present) return;
+    
+    uint8_t noise[64];
+    for (int i = 0; i < 64; i++) {
+        noise[i] = random(256);
     }
+    
+    while (bytes > 0) {
+        uint8_t chunk = (bytes > 64) ? 64 : bytes;
+        transmitRaw(noise, chunk);
+        bytes -= chunk;
+    }
+}
 
-    f.close();
-    return sig->valid;
+void RFCore::encodeProtocol(uint32_t code, uint8_t bits, RFProtocol proto, uint8_t* out, uint16_t* outLen) {
+    // Simple encoding - just copy code bytes
+    *outLen = (bits + 7) / 8;
+    for (int i = 0; i < *outLen; i++) {
+        out[i] = (code >> (8 * ((*outLen) - 1 - i))) & 0xFF;
+    }
 }

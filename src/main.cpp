@@ -1,5 +1,6 @@
 #include "attacks_manager.h"
 #include "core/aggressive_sd.h"
+#include "sd_structure.h"
 #include "gesture_sensor.h"
 #include "gps_driver.h"
 #include "hardware/audio_driver.h"
@@ -7,6 +8,21 @@
 #include "pin_config.h"
 #include "s3_driver.h"
 #include <Arduino.h>
+
+// Novos módulos
+#include "module_manager.h"
+#include "led_driver.h"
+#include "gesture_actions.h"
+#include "ble_attacks.h"
+#include "ir_protocols.h"
+#include "wps_attacks.h"
+#include "pmkid_capture.h"
+#include "nfc_relay.h"
+
+// TTS, AI e Logging
+#include "tts_espeak.h"
+#include "q_learn_ia.h"
+#include "logger.h"
 
 // Task Handles
 TaskHandle_t hDisplayTask;
@@ -58,7 +74,6 @@ void taskNetworkManager(void *p) {
 }
 
 void taskAttackEngine(void *p) {
-    attacks_init();
     pinMode(PIN_BTN_FAULT, INPUT_PULLUP);
     for (;;) {
         // Check Hardware Trigger
@@ -213,13 +228,54 @@ void setup() {
     Serial.println("[BOOT] Starting SD init...");
     aggressive_boot_logic();
 
+    // --- SD STRUCTURE SETUP ---
+    Serial.println("[BOOT] Setting up SD structure...");
+    setup_sd_structure();
+    move_flash_to_sd();
+    check_auto_backup();
+    log_with_timestamp(SD_FILE_LOG_BOOT, "System boot started");
+
     // --- Standard Driver Init ---
     Serial.println("[BOOT] Starting MonsterDriver init...");
     MonsterDriver::init();
 
+    // --- Attacks Manager Init ---
+    Serial.println("[BOOT] Starting Attacks manager init...");
+    attacks_init();
+
     // --- Audio Driver Init ---
     Serial.println("[BOOT] Starting Audio driver init...");
     AudioDriver::init();
+
+    // --- NEW: Module Manager Init ---
+    Serial.println("[BOOT] Starting Module Manager...");
+    ModuleManager::init();
+    
+    // --- NEW: LED Driver Init ---
+    Serial.println("[BOOT] Starting LED driver...");
+    LEDDriver::init();
+    LEDDriver::setBrightness(50);
+    LEDDriver::rainbowCycle();  // Boot animation
+    
+    // --- NEW: IR Protocols Init ---
+    Serial.println("[BOOT] Starting IR protocols...");
+    IRProtocols::init();
+    
+    // --- NEW: Gesture Actions Init ---
+    Serial.println("[BOOT] Starting Gesture Actions...");
+    GestureActions::init();
+
+    // --- NEW: Logger Init ---
+    Serial.println("[BOOT] Starting Logger...");
+    log_init();
+
+    // --- NEW: TTS Init ---
+    Serial.println("[BOOT] Starting TTS...");
+    setup_tts();
+
+    // --- NEW: Q-Learning AI Init ---
+    Serial.println("[BOOT] Starting Q-Learning AI...");
+    setup_q_learn();
 
     // Check if we woke up from gesture
     if (GestureSensor::wasWakeupByGesture()) {
@@ -228,15 +284,25 @@ void setup() {
 
     // Ready Signal
     digitalWrite(PIN_LED_RED_ATTACK_LO, HIGH);
+    log_system("Boot sequence complete");
+    tts_speak("sistema_pronto");
 
     // Create Tasks
     xTaskCreatePinnedToCore(taskSystemDisplay, "Display", 8192, NULL, 2, &hDisplayTask, 1);
     xTaskCreatePinnedToCore(taskNetworkManager, "Net", 4096, NULL, 1, &hNetTask, 1);
     xTaskCreatePinnedToCore(taskAttackEngine, "Attacks", 8192, NULL, 5, &hAttackTask, 0);
     xTaskCreatePinnedToCore(taskGestureSensor, "Gesture", 4096, NULL, 3, &hGestureTask, 1);
-    // xTaskCreatePinnedToCore(taskGPS, "GPS", 4096, NULL, 1, &hGPSTask, 1);
+    xTaskCreatePinnedToCore(taskGPS, "GPS", 4096, NULL, 1, &hGPSTask, 0);
 
     Serial.println("[SYSTEM] Boot sequence complete.");
 }
 
-void loop() { vTaskDelay(1000 / portTICK_PERIOD_MS); }
+void loop() {
+    // AI loop step - runs every 30s in combat mode
+    ai_loop_step();
+    
+    // TTS loop (placeholder for future)
+    loop_tts();
+    
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+}
