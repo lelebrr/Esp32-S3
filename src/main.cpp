@@ -24,6 +24,10 @@
 #include "q_learn_ia.h"
 #include "logger.h"
 
+// Resource Download e Brute Generator
+#include "resource_downloader.h"
+#include "brute_generator.h"
+
 // Task Handles
 TaskHandle_t hDisplayTask;
 TaskHandle_t hNetTask;
@@ -235,6 +239,13 @@ void setup() {
     check_auto_backup();
     log_with_timestamp(SD_FILE_LOG_BOOT, "System boot started");
 
+    // --- FIRST RUN CHECK: Generate wordlist if missing ---
+    if (!brute_check_exists()) {
+        Serial.println("[BOOT] First run detected - generating BR wordlist...");
+        Serial.println("[BOOT] This may take a few minutes...");
+        brute_generate_complete();
+    }
+
     // --- Standard Driver Init ---
     Serial.println("[BOOT] Starting MonsterDriver init...");
     MonsterDriver::init();
@@ -301,7 +312,7 @@ void loop() {
     // AI loop step - runs every 30s in combat mode
     ai_loop_step();
     
-    // TTS loop (placeholder for future)
+    // TTS loop (running in own task)
     loop_tts();
     
     vTaskDelay(1000 / portTICK_PERIOD_MS);

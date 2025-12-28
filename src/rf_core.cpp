@@ -50,6 +50,20 @@
 #define CC1101_TXFIFO   0x3F
 #define CC1101_RXFIFO   0x3F
 
+// Additional registers for full configuration
+#define CC1101_SYNC1    0x04  // Sync Word high byte
+#define CC1101_SYNC0    0x05  // Sync Word low byte
+#define CC1101_BSCFG    0x1A
+#define CC1101_AGCCTRL2 0x1B
+#define CC1101_AGCCTRL1 0x1C
+#define CC1101_AGCCTRL0 0x1D
+#define CC1101_WORCTRL  0x20
+#define CC1101_RCCTRL1  0x27
+#define CC1101_RCCTRL0  0x28
+#define CC1101_LQI      0x33
+#define CC1101_RXBYTES  0x3B
+#define CC1101_TXBYTES  0x3A
+
 // Strobe commands
 #define CC1101_SRES     0x30  // Reset
 #define CC1101_SCAL     0x33  // Calibrate
@@ -314,10 +328,102 @@ void RFCore::setModulation(int mod) {
     // Would configure CC1101 for different modulation types
 }
 
-void RFCore::setDataRate(float kbps) { }
-void RFCore::setBandwidth(float khz) { }
-void RFCore::setDeviation(float khz) { }
-void RFCore::setSyncWord(uint16_t sync) { }
+void RFCore::setDataRate(float kbps) {
+    if (!_initialized || !cc1101_hw_present) return;
+    
+    // CC1101 data rate formula:
+    // DRATE = (f_xosc * (256 + DRATE_M) * 2^DRATE_E) / 2^28
+    // f_xosc = 26 MHz
+    // Solving for DRATE_M and DRATE_E:
+    float drate = kbps * 1000.0f;  // Convert to bps
+    uint8_t drate_e = 0;
+    uint8_t drate_m = 0;
+    
+    // Find exponent
+    float target = drate * 1048576.0f / 26000000.0f;  // 2^20 / 26MHz
+    while (target >= 512 && drate_e < 15) {
+        target /= 2;
+        drate_e++;
+    }
+    drate_m = (uint8_t)(target - 256);
+    if (drate_m > 255) drate_m = 255;
+    
+    // MDMCFG4: bits 7:4 = channel bandwidth, bits 3:0 = DRATE_E
+    uint8_t mdmcfg4 = cc1101_read_reg(CC1101_MDMCFG4);
+    mdmcfg4 = (mdmcfg4 & 0xF0) | (drate_e & 0x0F);
+    cc1101_write_reg(CC1101_MDMCFG4, mdmcfg4);
+    cc1101_write_reg(CC1101_MDMCFG3, drate_m);
+    
+    Serial.printf("[RF] Data rate set to %.2f kbps (E=%d, M=%d)\n", kbps, drate_e, drate_m);
+}
+
+void RFCore::setBandwidth(float khz) {
+    if (!_initialized || !cc1101_hw_present) return;
+    
+    // CC1101 RX bandwidth formula:
+    // BW = f_xosc / (8 * (4 + CHANBW_M) * 2^CHANBW_E)
+    // f_xosc = 26 MHz
+    // CHANBW_E = bits 7:6, CHANBW_M = bits 5:4 of MDMCFG4
+    
+    // Available bandwidths (kHz): 812, 650, 541, 464, 406, 325, 270, 232, 
+    //                              203, 162, 135, 116, 102, 81, 68, 58
+    static const float bw_table[] = {812, 650, 541, 464, 406, 325, 270, 232,
+                                      203, 162, 135, 116, 102, 81, 68, 58};
+    static const uint8_t bw_config[] = {0x00, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70,
+                                         0x80, 0x90, 0xA0, 0xB0, 0xC0, 0xD0, 0xE0, 0xF0};
+    
+    // Find closest bandwidth
+    uint8_t best_idx = 0;
+    float best_diff = abs(bw_table[0] - khz);
+    for (int i = 1; i < 16; i++) {
+        float diff = abs(bw_table[i] - khz);
+        if (diff < best_diff) {
+            best_diff = diff;
+            best_idx = i;
+        }
+    }
+    
+    uint8_t mdmcfg4 = cc1101_read_reg(CC1101_MDMCFG4);
+    mdmcfg4 = (mdmcfg4 & 0x0F) | bw_config[best_idx];
+    cc1101_write_reg(CC1101_MDMCFG4, mdmcfg4);
+    
+    Serial.printf("[RF] Bandwidth set to %.0f kHz (actual %.0f kHz)\n", khz, bw_table[best_idx]);
+}
+
+void RFCore::setDeviation(float khz) {
+    if (!_initialized || !cc1101_hw_present) return;
+    
+    // CC1101 deviation formula:
+    // f_dev = (f_xosc / 2^17) * (8 + DEVIATION_M) * 2^DEVIATION_E
+    // f_xosc = 26 MHz
+    
+    float dev_hz = khz * 1000.0f;
+    uint8_t dev_e = 0;
+    uint8_t dev_m = 0;
+    
+    // Calculate exponent and mantissa
+    float target = dev_hz * 131072.0f / 26000000.0f;  // 2^17 / 26MHz
+    while (target >= 16 && dev_e < 7) {
+        target /= 2;
+        dev_e++;
+    }
+    dev_m = (uint8_t)(target - 8);
+    if (dev_m > 7) dev_m = 7;
+    
+    uint8_t deviatn = (dev_e << 4) | dev_m;
+    cc1101_write_reg(CC1101_DEVIATN, deviatn);
+    
+    Serial.printf("[RF] Deviation set to %.2f kHz (E=%d, M=%d)\n", khz, dev_e, dev_m);
+}
+
+void RFCore::setSyncWord(uint16_t sync) {
+    if (!_initialized || !cc1101_hw_present) return;
+    
+    cc1101_write_reg(CC1101_SYNC1, (sync >> 8) & 0xFF);  // High byte
+    cc1101_write_reg(CC1101_SYNC0, sync & 0xFF);         // Low byte
+    
+    Serial.printf("[RF] Sync word set to 0x%04X\n", sync);
+}
 
 // ============================================================================
 // JAMMER
@@ -568,8 +674,135 @@ float RFCore::findStrongestFrequency() {
 // ============================================================================
 // PROTOCOL DETECTION
 // ============================================================================
-RFProtocol RFCore::detectProtocol(uint8_t* data, uint16_t len) { return PROTO_UNKNOWN; }
-bool RFCore::decodeProtocol(CapturedSignal* signal) { return false; }
+RFProtocol RFCore::detectProtocol(uint8_t* data, uint16_t len) {
+    if (!data || len < 4) return PROTO_UNKNOWN;
+    
+    // Analyze timing patterns in raw data to detect protocol
+    // Each protocol has characteristic pulse widths:
+    // Princeton/PT2262: Short pulse ~350us, Long pulse ~1050us (1:3 ratio)
+    // CAME: Short ~320us, Long ~640us (1:2 ratio)
+    // Nice FLO: Short ~700us, Long ~1400us (1:2 ratio)
+    // Holtek: Short ~380us, Long ~1140us (1:3 ratio)
+    
+    // Count timing patterns
+    int short_pulses = 0;
+    int long_pulses = 0;
+    uint16_t avg_short = 0;
+    uint16_t avg_long = 0;
+    
+    for (int i = 0; i < len - 1; i += 2) {
+        uint16_t pulse = (data[i] << 8) | data[i + 1];
+        if (pulse < 500) {
+            short_pulses++;
+            avg_short += pulse;
+        } else if (pulse < 1500) {
+            long_pulses++;
+            avg_long += pulse;
+        }
+    }
+    
+    if (short_pulses == 0 || long_pulses == 0) return PROTO_UNKNOWN;
+    
+    avg_short /= short_pulses;
+    avg_long /= long_pulses;
+    
+    float ratio = (float)avg_long / (float)avg_short;
+    
+    // Detect based on ratio
+    if (ratio >= 2.7 && ratio <= 3.3) {
+        // 1:3 ratio - Princeton or Holtek
+        if (avg_short >= 300 && avg_short <= 400) {
+            Serial.println("[RF] Protocol detected: Princeton/PT2262");
+            return PROTO_PRINCETON;
+        } else if (avg_short >= 350 && avg_short <= 420) {
+            Serial.println("[RF] Protocol detected: Holtek");
+            return PROTO_HOLTEK;
+        }
+    } else if (ratio >= 1.8 && ratio <= 2.2) {
+        // 1:2 ratio - CAME or Nice FLO
+        if (avg_short >= 280 && avg_short <= 360) {
+            Serial.println("[RF] Protocol detected: CAME");
+            return PROTO_CAME;
+        } else if (avg_short >= 650 && avg_short <= 750) {
+            Serial.println("[RF] Protocol detected: Nice FLO");
+            return PROTO_NICE_FLO;
+        }
+    }
+    
+    // Linear uses different encoding
+    if (len >= 8 && avg_short >= 450 && avg_short <= 550) {
+        Serial.println("[RF] Protocol detected: Linear");
+        return PROTO_LINEAR;
+    }
+    
+    Serial.printf("[RF] Unknown protocol (ratio=%.2f, short=%d, long=%d)\n", ratio, avg_short, avg_long);
+    return PROTO_UNKNOWN;
+}
+
+bool RFCore::decodeProtocol(CapturedSignal* signal) {
+    if (!signal || !signal->valid || signal->rawLength < 4) return false;
+    
+    signal->protocol = detectProtocol(signal->rawData, signal->rawLength);
+    if (signal->protocol == PROTO_UNKNOWN) return false;
+    
+    // Decode based on protocol
+    uint32_t code = 0;
+    uint8_t bits = 0;
+    
+    switch (signal->protocol) {
+        case PROTO_PRINCETON:
+        case PROTO_PT2262:
+            // PT2262: 24 bits, each bit = short+long (0) or long+short (1)
+            bits = 24;
+            for (int i = 0; i < signal->rawLength - 1 && bits > 0; i += 4) {
+                uint16_t p1 = (signal->rawData[i] << 8) | signal->rawData[i + 1];
+                uint16_t p2 = (signal->rawData[i + 2] << 8) | signal->rawData[i + 3];
+                code <<= 1;
+                if (p1 > p2) code |= 1;  // Long first = 1
+                bits--;
+            }
+            signal->bitLength = 24;
+            break;
+            
+        case PROTO_CAME:
+            // CAME: 12 bits fixed code
+            bits = 12;
+            for (int i = 0; i < signal->rawLength - 1 && bits > 0; i += 4) {
+                uint16_t p1 = (signal->rawData[i] << 8) | signal->rawData[i + 1];
+                uint16_t p2 = (signal->rawData[i + 2] << 8) | signal->rawData[i + 3];
+                code <<= 1;
+                if (p1 > p2) code |= 1;
+                bits--;
+            }
+            signal->bitLength = 12;
+            break;
+            
+        case PROTO_NICE_FLO:
+            // Nice FLO: 12 bits
+            bits = 12;
+            for (int i = 0; i < signal->rawLength - 1 && bits > 0; i += 4) {
+                uint16_t p1 = (signal->rawData[i] << 8) | signal->rawData[i + 1];
+                uint16_t p2 = (signal->rawData[i + 2] << 8) | signal->rawData[i + 3];
+                code <<= 1;
+                if (p1 > p2) code |= 1;
+                bits--;
+            }
+            signal->bitLength = 12;
+            break;
+            
+        default:
+            // RAW - just copy first 4 bytes as code
+            code = (signal->rawData[0] << 24) | (signal->rawData[1] << 16) |
+                   (signal->rawData[2] << 8) | signal->rawData[3];
+            signal->bitLength = 32;
+            break;
+    }
+    
+    signal->code = code;
+    Serial.printf("[RF] Decoded: %s, Code=0x%08X, Bits=%d\n", 
+                  getProtocolName(signal->protocol), code, signal->bitLength);
+    return true;
+}
 
 const char* RFCore::getProtocolName(RFProtocol proto) {
     switch (proto) {
@@ -639,7 +872,12 @@ uint8_t RFCore::getVersion() {
     return cc1101_read_status(CC1101_VERSION);
 }
 
-int8_t RFCore::getTemperature() { return 0; }
+int8_t RFCore::getTemperature() {
+    // Use ESP32 internal temperature sensor
+    // temperatureRead() is available in Arduino ESP32 core
+    float temp = temperatureRead();
+    return (int8_t)temp;
+}
 
 void RFCore::printStatus() {
     Serial.println("=== RF Core Status ===");
@@ -673,8 +911,59 @@ bool RFCore::saveSignal(const char* filename, CapturedSignal* sig) {
 }
 
 bool RFCore::loadSignal(const char* filename, CapturedSignal* sig) {
-    // Not implemented yet
-    return false;
+    if (!sig) return false;
+    
+    File f = SD.open(filename, FILE_READ);
+    if (!f) {
+        Serial.printf("[RF] Failed to open: %s\n", filename);
+        return false;
+    }
+    
+    // Initialize signal
+    memset(sig, 0, sizeof(CapturedSignal));
+    
+    // Parse file line by line
+    char line[256];
+    while (f.available()) {
+        int len = f.readBytesUntil('\n', line, sizeof(line) - 1);
+        line[len] = '\0';
+        
+        // Remove trailing CR
+        if (len > 0 && line[len - 1] == '\r') line[len - 1] = '\0';
+        
+        if (strncmp(line, "Frequency:", 10) == 0) {
+            sig->frequency = atof(line + 10);
+        } else if (strncmp(line, "Protocol:", 9) == 0) {
+            char* proto = line + 9;
+            while (*proto == ' ') proto++;
+            if (strcmp(proto, "Princeton") == 0) sig->protocol = PROTO_PRINCETON;
+            else if (strcmp(proto, "CAME") == 0) sig->protocol = PROTO_CAME;
+            else if (strcmp(proto, "Nice FLO") == 0 || strcmp(proto, "Nice FloR") == 0) sig->protocol = PROTO_NICE_FLO;
+            else if (strcmp(proto, "Linear") == 0) sig->protocol = PROTO_LINEAR;
+            else if (strcmp(proto, "Holtek") == 0) sig->protocol = PROTO_HOLTEK;
+            else if (strcmp(proto, "PT2262") == 0) sig->protocol = PROTO_PT2262;
+            else if (strcmp(proto, "KeeLoq") == 0) sig->protocol = PROTO_KEELOQ;
+            else sig->protocol = PROTO_RAW;
+        } else if (strncmp(line, "Data:", 5) == 0) {
+            char* data = line + 5;
+            while (*data == ' ') data++;
+            int rawLen = strlen(data) / 2;
+            if (rawLen > REPLAY_BUFFER_SIZE) rawLen = REPLAY_BUFFER_SIZE;
+            for (int i = 0; i < rawLen; i++) {
+                char hex[3] = {data[i * 2], data[i * 2 + 1], '\0'};
+                sig->rawData[i] = (uint8_t)strtol(hex, NULL, 16);
+            }
+            sig->rawLength = rawLen;
+        }
+    }
+    
+    f.close();
+    sig->valid = (sig->rawLength > 0 || sig->frequency > 0);
+    sig->timestamp = millis();
+    
+    Serial.printf("[RF] Loaded signal: %.3f MHz, %s, %d bytes\n",
+                  sig->frequency, getProtocolName(sig->protocol), sig->rawLength);
+    return sig->valid;
 }
 
 bool RFCore::saveFlipperFormat(const char* filename, CapturedSignal* sig) {
@@ -693,7 +982,82 @@ bool RFCore::saveFlipperFormat(const char* filename, CapturedSignal* sig) {
 }
 
 bool RFCore::loadFlipperFormat(const char* filename, CapturedSignal* sig) {
-    return false;
+    if (!sig) return false;
+    
+    File f = SD.open(filename, FILE_READ);
+    if (!f) {
+        Serial.printf("[RF] Failed to open Flipper file: %s\n", filename);
+        return false;
+    }
+    
+    memset(sig, 0, sizeof(CapturedSignal));
+    
+    char line[512];
+    bool isRaw = false;
+    int rawIdx = 0;
+    
+    while (f.available()) {
+        int len = f.readBytesUntil('\n', line, sizeof(line) - 1);
+        line[len] = '\0';
+        if (len > 0 && line[len - 1] == '\r') line[len - 1] = '\0';
+        
+        if (strncmp(line, "Filetype:", 9) == 0) {
+            // Validate it's a SubGhz file
+            if (strstr(line, "SubGhz") == NULL) {
+                Serial.println("[RF] Not a Flipper SubGhz file");
+                f.close();
+                return false;
+            }
+        } else if (strncmp(line, "Frequency:", 10) == 0) {
+            uint32_t freq_hz = atol(line + 10);
+            sig->frequency = freq_hz / 1000000.0f;
+        } else if (strncmp(line, "Protocol:", 9) == 0) {
+            char* proto = line + 9;
+            while (*proto == ' ') proto++;
+            if (strcmp(proto, "RAW") == 0) {
+                sig->protocol = PROTO_RAW;
+                isRaw = true;
+            } else if (strstr(proto, "Princeton") != NULL) {
+                sig->protocol = PROTO_PRINCETON;
+            } else if (strstr(proto, "CAME") != NULL) {
+                sig->protocol = PROTO_CAME;
+            } else if (strstr(proto, "Nice") != NULL) {
+                sig->protocol = PROTO_NICE_FLO;
+            } else {
+                sig->protocol = PROTO_RAW;
+            }
+        } else if (strncmp(line, "RAW_Data:", 9) == 0 && isRaw) {
+            // Parse RAW timings: space-separated signed integers
+            char* ptr = line + 9;
+            while (*ptr && rawIdx < REPLAY_BUFFER_SIZE - 2) {
+                while (*ptr == ' ') ptr++;
+                if (*ptr == '\0') break;
+                int32_t timing = atoi(ptr);
+                // Store absolute value as uint16_t (high byte, low byte)
+                uint16_t abs_timing = abs(timing);
+                sig->rawData[rawIdx++] = (abs_timing >> 8) & 0xFF;
+                sig->rawData[rawIdx++] = abs_timing & 0xFF;
+                // Skip to next number
+                while (*ptr && *ptr != ' ') ptr++;
+            }
+        } else if (strncmp(line, "Preset:", 7) == 0) {
+            // Determine modulation from preset
+            if (strstr(line, "Ook") != NULL || strstr(line, "OOK") != NULL) {
+                sig->modulation = MOD_ASK_OOK;
+            } else if (strstr(line, "2FSK") != NULL) {
+                sig->modulation = MOD_2FSK;
+            }
+        }
+    }
+    
+    f.close();
+    sig->rawLength = rawIdx;
+    sig->valid = (sig->rawLength > 0 && sig->frequency > 0);
+    sig->timestamp = millis();
+    
+    Serial.printf("[RF] Loaded Flipper file: %.3f MHz, %s, %d bytes\n",
+                  sig->frequency, getProtocolName(sig->protocol), sig->rawLength);
+    return sig->valid;
 }
 
 // ============================================================================

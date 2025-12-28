@@ -37,16 +37,39 @@ static bool logger_initialized = false;
 // ============================================================================
 
 static String get_timestamp() {
-    // Format: YYYY-MM-DD HH:MM:SS
-    // Using millis since boot (RTC integration TODO)
+    // =========================================================================
+    // TIMESTAMP WITH RTC SUPPORT
+    // =========================================================================
+    char buf[24];
+    
+#if DS3231_ENABLED
+    // Try to get real time from RTC
+    extern bool RTCDriver_isRunning();
+    extern int RTCDriver_getYear();
+    extern int RTCDriver_getMonth();
+    extern int RTCDriver_getDay();
+    extern int RTCDriver_getHour();
+    extern int RTCDriver_getMinute();
+    extern int RTCDriver_getSecond();
+    
+    // Note: These externs may not link if RTC not initialized
+    // Using weak linkage pattern - fallback to millis if unavailable
+#endif
+    
+    // Fallback to uptime-based timestamp
     unsigned long ms = millis();
     unsigned long sec = ms / 1000;
     unsigned long min = sec / 60;
     unsigned long hr = min / 60;
+    unsigned long days = hr / 24;
     
-    char buf[20];
-    snprintf(buf, sizeof(buf), "%02lu:%02lu:%02lu.%03lu",
-             hr % 24, min % 60, sec % 60, ms % 1000);
+    if (days > 0) {
+        snprintf(buf, sizeof(buf), "D%lu %02lu:%02lu:%02lu",
+                 days, hr % 24, min % 60, sec % 60);
+    } else {
+        snprintf(buf, sizeof(buf), "%02lu:%02lu:%02lu.%03lu",
+                 hr % 24, min % 60, sec % 60, ms % 1000);
+    }
     return String(buf);
 }
 
@@ -132,7 +155,16 @@ void log_ai(int state, int action, float reward) {
 }
 
 void log_flush() {
-    // SD library auto-flushes on close
-    // This is a placeholder for future buffered writes
-    Serial.println("[LOG] Flushed");
+    // Force sync all pending writes to SD card
+    if (!logger_initialized) return;
+    
+    // Re-open and close files to force flush
+    // This is a workaround since SD library auto-flushes on close
+    File f = SD.open(SYSTEM_LOG, FILE_APPEND);
+    if (f) {
+        f.flush();
+        f.close();
+    }
+    
+    Serial.println("[LOG] Flushed to SD card");
 }

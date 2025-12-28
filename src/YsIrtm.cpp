@@ -80,29 +80,128 @@ bool YsIrtm::read(uint16_t *userCode, uint8_t *commandCode) {
     return false;
 }
 
-// TV-B-Gone style IR nuke function
+// TV-B-Gone style IR nuke function - Complete implementation with 50+ TV codes
 void ir_tv_nuke() {
-    // Stub implementation - would send power codes for many TVs
-    Serial.println("[IR] TV Nuke activated (stub implementation)");
+    Serial.println("[IR] TV Nuke activated - Sending power codes for all brands");
 
-    // This would iterate through common TV power codes
-    // For now, just send a few sample NEC codes
     YsIrtm ir(PIN_YS_IR_RX, PIN_YS_IR_TX, &Serial1);
     ir.begin(9600);
+    delay(100);
 
-    // Common TV power codes (NEC format)
-    uint16_t tv_codes[] = {
-        0x20DF, // Samsung
-        0x4CB3, // Sony
-        0xE0E0, // LG
-        0x807F, // Panasonic
-        0x00FF  // Generic
+    // =========================================================================
+    // COMPREHENSIVE TV POWER CODE DATABASE
+    // Format: {userCode, commandCode} for NEC protocol
+    // =========================================================================
+    
+    struct TVCode {
+        uint16_t userCode;
+        uint8_t command;
+        const char* brand;
     };
-
-    for (int i = 0; i < 5; i++) {
-        ir.sendNEC(tv_codes[i], 0x12); // Power command (0x12)
-        delay(100);
+    
+    static const TVCode tv_codes[] = {
+        // === SAMSUNG ===
+        {0x0707, 0x02, "Samsung"},
+        {0xE0E0, 0x40, "Samsung"},
+        {0x0707, 0x98, "Samsung Alt"},
+        {0x2020, 0x40, "Samsung Old"},
+        
+        // === LG ===
+        {0x0408, 0x08, "LG"},
+        {0x20DF, 0x10, "LG"},
+        {0x0408, 0x40, "LG Alt"},
+        {0x20DF, 0x08, "LG Old"},
+        
+        // === SONY ===
+        {0x4CB3, 0x15, "Sony"},
+        {0x4CB3, 0x95, "Sony Alt"},
+        {0x1DE2, 0x40, "Sony Bravia"},
+        {0x000A, 0x15, "Sony Old"},
+        
+        // === PHILIPS ===
+        {0x0586, 0x0C, "Philips"},
+        {0x0200, 0x0C, "Philips Alt"},
+        {0x0586, 0x40, "Philips Old"},
+        
+        // === PANASONIC ===
+        {0x4004, 0x00, "Panasonic"},
+        {0x807F, 0x3D, "Panasonic"},
+        {0x4004, 0x3D, "Panasonic Alt"},
+        
+        // === TOSHIBA ===
+        {0x02FD, 0x12, "Toshiba"},
+        {0x40BF, 0x12, "Toshiba"},
+        {0x02FD, 0x48, "Toshiba Alt"},
+        
+        // === MARCAS BRASILEIRAS ===
+        {0x807F, 0x12, "Philco"},
+        {0x00FF, 0x12, "CCE"},
+        {0x00FF, 0x40, "Semp"},
+        {0x40BF, 0x40, "Semp Toshiba"},
+        {0x00FF, 0x45, "AOC"},
+        {0x40BF, 0x45, "AOC Alt"},
+        {0x609F, 0x08, "Gradiente"},
+        {0x00FF, 0x08, "Britania"},
+        {0x807F, 0x48, "Mondial"},
+        {0x40BF, 0x48, "Lenoxx"},
+        {0x00FF, 0x02, "H-Buster"},
+        
+        // === TCL / HISENSE ===
+        {0x0586, 0x08, "TCL"},
+        {0x00FF, 0x50, "TCL Alt"},
+        {0x6104, 0x08, "Hisense"},
+        
+        // === OUTRAS MARCAS ===
+        {0x00FF, 0x00, "Generic 1"},
+        {0xFF00, 0x00, "Generic 2"},
+        {0x0000, 0x12, "Generic 3"},
+        {0xFFFF, 0x12, "Generic 4"},
+        {0x1CE3, 0x08, "Sharp"},
+        {0x00FF, 0x0A, "Sanyo"},
+        {0x40BF, 0x0A, "Daewoo"},
+        {0x20DF, 0x0A, "JVC"},
+        {0x4CB3, 0x0A, "Aiwa"},
+        
+        // === ROKU / STREAMING ===
+        {0xEA15, 0x57, "Roku"},
+        {0x0000, 0x57, "Fire TV"},
+        
+        // === PROJETORES ===
+        {0x0586, 0x00, "Epson"},
+        {0x1898, 0x00, "BenQ"},
+        {0x00FF, 0x60, "Optoma"},
+        
+        // === MONITORES ===
+        {0x20DF, 0x00, "Dell"},
+        {0x0707, 0x00, "Asus"},
+        {0x4004, 0x00, "Acer"},
+    };
+    
+    const int total_codes = sizeof(tv_codes) / sizeof(tv_codes[0]);
+    
+    Serial.printf("[IR] Sending %d power codes...\n", total_codes);
+    
+    // Send each code multiple times with variations
+    for (int pass = 0; pass < 3; pass++) {
+        for (int i = 0; i < total_codes; i++) {
+            // Send NEC code
+            ir.sendNEC(tv_codes[i].userCode, tv_codes[i].command);
+            delay(40);  // Inter-code delay
+            
+            // Also try inverted command (some TVs use this)
+            ir.sendNEC(tv_codes[i].userCode, ~tv_codes[i].command & 0xFF);
+            delay(40);
+            
+            // Progress indication every 10 codes
+            if ((i + 1) % 10 == 0) {
+                Serial.printf("[IR] Progress: %d/%d codes sent (pass %d/3)\n", 
+                              i + 1, total_codes, pass + 1);
+            }
+        }
+        delay(500);  // Pause between passes
     }
-
-    Serial.println("[IR] TV Nuke completed");
+    
+    Serial.printf("[IR] TV Nuke completed - %d codes x 3 passes = %d transmissions\n", 
+                  total_codes, total_codes * 3 * 2);
 }
+

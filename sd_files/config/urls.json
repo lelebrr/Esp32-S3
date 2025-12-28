@@ -1,0 +1,13 @@
+{
+  "tts_voices": [
+    "https://raw.githubusercontent.com/espeak-ng/espeak-ng/master/dictsource/pt_dict"
+  ],
+  "wordlists": [
+    "https://raw.githubusercontent.com/kkrypt0nn/wordlists/main/wordlists/passwords/common_passwords.txt",
+    "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Passwords/Common-Credentials/10-million-password-list-top-100000.txt"
+  ],
+  "cve_database": [
+    "https://cve.circl.lu/api/query?vendor=br"
+  ],
+  "update_check_url": "https://api.github.com/repos/monster-s3/firmware/releases/latest"
+}

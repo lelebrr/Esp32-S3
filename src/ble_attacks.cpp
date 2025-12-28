@@ -374,11 +374,161 @@ void BLEAttacks::updateSamsungBuds() {
 // ============================================================================
 
 void BLEAttacks::updateSkimmerDetect() {
-    // Scan for suspicious BLE devices (skimmers)
-    // Known skimmer names: HC-05, HC-06, unnamed with specific UUIDs
+    // =========================================================================
+    // SKIMMER DETECTION - Scans for suspicious BLE devices
+    // Common skimmer indicators:
+    // 1. Names: HC-05, HC-06, BT05, MLT-BT05, JDY-*, unnamed devices
+    // 2. UUIDs: SPP (0x1101), HID (0x1812), Custom UUIDs
+    // 3. Behavior: Constant advertising, no proper pairing
+    // =========================================================================
     
-    // This would require BLE scan, not advertising
-    // For now, just placeholder
+    static bool scanStarted = false;
+    static uint32_t lastScanTime = 0;
+    static int suspiciousCount = 0;
+    
+    // Known skimmer device name patterns
+    static const char* SKIMMER_PATTERNS[] = {
+        "HC-05", "HC-06", "HC05", "HC06",
+        "BT05", "BT04", "MLT-BT",
+        "JDY-", "JDY30", "JDY31",
+        "SPP", "UART", "Serial",
+        "HM-10", "HM-11", "CC41",
+        "AT-09", "BLE-", 
+        nullptr  // Sentinel
+    };
+    
+    // Known skimmer MAC prefixes (common cheap modules)
+    static const uint8_t SKIMMER_MAC_PREFIXES[][3] = {
+        {0x00, 0x15, 0x83},  // HC-05/06 common
+        {0x98, 0xD3, 0x31},  // Chinese BT modules
+        {0xC8, 0xFD, 0x19},  // JDY series
+        {0x20, 0x15, 0x12},  // Generic skimmers
+    };
+    const int MAC_PREFIX_COUNT = 4;
+    
+    uint32_t now = millis();
+    
+    if (!scanStarted) {
+        // Start BLE scan
+        Serial.println("[BLE-SKIM] Starting skimmer detection scan...");
+        
+        NimBLEScan* pScan = NimBLEDevice::getScan();
+        pScan->setActiveScan(true);    // Get names
+        pScan->setInterval(100);
+        pScan->setWindow(99);
+        pScan->start(5, false);         // 5 second scan, non-blocking
+        
+        scanStarted = true;
+        lastScanTime = now;
+        suspiciousCount = 0;
+        LEDDriver::setAll(LED_YELLOW);
+        LEDDriver::show();
+        return;
+    }
+    
+    // Check if scan is still running
+    NimBLEScan* pScan = NimBLEDevice::getScan();
+    if (pScan->isScanning()) {
+        // Flash LED while scanning
+        static bool ledState = false;
+        if ((now / 200) % 2 != ledState) {
+            ledState = !ledState;
+            if (ledState) LEDDriver::setAll(LED_YELLOW);
+            else LEDDriver::clear();
+            LEDDriver::show();
+        }
+        return;
+    }
+    
+    // Scan complete - analyze results
+    Serial.println("[BLE-SKIM] Scan complete, analyzing...");
+    
+    NimBLEScanResults results = pScan->getResults();
+    int deviceCount = results.getCount();
+    
+    Serial.printf("[BLE-SKIM] Found %d BLE devices\n", deviceCount);
+    
+    for (int i = 0; i < deviceCount; i++) {
+        NimBLEAdvertisedDevice device = results.getDevice(i);
+        String name = device.getName().c_str();
+        NimBLEAddress addr = device.getAddress();
+        int rssi = device.getRSSI();
+        
+        bool suspicious = false;
+        String reason = "";
+        
+        // Check name patterns
+        for (int p = 0; SKIMMER_PATTERNS[p] != nullptr; p++) {
+            if (name.indexOf(SKIMMER_PATTERNS[p]) >= 0) {
+                suspicious = true;
+                reason = "Suspicious name pattern: " + String(SKIMMER_PATTERNS[p]);
+                break;
+            }
+        }
+        
+        // Check for unnamed devices with strong signal (physical proximity)
+        if (!suspicious && name.length() == 0 && rssi > -50) {
+            suspicious = true;
+            reason = "Unnamed device with strong signal";
+        }
+        
+        // Check MAC address prefix
+        if (!suspicious) {
+            const uint8_t* mac = addr.getNative();
+            for (int m = 0; m < MAC_PREFIX_COUNT; m++) {
+                if (mac[0] == SKIMMER_MAC_PREFIXES[m][0] &&
+                    mac[1] == SKIMMER_MAC_PREFIXES[m][1] &&
+                    mac[2] == SKIMMER_MAC_PREFIXES[m][2]) {
+                    suspicious = true;
+                    reason = "Known skimmer MAC prefix";
+                    break;
+                }
+            }
+        }
+        
+        // Check for SPP service UUID (serial over BLE = common skimmer)
+        if (!suspicious && device.haveServiceUUID()) {
+            if (device.isAdvertisingService(NimBLEUUID((uint16_t)0x1101))) {
+                suspicious = true;
+                reason = "SPP service (Serial Port Profile)";
+            }
+        }
+        
+        if (suspicious) {
+            suspiciousCount++;
+            Serial.printf("[BLE-SKIM] ⚠️  SUSPICIOUS: %s [%s] RSSI:%d\n",
+                         name.length() > 0 ? name.c_str() : "(unnamed)",
+                         addr.toString().c_str(), rssi);
+            Serial.printf("[BLE-SKIM]    Reason: %s\n", reason.c_str());
+            
+            // Alert - red LED flash
+            for (int f = 0; f < 3; f++) {
+                LEDDriver::setAll(LED_RED);
+                LEDDriver::show();
+                delay(100);
+                LEDDriver::clear();
+                LEDDriver::show();
+                delay(100);
+            }
+        }
+    }
+    
+    // Report results
+    if (suspiciousCount > 0) {
+        Serial.printf("[BLE-SKIM] ⚠️  ALERT: %d suspicious devices detected!\n", suspiciousCount);
+        LEDDriver::setAll(LED_RED);
+    } else {
+        Serial.println("[BLE-SKIM] ✓ No skimmers detected");
+        LEDDriver::setAll(LED_GREEN);
+    }
+    LEDDriver::show();
+    
+    // Reset for next scan
+    scanStarted = false;
+    pScan->clearResults();
+    
+    _packetCount++;
+    _ppsCounter++;
 }
 
 // ============================================================================
