@@ -242,3 +242,53 @@ void LEDDriver::scanner(uint32_t color) {
         if (pos <= 0) forward = true;
     }
 }
+
+void LEDDriver::pulseEffect(uint32_t color1, uint32_t color2, uint16_t speed) {
+    static uint8_t phase = 0;
+    static bool rising = true;
+    
+    // Interpolate between colors
+    uint8_t g1 = (color1 >> 16) & 0xFF, r1 = (color1 >> 8) & 0xFF, b1 = color1 & 0xFF;
+    uint8_t g2 = (color2 >> 16) & 0xFF, r2 = (color2 >> 8) & 0xFF, b2 = color2 & 0xFF;
+    
+    uint8_t g = g1 + ((g2 - g1) * phase / 255);
+    uint8_t r = r1 + ((r2 - r1) * phase / 255);
+    uint8_t b = b1 + ((b2 - b1) * phase / 255);
+    
+    uint32_t color = ((uint32_t)g << 16) | ((uint32_t)r << 8) | b;
+    setAll(color);
+    show();
+    
+    if (rising) {
+        phase += 10;
+        if (phase >= 250) rising = false;
+    } else {
+        phase -= 10;
+        if (phase <= 5) rising = true;
+    }
+}
+
+void LEDDriver::matrixRain() {
+    static uint8_t drops[LED_COUNT] = {0};
+    static uint8_t speeds[LED_COUNT] = {0};
+    
+    // Initialize speeds randomly
+    static bool init = false;
+    if (!init) {
+        for (int i = 0; i < LED_COUNT; i++) {
+            speeds[i] = random(5, 20);
+        }
+        init = true;
+    }
+    
+    // Update each LED
+    for (int i = 0; i < LED_COUNT; i++) {
+        drops[i] += speeds[i];
+        
+        // Green with varying intensity
+        uint8_t intensity = 255 - drops[i];
+        setPixelRGB(i, 0, intensity, intensity / 4);  // Greenish with hint of blue
+    }
+    
+    show();
+}

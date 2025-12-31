@@ -16,6 +16,8 @@
 #include "gps_driver.h"
 #include "nfc_driver.h"
 #include "q_learn_ia.h"
+#include <SD.h>
+#include <esp_sleep.h>
 
 // ------------------------------------------------------------
 // CONFIGURATION
@@ -115,8 +117,10 @@ static void show_hardware_menu();
 static void show_ai_voice_menu();
 static void show_settings_menu();
 static void show_status_screen();
-static void show_status_screen();
-static void show_evil_twin_menu(); // Forward declaration
+static void show_evil_twin_menu();
+static void show_led_menu();
+static void show_energy_menu();
+static void show_reset_menu();
 static void update_status_bar();
 
 // ------------------------------------------------------------
@@ -306,7 +310,16 @@ static void show_quick_attack_menu() {
     y += 50;
     create_menu_btn(scr, "Combo Full Auto", 10, y, 300, 40, COL_BTN, [](lv_event_t *e){
         attacks_stop();
-        attacks_start(ATTACK_WIFI_DEAUTH);
+        // AI decides best attack based on Q-table
+        int best = ai_get_best_action();
+        AttackType ai_attack = (AttackType)(best + 1); // Offset for enum
+        if (ai_attack > ATTACK_NONE && ai_attack < ATTACK_USB_EXFIL) {
+            attacks_start(ai_attack);
+            tts_speak("modo_combate");
+            LEDDriver::blinkAttacking();
+        } else {
+            attacks_start(ATTACK_WIFI_DEAUTH); // Fallback
+        }
         update_status_bar();
     });
     y += 50;
@@ -529,16 +542,111 @@ static void show_hardware_menu() {
         bool cur = lvgl_get_module_state("ir");
         lvgl_toggle_module("ir", !cur);
     });
-    create_menu_btn(scr, "LEDs", 160, y, 140, 40, COL_BTN, [](lv_event_t *e){
-        // LED submenu with real functionality
-        static int led_mode = 0;
-        led_mode = (led_mode + 1) % 4;
-        switch(led_mode) {
-            case 0: LEDDriver::clear(); LEDDriver::show(); break;
-            case 1: LEDDriver::setAll(LED_RED); LEDDriver::show(); break;
-            case 2: LEDDriver::setAll(LED_GREEN); LEDDriver::show(); break;
-            case 3: LEDDriver::rainbowCycle(); break;
-        }
+    create_menu_btn(scr, "LEDs", 160, y, 140, 40, COL_BTN, [](lv_event_t *e){ show_led_menu(); });
+    y += 50;
+    create_menu_btn(scr, "Energia", 10, y, 140, 40, COL_BTN, [](lv_event_t *e){ show_energy_menu(); });
+    create_menu_btn(scr, "Reset", 160, y, 140, 40, COL_RED, [](lv_event_t *e){ show_reset_menu(); });
+}
+
+// ------------------------------------------------------------
+// LED MENU (WS2812B effects)
+// ------------------------------------------------------------
+static void show_led_menu() {
+    current_screen = (ScreenType)SCREEN_HW_LEDS;
+    lv_obj_clean(lv_scr_act());
+    if (main_group) lv_group_remove_all_objs(main_group);
+    lv_obj_t *scr = lv_scr_act();
+    lv_obj_set_style_bg_color(scr, lv_color_hex(COL_BG), 0);
+    create_header(scr, "LEDs WS2812B");
+    int y = 45;
+    create_menu_btn(scr, "Neon Pulse", 10, y, 145, 40, COL_BTN, [](lv_event_t *e){
+        LEDDriver::pulseEffect(LED_CYAN, LED_MAGENTA, 50);
+    });
+    create_menu_btn(scr, "Matrix Rain", 165, y, 145, 40, COL_GREEN, [](lv_event_t *e){
+        LEDDriver::matrixRain();
+    });
+    y += 50;
+    create_menu_btn(scr, "Rainbow", 10, y, 145, 40, COL_BTN, [](lv_event_t *e){
+        LEDDriver::rainbowCycle();
+    });
+    create_menu_btn(scr, "Ataque Blink", 165, y, 145, 40, COL_RED, [](lv_event_t *e){
+        LEDDriver::blinkAttacking();
+    });
+    y += 50;
+    create_menu_btn(scr, "Status Verde", 10, y, 145, 40, COL_GREEN, [](lv_event_t *e){
+        LEDDriver::setAll(LED_GREEN); LEDDriver::show();
+    });
+    create_menu_btn(scr, "Off", 165, y, 145, 40, COL_BTN, [](lv_event_t *e){
+        LEDDriver::clear(); LEDDriver::show();
+    });
+}
+
+// ------------------------------------------------------------
+// ENERGY MENU (Deep Sleep, Overclock, Battery)
+// ------------------------------------------------------------
+static void show_energy_menu() {
+    current_screen = (ScreenType)SCREEN_HW_ENERGY;
+    lv_obj_clean(lv_scr_act());
+    if (main_group) lv_group_remove_all_objs(main_group);
+    lv_obj_t *scr = lv_scr_act();
+    lv_obj_set_style_bg_color(scr, lv_color_hex(COL_BG), 0);
+    create_header(scr, "Energia");
+    int y = 45;
+    create_menu_btn(scr, "Deep Sleep 500ms", 10, y, 145, 40, COL_BTN, [](lv_event_t *e){
+        esp_sleep_enable_timer_wakeup(500000); // 500ms
+        esp_light_sleep_start();
+    });
+    create_menu_btn(scr, "Deep Sleep 2s", 165, y, 145, 40, COL_BTN, [](lv_event_t *e){
+        esp_sleep_enable_timer_wakeup(2000000); // 2s
+        esp_light_sleep_start();
+    });
+    y += 50;
+    create_menu_btn(scr, "OC 240MHz", 10, y, 145, 40, COL_YELLOW, [](lv_event_t *e){
+        setCpuFrequencyMhz(240);
+        Serial.println("[CPU] Overclock: 240MHz");
+    });
+    create_menu_btn(scr, "Normal 160MHz", 165, y, 145, 40, COL_BTN, [](lv_event_t *e){
+        setCpuFrequencyMhz(160);
+        Serial.println("[CPU] Normal: 160MHz");
+    });
+    y += 50;
+    // Battery info
+    lv_obj_t *info = lv_label_create(scr);
+    char buf[64];
+    snprintf(buf, sizeof(buf), "CPU: %d MHz | Heap: %dKB", getCpuFrequencyMhz(), ESP.getFreeHeap()/1024);
+    lv_label_set_text(info, buf);
+    lv_obj_set_style_text_color(info, lv_color_hex(COL_GREEN), 0);
+    lv_obj_align(info, LV_ALIGN_BOTTOM_MID, 0, -10);
+}
+
+// ------------------------------------------------------------
+// RESET MENU (Q-Table, Configs, Logs)
+// ------------------------------------------------------------
+static void show_reset_menu() {
+    current_screen = (ScreenType)SCREEN_HW_RESET;
+    lv_obj_clean(lv_scr_act());
+    if (main_group) lv_group_remove_all_objs(main_group);
+    lv_obj_t *scr = lv_scr_act();
+    lv_obj_set_style_bg_color(scr, lv_color_hex(COL_BG), 0);
+    create_header(scr, "Reset");
+    int y = 45;
+    create_menu_btn(scr, "Reset Q-Table", 10, y, 300, 40, COL_RED, [](lv_event_t *e){
+        ai_reset_qtable();
+        tts_speak("ataque_parado");
+        Serial.println("[AI] Q-Table resetada");
+    });
+    y += 50;
+    create_menu_btn(scr, "Limpar Logs", 10, y, 300, 40, COL_BTN, [](lv_event_t *e){
+        SD.remove("/logs/system.log");
+        SD.remove("/logs/attacks.log");
+        Serial.println("[SD] Logs limpos");
+    });
+    y += 50;
+    create_menu_btn(scr, "Factory Reset", 10, y, 300, 40, COL_RED, [](lv_event_t *e){
+        ai_reset_qtable();
+        SD.remove("/config/config.json");
+        tts_speak("sistema_pronto");
+        ESP.restart();
     });
 }
 

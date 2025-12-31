@@ -1,7 +1,7 @@
-﻿# 🎯 Funcionalidades Completas - Lele Origin Arsenal Black Hat
+﻿# 🎯 Funcionalidades Completas - Monster S3 Arsenal
 
 > **Lista detalhada de todas as capacidades ofensivas e defensivas.**
-> Última atualização: 2025-12-19
+> Última atualização: 2025-12-28
 
 ---
 
@@ -172,7 +172,7 @@
 
 ---
 
-## �📻 RF (Rádio Frequência)
+## 📻 RF (Rádio Frequência)
 
 | Função | Descrição |
 |--------|-----------|
@@ -182,14 +182,17 @@
 | Jammer Full | Jammer onda quadrada |
 | Jammer Intermittent | Jammer PWM |
 | Replay | Reproduzir sinais |
-| **Pentest Attacks** | Ataques avançados RF |
-| ↳ 433MHz Jammer | Flood 433MHz com ruído |
-| ↳ Ghost Replay | Captura e replay aleatório |
+| Ghost Replay | Replay aleatório temporizado |
+| Brute Force | Ataque sequencial de códigos |
+| De Bruijn | Brute force otimizado |
+| Protocol Detection | Princeton/CAME/NiceFLO/Holtek |
+| Flipper Import | Importar arquivos .sub |
+| Signal Save/Load | Salvar/carregar do SD |
 | **Config** | Configurações |
 | ↳ RF TX Pin | Pino de transmissão |
 | ↳ RF RX Pin | Pino de recepção |
-| ↳ RF Module | Módulo (CC1101/RF433) |
-| ↳ RF Frequency | Frequência |
+| ↳ RF Module | Módulo (CC1101) |
+| ↳ RF Frequency | Frequência (315/433/868/915 MHz) |
 
 ---
 

@@ -1,10 +1,10 @@
 # 📻 RF (Rádio Frequência)
 
 > **SubGHz, 433MHz e NRF24.**
-> Última atualização: 2025-12-19
+> Última atualização: 2025-12-28
 
-Documentação das funcionalidades de RF, CC1101 e NRF24 do Lele Origin.
-> **CONFIRA TAMBÉM:** [CC1101_MODULE.md](file:///c:/Users/leleb/OneDrive/Desktop/Esp32-S3/docs/CC1101_MODULE.md) para pinout detalhado e drivers.
+Documentação das funcionalidades de RF, CC1101 e NRF24 do Monster S3.
+> **CONFIRA TAMBÉM:** [CC1101_MODULE.md](CC1101_MODULE.md) para pinout detalhado e drivers.
 
 ---
 
@@ -141,9 +141,8 @@ Ataque a mouses e teclados wireless vulneráveis.
 ---
 
 ## 🛠️ Configuração NRF24
->
-> **SubGHz, 433MHz e NRF24.**
-> Última atualização: 2025-12-19
+
+> **Atenção:** NRF24 usa SPI separado no ESP32-S3.
 
 **Pinagem NRF24L01:**
 

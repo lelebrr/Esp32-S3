@@ -1,9 +1,9 @@
 # 📺 Infravermelho (IR)
 
-Documentação das funcionalidades de infravermelho do Lele Origin.
+Documentação das funcionalidades de infravermelho do Monster S3.
 
-> **Controle Universal e TV-B-Gone.**
-> Última atualização: 2025-12-19
+> **Controle Universal e TV-B-Gone com 50+ marcas.**
+> Última atualização: 2025-12-28
 
 ---
 
@@ -45,15 +45,18 @@ Função clássica para desligar TVs automaticamente.
 
 **Como funciona:**
 
-1. O Lele emite sequencialmente códigos de desligamento
-2. Cobre mais de 100 modelos de TVs
-3. Funciona em TVs Samsung, LG, Sony, Philips, etc.
+1. O Monster S3 emite sequencialmente códigos de desligamento
+2. Cobre mais de **50 marcas de TVs** brasileiras e internacionais
+3. **Marcas BR:** Samsung, LG, Sony, Philips, Philco, CCE, Semp, AOC, Gradiente, Britania, Mondial, Lenoxx, H-Buster
+4. **Marcas Int:** Panasonic, Toshiba, TCL, Hisense, Sharp, Sanyo, Daewoo, JVC, Aiwa, Dell, Asus, Acer
+5. **Streaming:** Roku TV, Fire TV
+6. **Projetores:** Epson, BenQ, Optoma
 
 **Como usar:**
 
 1. Aponte o LED IR para a TV
-2. Acesse **IR → TV-B-Gone**
-3. Aguarde (pode levar até 1 minuto)
+2. Acesse **IR → TV-B-Gone** ou **TV Nuke**
+3. Aguarde (envia 50+ códigos x 3 passes = ~300 transmissões)
 4. A TV será desligada quando o código correto for enviado
 
 > [!TIP]

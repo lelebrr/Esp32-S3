@@ -1,7 +1,7 @@
 ﻿# ⚔️ Ataques e Funcionalidades Avançadas
 
 > **Explicação técnica de como cada ataque funciona.**  
-> Última atualização: 2025-12-21
+> Última atualização: 2025-12-28
 
 ---
 
@@ -11,7 +11,7 @@
 |-----------|---------|-----------|
 | WiFi | 8 | Deauth, Beacon Spam, Evil Portal, Handshake |
 | BLE | 7 | Spam iOS/Android/Windows/Samsung, iBeacon |
-| RF | 5 | Jammer, Bruteforce, Replay, Spectrum |
+| RF | 10 | Jammer, Bruteforce, Replay, Spectrum, De Bruijn, Protocol Det |
 | RFID | 6 | Clone, EMV Reader, Chameleon, Amiibo |
 | Ethernet | 4 | ARP Spoof, DHCP Starvation, MAC Flood |
 | IR | 4 | TV-B-Gone, Jammer, Custom, Receiver |

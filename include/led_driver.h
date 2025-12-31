@@ -101,6 +101,19 @@ public:
      * @brief Scanner effect (Larson scanner)
      */
     static void scanner(uint32_t color);
+    
+    /**
+     * @brief Pulse effect between two colors
+     * @param color1 First color
+     * @param color2 Second color
+     * @param speed Animation speed in ms
+     */
+    static void pulseEffect(uint32_t color1, uint32_t color2, uint16_t speed);
+    
+    /**
+     * @brief Matrix rain effect (green cascade)
+     */
+    static void matrixRain();
 
 private:
     static uint32_t _pixels[LED_COUNT];

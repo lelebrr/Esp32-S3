@@ -248,11 +248,62 @@ Documentação detalhada disponível em [`/docs`](docs/):
 
 ## 📱 Interface LVGL
 
-O sistema usa LVGL 8.3 para interface gráfica com:
-- Menu principal com ícones
-- Temas customizáveis
-- Feedback tátil
-- Animações suaves
+O sistema usa LVGL 8.4 para interface gráfica com:
+
+### Menu Principal (8 Categorias)
+| Categoria | Descrição |
+|-----------|----------|
+| Ataque Rápido | Combos pré-configurados (Porteiro, Casa, BLE, IR, Full Auto, Stealth) |
+| WiFi | Deauth, Beacon, Evil Twin (templates BR), PMKID, WPS |
+| BLE | Spam (iOS, Windows, Android, Samsung), BLE BR |
+| NFC | Clone, Fault Injection, Relay |
+| SubGHz | Capture, Replay, Jammers, Brute Force, Spectrum |
+| IR | TV-B-Gone, Brute, Clone |
+| Hardware | Módulos On/Off, LEDs WS2812B, Energia, Reset |
+| IA & Voz | Modo Treino/Combate, CVE, TTS |
+
+### Submenus Deep
+- **WiFi → Evil Twin**: Templates BR (Vivo, Claro, Oi, TIM, GVT)
+- **Hardware → LEDs**: Neon Pulse, Matrix Rain, Rainbow, Ataque Blink
+- **Hardware → Energia**: Deep Sleep 500ms/2s, Overclock 240/160MHz
+- **Hardware → Reset**: Q-Table, Logs, Factory Reset
+- **IA & Voz**: Treino/Combate, Estatísticas, Export JSON
+
+### Recursos Visuais
+- Tema cyberpunk neon
+- Animações 60fps
+- Touch calibrado
+- Navegação por gestos (PAJ7620U2)
+
+---
+
+## 🤖 IA Q-Learning
+
+### Recursos
+- Q-Table 32 estados × 8 ações em PSRAM
+- Modo Treino/Combate
+- `ai_get_best_action()` para decisão autônoma
+- Export JSON para análise
+- Epsilon-greedy com decay (30% → 5%)
+
+### Combo Full Auto
+A IA escolhe o melhor ataque baseado em:
+- Nível de bateria
+- Hora do dia
+- Atividade WiFi no ambiente
+- Histórico de sucesso
+
+---
+
+## 💡 LEDs WS2812B
+
+| Efeito | Descrição |
+|--------|----------|
+| Neon Pulse | Pulsa entre cyan e magenta |
+| Matrix Rain | Cascata verde estilo Matrix |
+| Rainbow Cycle | Espectro completo em loop |
+| Ataque Blink | Azul pulsante durante ataques |
+| Status Verde | Pronto para uso |
 
 ---
 
@@ -260,11 +311,12 @@ O sistema usa LVGL 8.3 para interface gráfica com:
 
 ### Modos de Energia
 
-| Modo | CPU | Autonomia | Uso |
-|------|-----|-----------|-----|
-| Economy | 80MHz | ~14 dias | Monitoramento |
-| Balanced | 160MHz | ~5 dias | Uso normal |
-| Force | 240MHz | ~8 horas | Ataques intensos |
+| Modo | CPU | Uso |
+|------|-----|-----|
+| Deep Sleep 500ms | Wake rápido | Monitoramento |
+| Deep Sleep 2s | Wake lento | Standby |
+| Normal | 160MHz | Uso diário |
+| Overclock | 240MHz | Ataques intensos |
 
 ---
 

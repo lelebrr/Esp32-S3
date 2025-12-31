@@ -208,96 +208,54 @@ void handleGestureAction(GestureAction action) {
 
 void setup() {
     // --- EARLY SERIAL INIT FOR USB CDC ---
+    // Increase timeout safety
     Serial.begin(115200);
-
-    // USB CDC needs time to enumerate after reset
-    // Wait up to 3 seconds for serial connection
-    unsigned long start = millis();
-    while (!Serial && (millis() - start < 3000)) {
-        delay(10);
-    }
-    delay(500); // Additional stabilization
-
-    // Setup backlight PWM
-    ledcSetup(1, 2000, 8);
-    ledcAttachPin(PIN_TFT_BL, 1);
+    // Give valid delay for USB to catch up, but don't block forever with WDT risk
+    delay(2000); 
     
     Serial.println("\n\n========================================");
-    Serial.println("     MONSTER S3 EARLY BOOT DEBUG");
+    Serial.println("     MONSTER S3 DEBUG BOOT START");
     Serial.println("========================================");
-    Serial.printf("Free Heap: %d bytes\n", ESP.getFreeHeap());
-    Serial.printf("PSRAM: %s\n", psramFound() ? "FOUND" : "NOT FOUND");
     
-    // --- AGGRESSIVE SD BOOT ---
-    Serial.println("[BOOT] Starting SD init...");
-    aggressive_boot_logic();
+    // --- SAFE MODE CHECK ---
+    // If boot loop persists, we can debug here
+    Serial.println("[BOOT] Checkpoint 1: Serial Init OK");
+    
+    // Setup backlight - Turn OFF initially to save power/avoid glitches
+    ledcSetup(1, 2000, 8);
+    ledcAttachPin(PIN_TFT_BL, 1);
+    ledcWrite(1, 0); // Black screen
+    
+    Serial.printf("[BOOT] Free Heap: %d bytes\n", ESP.getFreeHeap());
+    Serial.printf("[BOOT] PSRAM: %s\n", psramFound() ? "FOUND" : "NOT FOUND");
+    
+    // --- SD BOOT (DISABLED FOR DEBUGGING) ---
+    // Serial.println("[BOOT] Starting SD init...");
+    // aggressive_boot_logic();
 
-    // --- SD STRUCTURE SETUP ---
-    Serial.println("[BOOT] Setting up SD structure...");
-    setup_sd_structure();
-    move_flash_to_sd();
-    check_auto_backup();
-    log_with_timestamp(SD_FILE_LOG_BOOT, "System boot started");
-
-    // --- FIRST RUN CHECK: Generate wordlist if missing ---
-    if (!brute_check_exists()) {
-        Serial.println("[BOOT] First run detected - generating BR wordlist...");
-        Serial.println("[BOOT] This may take a few minutes...");
-        brute_generate_complete();
-    }
-
-    // --- Standard Driver Init ---
-    Serial.println("[BOOT] Starting MonsterDriver init...");
-    MonsterDriver::init();
-
+    // --- SD STRUCTURE SETUP (DISABLED) ---
+    // Serial.println("[BOOT] Setting up SD structure...");
+    // setup_sd_structure();
+    
+    // Verify Driver Init safely
+    Serial.println("[BOOT] Checkpoint 2: Drivers");
+    
+    // MonsterDriver::init(); // Commented out for isolation
+    
     // --- Attacks Manager Init ---
     Serial.println("[BOOT] Starting Attacks manager init...");
     attacks_init();
-
-    // --- Audio Driver Init ---
-    Serial.println("[BOOT] Starting Audio driver init...");
-    AudioDriver::init();
-
-    // --- NEW: Module Manager Init ---
-    Serial.println("[BOOT] Starting Module Manager...");
+    
+    // --- Hardware Drivers ---
+    Serial.println("[BOOT] Init Hardware modules...");
     ModuleManager::init();
-    
-    // --- NEW: LED Driver Init ---
-    Serial.println("[BOOT] Starting LED driver...");
     LEDDriver::init();
-    LEDDriver::setBrightness(50);
-    LEDDriver::rainbowCycle();  // Boot animation
+    LEDDriver::setBrightness(20);
+    LEDDriver::setAll(LED_BLUE);
+    LEDDriver::show();
     
-    // --- NEW: IR Protocols Init ---
-    Serial.println("[BOOT] Starting IR protocols...");
-    IRProtocols::init();
-    
-    // --- NEW: Gesture Actions Init ---
-    Serial.println("[BOOT] Starting Gesture Actions...");
-    GestureActions::init();
-
-    // --- NEW: Logger Init ---
-    Serial.println("[BOOT] Starting Logger...");
-    log_init();
-
-    // --- NEW: TTS Init ---
-    Serial.println("[BOOT] Starting TTS...");
-    setup_tts();
-
-    // --- NEW: Q-Learning AI Init ---
-    Serial.println("[BOOT] Starting Q-Learning AI...");
-    setup_q_learn();
-
-    // Check if we woke up from gesture
-    if (GestureSensor::wasWakeupByGesture()) {
-        Serial.println("[GESTURE] Woke up from deep sleep by gesture!");
-    }
-
-    // Ready Signal
-    digitalWrite(PIN_LED_RED_ATTACK_LO, HIGH);
-    log_system("Boot sequence complete");
-    tts_speak("sistema_pronto");
-
+    // --- Init Display ---
+    Serial.println("[BOOT] Starting Display Task...");
     // Create Tasks
     xTaskCreatePinnedToCore(taskSystemDisplay, "Display", 8192, NULL, 2, &hDisplayTask, 1);
     xTaskCreatePinnedToCore(taskNetworkManager, "Net", 4096, NULL, 1, &hNetTask, 1);
@@ -306,6 +264,7 @@ void setup() {
     xTaskCreatePinnedToCore(taskGPS, "GPS", 4096, NULL, 1, &hGPSTask, 0);
 
     Serial.println("[SYSTEM] Boot sequence complete.");
+    tts_speak("sistema_pronto");
 }
 
 void loop() {

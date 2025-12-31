@@ -142,5 +142,11 @@ void ai_decay_exploration();
  */
 void ai_reset_qtable();
 
+/**
+ * @brief Get best action for current state (exploitation)
+ * @return Action index with highest Q-value
+ */
+int ai_get_best_action();
+
 #endif // Q_LEARN_IA_H
 

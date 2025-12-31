@@ -503,3 +503,22 @@ void ai_reset_qtable() {
     Serial.println("[AI] Q-table reset to initial values");
 }
 
+int ai_get_best_action() {
+    if (!ai_initialized || !q_table) return 0;
+    
+    int state = get_env_state();
+    int best_action = 0;
+    float max_val = -9999.0f;
+    
+    for (int a = 0; a < ACTIONS; a++) {
+        float val = q_table[state * ACTIONS + a];
+        if (val > max_val) {
+            max_val = val;
+            best_action = a;
+        }
+    }
+    
+    Serial.printf("[AI] Best action for state %d: %d (Q=%.3f)\n", state, best_action, max_val);
+    return best_action;
+}
+
