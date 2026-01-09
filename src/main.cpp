@@ -1,32 +1,32 @@
 #include "attacks_manager.h"
 #include "core/aggressive_sd.h"
-#include "sd_structure.h"
 #include "gesture_sensor.h"
 #include "gps_driver.h"
 #include "hardware/audio_driver.h"
 #include "lvgl_menu.h"
 #include "pin_config.h"
 #include "s3_driver.h"
+#include "sd_structure.h"
 #include <Arduino.h>
 
 // Novos módulos
-#include "module_manager.h"
-#include "led_driver.h"
-#include "gesture_actions.h"
 #include "ble_attacks.h"
+#include "gesture_actions.h"
 #include "ir_protocols.h"
-#include "wps_attacks.h"
-#include "pmkid_capture.h"
+#include "led_driver.h"
+#include "module_manager.h"
 #include "nfc_relay.h"
+#include "pmkid_capture.h"
+#include "wps_attacks.h"
 
 // TTS, AI e Logging
-#include "tts_espeak.h"
-#include "q_learn_ia.h"
 #include "logger.h"
+#include "q_learn_ia.h"
+#include "tts_espeak.h"
 
 // Resource Download e Brute Generator
-#include "resource_downloader.h"
 #include "brute_generator.h"
+#include "resource_downloader.h"
 
 // Task Handles
 TaskHandle_t hDisplayTask;
@@ -211,24 +211,24 @@ void setup() {
     // Increase timeout safety
     Serial.begin(115200);
     // Give valid delay for USB to catch up, but don't block forever with WDT risk
-    delay(2000); 
-    
+    delay(2000);
+
     Serial.println("\n\n========================================");
-    Serial.println("     MONSTER S3 DEBUG BOOT START");
+    Serial.println("       MORPHNODE DEBUG BOOT START");
     Serial.println("========================================");
-    
+
     // --- SAFE MODE CHECK ---
     // If boot loop persists, we can debug here
     Serial.println("[BOOT] Checkpoint 1: Serial Init OK");
-    
+
     // Setup backlight - Turn OFF initially to save power/avoid glitches
     ledcSetup(1, 2000, 8);
     ledcAttachPin(PIN_TFT_BL, 1);
     ledcWrite(1, 0); // Black screen
-    
+
     Serial.printf("[BOOT] Free Heap: %d bytes\n", ESP.getFreeHeap());
     Serial.printf("[BOOT] PSRAM: %s\n", psramFound() ? "FOUND" : "NOT FOUND");
-    
+
     // --- SD BOOT (DISABLED FOR DEBUGGING) ---
     // Serial.println("[BOOT] Starting SD init...");
     // aggressive_boot_logic();
@@ -236,16 +236,16 @@ void setup() {
     // --- SD STRUCTURE SETUP (DISABLED) ---
     // Serial.println("[BOOT] Setting up SD structure...");
     // setup_sd_structure();
-    
+
     // Verify Driver Init safely
     Serial.println("[BOOT] Checkpoint 2: Drivers");
-    
-    // MonsterDriver::init(); // Commented out for isolation
-    
+
+    // MorphDriver::init(); // Commented out for isolation
+
     // --- Attacks Manager Init ---
     Serial.println("[BOOT] Starting Attacks manager init...");
     attacks_init();
-    
+
     // --- Hardware Drivers ---
     Serial.println("[BOOT] Init Hardware modules...");
     ModuleManager::init();
@@ -253,7 +253,7 @@ void setup() {
     LEDDriver::setBrightness(20);
     LEDDriver::setAll(LED_BLUE);
     LEDDriver::show();
-    
+
     // --- Init Display ---
     Serial.println("[BOOT] Starting Display Task...");
     // Create Tasks
@@ -270,9 +270,9 @@ void setup() {
 void loop() {
     // AI loop step - runs every 30s in combat mode
     ai_loop_step();
-    
+
     // TTS loop (running in own task)
     loop_tts();
-    
+
     vTaskDelay(1000 / portTICK_PERIOD_MS);
 }

@@ -1,10 +1,10 @@
 /**
  * @file wardriving.h
  * Wardriving Logger - WiFi/BLE + GPS
- * Monster S3 Firmware
- * 
+ * MorphNode Firmware
+ *
  * Logs scanned networks with GPS coordinates to CSV/KML on SD card.
- * 
+ *
  * Updated: 2025-12-19
  */
 
@@ -12,13 +12,14 @@
 #define WARDRIVING_H
 
 #include <Arduino.h>
-#include <SPI.h>
 #include <SD.h>
+#include <SPI.h>
+
 
 class WardrivingLogger {
 public:
     static bool init();
-    
+
     /**
      * @brief Log a WiFi network with current GPS location
      * @param ssid WiFi SSID
@@ -28,7 +29,7 @@ public:
      * @param encrypt Encryption type
      */
     static void logWiFi(String ssid, String bssid, int32_t rssi, int32_t channel, String encrypt);
-    
+
     /**
      * @brief Log a BLE device with current GPS location
      * @param name Device Name
@@ -36,10 +37,10 @@ public:
      * @param rssi Signal Strength
      */
     static void logBLE(String name, String address, int32_t rssi);
-    
+
     // Status
     static uint32_t getLogCount();
-    
+
 private:
     static uint32_t _logCount;
     static bool _initialized;

@@ -1,15 +1,17 @@
 #pragma once
 
-#include <Arduino.h>
 #include "modules/piezo_driver.h"
+#include <Arduino.h>
+
 // External Objects for global access
 extern PiezoDriver Piezo;
+#include "pin_config.h"
 #include <SPI.h>
 #include <Wire.h>
-#include "pin_config.h"
 
-// Hardware Abstraction Layer for Monster S3
-class MonsterDriver {
+
+// Hardware Abstraction Layer for MorphNode
+class MorphDriver {
 public:
     static void init();
     static void powerOnModules(bool wifi, bool ble, bool nfc, bool cc1101);
@@ -26,4 +28,3 @@ private:
     static void initGPS();
     static void initRTC();
 };
-

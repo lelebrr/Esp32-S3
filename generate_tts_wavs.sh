@@ -5,7 +5,7 @@
 OUTPUT_DIR="sd_files/tts/frases"
 mkdir -p "$OUTPUT_DIR"
 
-# Frases do sistema Monster S3
+# Frases do sistema MorphNode
 declare -A PHRASES=(
     ["pronto"]="Sistema pronto"
     ["deauth"]="Deauth rodando"

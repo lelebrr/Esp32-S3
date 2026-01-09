@@ -1,15 +1,15 @@
 /**
  * @file brute_generator.h
  * @brief Brazilian Wordlist Generator for ESP32-S3
- * 
+ *
  * Generates 10M+ passwords targeted at Brazilian systems:
  * - Porteiro codes (0000-9999)
  * - Date patterns (DDMMYYYY, DDMMYY)
  * - ISP defaults (GVT, Vivo, Claro, TIM, Oi)
  * - CEP-based passwords
  * - Common Brazilian patterns
- * 
- * @author Monster S3 Team
+ *
+ * @author MorphNode Team
  * @date 2025-12-28
  */
 
@@ -22,9 +22,9 @@
 // GENERATION OPTIONS
 // ============================================================================
 
-#define BRUTE_FILE_PATH       "/cve/brute_br.txt"
-#define BRUTE_FILE_PATH_WIFI  "/cve/brute_wifi_br.txt"
-#define BRUTE_FILE_PATH_WPS   "/cve/brute_wps_br.txt"
+#define BRUTE_FILE_PATH "/cve/brute_br.txt"
+#define BRUTE_FILE_PATH_WIFI "/cve/brute_wifi_br.txt"
+#define BRUTE_FILE_PATH_WPS "/cve/brute_wps_br.txt"
 
 // ============================================================================
 // PROGRESS CALLBACK
@@ -37,7 +37,7 @@
  * @param category Current category being generated
  * @return true to continue, false to cancel
  */
-typedef bool (*BruteProgressCallback)(uint32_t generated, uint32_t total, const char* category);
+typedef bool (*BruteProgressCallback)(uint32_t generated, uint32_t total, const char *category);
 
 // ============================================================================
 // PUBLIC API

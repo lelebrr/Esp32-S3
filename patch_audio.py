@@ -1,6 +1,6 @@
 import os
 
-path = os.path.join(os.getcwd(), ".pio/libdeps/Monster_S3/ESP32-audioI2S/src/Audio.cpp")
+path = os.path.join(os.getcwd(), ".pio/libdeps/MorphNode/ESP32-audioI2S/src/Audio.cpp")
 print(f"Patching {path}")
 
 try:

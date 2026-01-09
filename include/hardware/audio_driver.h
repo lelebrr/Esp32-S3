@@ -1,8 +1,8 @@
 /**
  * @file audio_driver.h
  * @brief Audio Driver Header - I2S + Piezo
- * 
- * @author Monster S3 Team
+ *
+ * @author MorphNode Team
  * @date 2025-12-23
  */
 

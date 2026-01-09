@@ -120,6 +120,7 @@ public:
     static bool init();
     static void stop();
     static bool isInitialized();
+    static bool checkHardware();
     
     // ============================
     // CONFIGURATION

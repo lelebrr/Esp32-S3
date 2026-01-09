@@ -1,11 +1,11 @@
 /**
  * @file gesture_sensor.cpp
- * Monster S3 Firmware - PAJ7620U2 Gesture Sensor Implementation
- * 
+ * MorphNode Firmware - PAJ7620U2 Gesture Sensor Implementation
+ *
  * Full implementation of gesture recognition using PAJ7620U2 sensor.
  * Supports 9 gestures, cursor mode, game mode, and deep sleep wake.
- * 
- * @author Monster S3 Team
+ *
+ * @author MorphNode Team
  * @date 2025-12-19
  */
 
@@ -47,24 +47,24 @@ bool GestureSensor::init() {
 #endif
 
     Serial.println("[GESTURE] Initializing PAJ7620U2...");
-    
+
     // Sensor uses Wire (I2C) which should already be initialized
     // by s3_driver.cpp on GPIO 8 (SDA) and GPIO 9 (SCL)
-    
+
     if (!_sensor.begin()) {
         Serial.println("[GESTURE] ERROR: PAJ7620 not found!");
         Serial.println("[GESTURE] Check I2C connections (SDA=GPIO8, SCL=GPIO9)");
         _initialized = false;
         return false;
     }
-    
+
     Serial.println("[GESTURE] PAJ7620U2 initialized successfully!");
     Serial.printf("[GESTURE] I2C Address: 0x%02X\n", PAJ7620_I2C_ADDR);
-    
+
     // Apply default configuration
     _sensor.setGestureEntryTime(_config.entryTimeMs);
     _sensor.setGestureExitTime(_config.exitTimeMs);
-    
+
     // Set game mode if configured
     if (_config.gameMode) {
         _sensor.setGameSpeed();
@@ -73,16 +73,16 @@ bool GestureSensor::init() {
         _sensor.setNormalSpeed();
         Serial.println("[GESTURE] Normal mode (120fps)");
     }
-    
+
     // Configure interrupt pin if used
     if (PIN_PAJ7620_INT >= 0 && _config.useInterrupt) {
         pinMode(PIN_PAJ7620_INT, INPUT_PULLUP);
         Serial.printf("[GESTURE] Interrupt pin configured: GPIO %d\n", PIN_PAJ7620_INT);
     }
-    
+
     _initialized = true;
     _enabled = _config.enabled;
-    
+
     Serial.println("[GESTURE] Ready for gesture detection!");
     return true;
 }
@@ -91,18 +91,16 @@ bool GestureSensor::init() {
 // Update (Polling)
 // ========================================
 void GestureSensor::update() {
-    if (!_initialized || !_enabled) {
-        return;
-    }
-    
+    if (!_initialized || !_enabled) { return; }
+
     if (_inCursorMode) {
         // In cursor mode, don't poll for gestures
         return;
     }
-    
+
     // Read gesture from sensor
     Gesture gesture = _sensor.readGesture();
-    
+
     // Map library gesture to our enum
     switch (gesture) {
         case GES_UP:
@@ -154,31 +152,29 @@ void GestureSensor::update() {
 // ========================================
 GestureType GestureSensor::getLastGesture() {
     GestureType gesture = _lastGesture;
-    _lastGesture = GESTURE_NONE;  // Clear after reading
+    _lastGesture = GESTURE_NONE; // Clear after reading
     return gesture;
 }
 
 GestureAction GestureSensor::getActionForGesture(GestureType gesture) {
     switch (gesture) {
-        case GESTURE_UP:        return ACTION_MENU_UP;
-        case GESTURE_DOWN:      return ACTION_MENU_DOWN;
-        case GESTURE_LEFT:      return ACTION_MENU_LEFT;
-        case GESTURE_RIGHT:     return ACTION_MENU_RIGHT;
-        case GESTURE_FORWARD:   return ACTION_SELECT;
-        case GESTURE_BACKWARD:  return ACTION_BACK;
+        case GESTURE_UP: return ACTION_MENU_UP;
+        case GESTURE_DOWN: return ACTION_MENU_DOWN;
+        case GESTURE_LEFT: return ACTION_MENU_LEFT;
+        case GESTURE_RIGHT: return ACTION_MENU_RIGHT;
+        case GESTURE_FORWARD: return ACTION_SELECT;
+        case GESTURE_BACKWARD: return ACTION_BACK;
         case GESTURE_CLOCKWISE: return ACTION_SPECIAL_1;
         case GESTURE_ANTICLOCKWISE: return ACTION_SPECIAL_2;
-        case GESTURE_WAVE:      return ACTION_WAKE;
-        default:                return ACTION_NONE;
+        case GESTURE_WAVE: return ACTION_WAKE;
+        default: return ACTION_NONE;
     }
 }
 
 // ========================================
 // Status Methods
 // ========================================
-bool GestureSensor::isAvailable() {
-    return _initialized;
-}
+bool GestureSensor::isAvailable() { return _initialized; }
 
 void GestureSensor::setEnabled(bool enabled) {
     _enabled = enabled;
@@ -195,7 +191,7 @@ void GestureSensor::setEnabled(bool enabled) {
 
 void GestureSensor::setGameMode(bool enabled) {
     if (!_initialized) return;
-    
+
     _config.gameMode = enabled;
     if (enabled) {
         _sensor.setGameSpeed();
@@ -206,9 +202,7 @@ void GestureSensor::setGameMode(bool enabled) {
     }
 }
 
-int GestureSensor::getWaveCount() {
-    return _waveCount;
-}
+int GestureSensor::getWaveCount() { return _waveCount; }
 
 // ========================================
 // Object Detection
@@ -233,7 +227,7 @@ int GestureSensor::getObjectSize() {
 // ========================================
 void GestureSensor::enableCursorMode() {
     if (!_initialized) return;
-    
+
     _sensor.setCursorMode();
     _inCursorMode = true;
     Serial.println("[GESTURE] Cursor mode enabled");
@@ -241,7 +235,7 @@ void GestureSensor::enableCursorMode() {
 
 void GestureSensor::enableGestureMode() {
     if (!_initialized) return;
-    
+
     _sensor.setGestureMode();
     _inCursorMode = false;
     Serial.println("[GESTURE] Gesture mode enabled");
@@ -282,23 +276,21 @@ bool GestureSensor::wasWakeupByGesture() {
 // ========================================
 // Configuration
 // ========================================
-GestureConfig GestureSensor::getConfig() {
-    return _config;
-}
+GestureConfig GestureSensor::getConfig() { return _config; }
 
-void GestureSensor::setConfig(const GestureConfig& config) {
+void GestureSensor::setConfig(const GestureConfig &config) {
     _config = config;
-    
+
     if (_initialized) {
         _sensor.setGestureEntryTime(config.entryTimeMs);
         _sensor.setGestureExitTime(config.exitTimeMs);
-        
+
         if (config.gameMode) {
             _sensor.setGameSpeed();
         } else {
             _sensor.setNormalSpeed();
         }
-        
+
         setEnabled(config.enabled);
     }
 }
@@ -306,7 +298,7 @@ void GestureSensor::setConfig(const GestureConfig& config) {
 void GestureSensor::setTiming(uint16_t entryMs, uint16_t exitMs) {
     _config.entryTimeMs = entryMs;
     _config.exitTimeMs = exitMs;
-    
+
     if (_initialized) {
         _sensor.setGestureEntryTime(entryMs);
         _sensor.setGestureExitTime(exitMs);

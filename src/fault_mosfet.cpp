@@ -1,14 +1,14 @@
 /**
  * @file fault_mosfet.cpp
  * @brief Fault Injection Magnético - MOSFET IRF520
- * 
+ *
  * Hardware:
  * - MOSFET IRF520 no GPIO 37
  * - Capacitor 180uF 450V
  * - Bobina 2.5mm² 15-20 voltas (5cm diâmetro)
  * - Pulso 5ms para glitch em Mifare Classic
- * 
- * @author Monster S3 Team
+ *
+ * @author MorphNode Team
  * @date 2025-12-23
  */
 
@@ -23,8 +23,8 @@ static uint32_t fault_count = 0;
 static uint32_t last_fault_time = 0;
 
 // Configurações de pulso
-static uint16_t pulse_width_us = 5000;   // 5ms default
-static uint8_t pulse_count = 1;          // Número de pulsos
+static uint16_t pulse_width_us = 5000; // 5ms default
+static uint8_t pulse_count = 1;        // Número de pulsos
 
 /**
  * @brief Inicializa o sistema de fault injection
@@ -33,14 +33,14 @@ void setup_fault_mosfet() {
     // GPIO do MOSFET
     pinMode(PIN_FAULT_GATE, OUTPUT);
     digitalWrite(PIN_FAULT_GATE, LOW);
-    
+
     // Botão de trigger (GPIO0 = Boot button)
     pinMode(PIN_BTN_FAULT, INPUT_PULLUP);
-    
+
     // LED de status (RGB onboard)
     pinMode(PIN_RGB_LED, OUTPUT);
     digitalWrite(PIN_RGB_LED, LOW);
-    
+
     fault_armed = true;
     Serial.println("[FAULT] MOSFET IRF520 pronto no GPIO 37");
     Serial.println("[FAULT] Pressione BOOT para injetar falha");
@@ -55,36 +55,37 @@ bool fault_pulse_trigger() {
         Serial.println("[FAULT] Sistema não armado!");
         return false;
     }
-    
+
     // Desabilita interrupções para timing preciso
     portDISABLE_INTERRUPTS();
-    
+
     // Sequência de pulsos
     for (int p = 0; p < pulse_count; p++) {
         // PULSO ON
         digitalWrite(PIN_FAULT_GATE, HIGH);
-        
+
         // Delay preciso em microsegundos
         delayMicroseconds(pulse_width_us);
-        
+
         // PULSO OFF
         digitalWrite(PIN_FAULT_GATE, LOW);
-        
+
         // Pausa entre pulsos (se múltiplos)
         if (p < pulse_count - 1) {
-            delayMicroseconds(1000);  // 1ms entre pulsos
+            delayMicroseconds(1000); // 1ms entre pulsos
         }
     }
-    
+
     portENABLE_INTERRUPTS();
-    
+
     // Atualiza contadores
     fault_count++;
     last_fault_time = millis();
-    
-    Serial.printf("[FAULT] Glitch #%lu disparado! Pulso: %uus x%d\n", 
-                  fault_count, pulse_width_us, pulse_count);
-    
+
+    Serial.printf(
+        "[FAULT] Glitch #%lu disparado! Pulso: %uus x%d\n", fault_count, pulse_width_us, pulse_count
+    );
+
     // LED vermelho pisca 3x
     for (int i = 0; i < 3; i++) {
         digitalWrite(PIN_RGB_LED, HIGH);
@@ -92,10 +93,10 @@ bool fault_pulse_trigger() {
         digitalWrite(PIN_RGB_LED, LOW);
         delay(100);
     }
-    
+
     // Voz: "Falha injetada"
     tts_speak("falha_injetada");
-    
+
     return true;
 }
 
@@ -135,9 +136,7 @@ void fault_set_pulse_count(uint8_t count) {
 /**
  * @brief Retorna contagem de faults disparados
  */
-uint32_t fault_get_count() {
-    return fault_count;
-}
+uint32_t fault_get_count() { return fault_count; }
 
 /**
  * @brief Arma/Desarma o sistema
@@ -150,9 +149,7 @@ void fault_arm(bool arm) {
 /**
  * @brief Verifica se sistema está armado
  */
-bool fault_is_armed() {
-    return fault_armed;
-}
+bool fault_is_armed() { return fault_armed; }
 
 /**
  * @brief Loop de verificação do botão de trigger
@@ -161,15 +158,15 @@ bool fault_is_armed() {
 void fault_check_button() {
     static uint32_t last_press = 0;
     static bool was_pressed = false;
-    
+
     bool pressed = (digitalRead(PIN_BTN_FAULT) == LOW);
-    
+
     // Debounce 200ms
     if (pressed && !was_pressed && (millis() - last_press > 200)) {
         last_press = millis();
         fault_pulse_trigger();
     }
-    
+
     was_pressed = pressed;
 }
 
@@ -182,15 +179,15 @@ void fault_check_button() {
  */
 void fault_brute_force(uint16_t start_us, uint16_t end_us, uint16_t step_us, uint16_t delay_ms) {
     Serial.printf("[FAULT] Brute Force: %u - %u us (step %u)\n", start_us, end_us, step_us);
-    
+
     for (uint16_t width = start_us; width <= end_us; width += step_us) {
         fault_pulse_custom(width);
         delay(delay_ms);
-        
+
         // TODO: Verificar se NFC respondeu diferente após glitch
         // Se cartão Mifare Classic retornar dados inesperados = sucesso
     }
-    
+
     Serial.println("[FAULT] Brute Force concluído");
     tts_speak("brute_force_completo");
 }

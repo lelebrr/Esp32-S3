@@ -1,7 +1,7 @@
 /**
  * @file interface.h
- * @brief Hardware Interface Abstraction - Monster S3 Firmware
- * 
+ * @brief Hardware Interface Abstraction - MorphNode Firmware
+ *
  * Provides stubs for interface functions.
  * The main firmware uses pin_config.h and lvgl_menu for UI.
  */

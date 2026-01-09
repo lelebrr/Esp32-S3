@@ -1,4 +1,4 @@
-REM Monster S3 BadUSB - WiFi Credential Dump
+REM MorphNode BadUSB - WiFi Credential Dump
 REM This script runs on Windows and extracts saved WiFi passwords
 
 DELAY 1000

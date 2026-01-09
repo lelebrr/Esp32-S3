@@ -1,13 +1,13 @@
 /**
  * @file audio_driver.cpp
  * @brief Audio Driver with I2S Output (PCM5102A)
- * 
+ *
  * Provides audio output via I2S DAC for:
  * - Alert sounds
  * - TTS feedback (future)
  * - Attack notification beeps
- * 
- * @author Monster S3 Team
+ *
+ * @author MorphNode Team
  * @date 2025-12-23
  */
 
@@ -19,10 +19,10 @@
 bool AudioDriver::initialized = false;
 
 // I2S configuration
-#define I2S_SAMPLE_RATE     44100
+#define I2S_SAMPLE_RATE 44100
 #define I2S_BITS_PER_SAMPLE I2S_BITS_PER_SAMPLE_16BIT
-#define I2S_DMA_BUF_COUNT   8
-#define I2S_DMA_BUF_LEN     64
+#define I2S_DMA_BUF_COUNT 8
+#define I2S_DMA_BUF_LEN 64
 
 void AudioDriver::init() {
     if (initialized) return;
@@ -82,7 +82,7 @@ void AudioDriver::playTone(int frequency, int duration) {
     // Generate sine wave samples
     const int samples_per_cycle = I2S_SAMPLE_RATE / frequency;
     const int total_samples = (I2S_SAMPLE_RATE * duration) / 1000;
-    
+
     int16_t sample_buffer[64];
     size_t bytes_written;
     int sample_index = 0;
@@ -92,10 +92,10 @@ void AudioDriver::playTone(int frequency, int duration) {
             // Simple sine approximation
             float phase = (float)(sample_index % samples_per_cycle) / samples_per_cycle;
             float sine = sin(phase * 2.0f * 3.14159f);
-            int16_t sample = (int16_t)(sine * 16000);  // ~50% volume
-            
-            sample_buffer[j * 2] = sample;      // Left channel
-            sample_buffer[j * 2 + 1] = sample;  // Right channel
+            int16_t sample = (int16_t)(sine * 16000); // ~50% volume
+
+            sample_buffer[j * 2] = sample;     // Left channel
+            sample_buffer[j * 2 + 1] = sample; // Right channel
             sample_index++;
         }
 
@@ -155,12 +155,10 @@ void AudioDriver::playAlert() {
 
 void AudioDriver::stopAudio() {
     if (!initialized) return;
-    
+
     // Clear I2S buffer
     i2s_zero_dma_buffer(I2S_NUM_0);
     Serial.println("[AUDIO] Audio stopped");
 }
 
-bool AudioDriver::isInitialized() {
-    return initialized;
-}
+bool AudioDriver::isInitialized() { return initialized; }

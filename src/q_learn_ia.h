@@ -7,8 +7,8 @@
 // CONFIGURATION CONSTANTS
 // ============================================================================
 
-#define AI_STATES   32   // 4 battery * 2 time * 4 activity
-#define AI_ACTIONS  8    // None, BLE, WiFi, NFC, SubGHz, IR, WPS, KRACK
+#define AI_STATES 64 // 4 battery * 2 time * 2 activity * 2 movement = 32 (reserving 64 for future)
+#define AI_ACTIONS 8 // None, BLE, WiFi, NFC, SubGHz, IR, WPS, KRACK
 
 // ============================================================================
 // AI STATISTICS STRUCTURE
@@ -109,14 +109,14 @@ void ai_report_failure();
  * @brief Get AI training statistics
  * @param stats Output structure with statistics
  */
-void ai_get_statistics(AIStats* stats);
+void ai_get_statistics(AIStats *stats);
 
 /**
  * @brief Export Q-table as JSON to SD card
  * @param path Output file path (e.g., "/ai/qtable.json")
  * @return true on success
  */
-bool ai_export_qtable_json(const char* path);
+bool ai_export_qtable_json(const char *path);
 
 /**
  * @brief Set exploration rate (epsilon)
@@ -149,4 +149,3 @@ void ai_reset_qtable();
 int ai_get_best_action();
 
 #endif // Q_LEARN_IA_H
-

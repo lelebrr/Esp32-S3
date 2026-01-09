@@ -1,4 +1,4 @@
-REM Monster S3 BadUSB - Reverse Shell
+REM MorphNode BadUSB - Reverse Shell
 REM PowerShell reverse shell payload
 
 DELAY 1000

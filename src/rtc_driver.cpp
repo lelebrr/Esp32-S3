@@ -1,13 +1,16 @@
 #include "rtc_driver.h"
 #include "pin_config.h"
+#include <Arduino.h>
+#include <Wire.h>
+
 
 RTC_DS3231 RTCDriver::rtc;
 bool RTCDriver::_initialized = false;
 
 bool RTCDriver::init() {
     if (_initialized) return true;
-    
-    // Wire.begin() is called in MonsterDriver::initBuses()
+
+    // Wire.begin() is called in MorphDriver::initBuses()
     // But we check if device is on bus
     Wire.beginTransmission(DS3231_I2C_ADDR); // 0x68
     if (Wire.endTransmission() != 0) {
@@ -24,21 +27,19 @@ bool RTCDriver::init() {
         Serial.println("[RTC] Lost power, setting compilation time...");
         rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
     }
-    
+
     // Disable 32K Pin to save power if not used
     rtc.disable32K();
-    
+
     // Clear any pending alarms
     rtc.clearAlarm(1);
     rtc.clearAlarm(2);
-    
+
     // Turn off alarm interrupts by default
     rtc.writeSqwPinMode(DS3231_OFF);
 
-    Serial.printf("[RTC] Ready! Time: %s Temp: %.2fC\n", 
-                  getDateTimeString().c_str(), 
-                  getTemperature());
-                  
+    Serial.printf("[RTC] Ready! Time: %s Temp: %.2fC\n", getDateTimeString().c_str(), getTemperature());
+
     _initialized = true;
     return true;
 }
@@ -47,9 +48,17 @@ String RTCDriver::getDateTimeString() {
     if (!_initialized) return "1970-01-01 00:00:00";
     DateTime now = rtc.now();
     char buf[20];
-    snprintf(buf, sizeof(buf), "%04d-%02d-%02d %02d:%02d:%02d",
-             now.year(), now.month(), now.day(),
-             now.hour(), now.minute(), now.second());
+    snprintf(
+        buf,
+        sizeof(buf),
+        "%04d-%02d-%02d %02d:%02d:%02d",
+        now.year(),
+        now.month(),
+        now.day(),
+        now.hour(),
+        now.minute(),
+        now.second()
+    );
     return String(buf);
 }
 
@@ -63,9 +72,7 @@ float RTCDriver::getTemperature() {
     return rtc.getTemperature();
 }
 
-bool RTCDriver::isRunning() {
-    return _initialized;
-}
+bool RTCDriver::isRunning() { return _initialized; }
 
 void RTCDriver::adjust(uint16_t y, uint8_t m, uint8_t d, uint8_t h, uint8_t min, uint8_t s) {
     if (!_initialized) return;
@@ -73,7 +80,7 @@ void RTCDriver::adjust(uint16_t y, uint8_t m, uint8_t d, uint8_t h, uint8_t min,
     Serial.println("[RTC] Time adjusted manually");
 }
 
-void RTCDriver::adjust(const DateTime& dt) {
+void RTCDriver::adjust(const DateTime &dt) {
     if (!_initialized) return;
     rtc.adjust(dt);
     Serial.println("[RTC] Time adjusted manually");

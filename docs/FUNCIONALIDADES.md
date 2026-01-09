@@ -1,4 +1,4 @@
-﻿# 🎯 Funcionalidades Completas - Monster S3 Arsenal
+﻿# 🎯 Funcionalidades Completas - MorphNode Arsenal
 
 > **Lista detalhada de todas as capacidades ofensivas e defensivas.**
 > Última atualização: 2025-12-28
@@ -234,25 +234,7 @@
 
 ---
 
-## 📻 NRF24 (2.4GHz)
 
-| Função | Descrição |
-|--------|-----------|
-| NRF24 Jammer | Jammer 2.4GHz |
-| 2.4G Spectrum | Analisador de espectro |
-| Mousejack | Ataque Mousejack (em desenvolvimento) |
-
----
-
-## 📻 FM Radio
-
-| Função | Descrição |
-|--------|-----------|
-| Broadcast Standard | Transmissão padrão |
-| Broadcast Reserved | Transmissão reservada |
-| Broadcast Stop | Parar transmissão |
-
----
 
 ## 📝 Scripts
 
@@ -508,26 +490,6 @@
 
 ### Hardware Específico
 
-#### **Crowbar Circuit**
-
-- MOSFET IRF540 para voltage drop
-- Rise time: <50ns
-- Voltage range: 3.3V → 0.8V
-- Pulse width: 50-500ns
-
-#### **Laser Injection**
-
-- 405nm violet laser 500mW
-- Focus spot: <1mm
-- Pulse control: 50-500ms
-- Power supply: 5V boost
-
-#### **RF Trigger**
-
-- CC1101 433MHz synchronization
-- NRF24 2.4GHz alternative
-- ISR-based detection
-- Response time: <1µs
 
 ### Safety Features
 
@@ -535,7 +497,7 @@
 - **Emergency Stop:** Botão físico de parada
 - **Arm Confirmation:** Avisos obrigatórios
 - **Circuit Protection:** Current limiting + thermal
-- **Operator Warnings:** High voltage alerts
+
 
 ---
 
@@ -588,6 +550,27 @@
 O sistema pode usar os LEDs para feedback visual:
 
 - 🔴 **Erro**: Vermelho piscando
+- 🟢 **Sucesso**: Verde rápido
+- 🔵 **Ativo**: Azul pulsando
+- 🟡 **Aviso**: Amarelo fixo (Hardware não detectado)
+
+---
+
+## 🔒 Smart Hardware Detection
+
+O sistema possui detecção automática de hardware no boot. Se um módulo não for encontrado (ex: CC1101 desconectado), o menu correspondente será desativado automaticamente para evitar crashes.
+
+### Comportamento
+- **Módulos Detectados:** Botões azuis/coloridos, totalmente funcionais.
+- **Módulos Ausentes:** Botões cinza escuro, não clicáveis.
+- **Status de Boot:** O log serial e a tela de splash indicam quais hardwares foram inicializados com sucesso.
+
+### Hardware Monitorado
+- **RF SubGHz:** Verifica registrador VERSION do CC1101 via SPI.
+- **NFC:** Verifica firmware do PN532 via I2C.
+- **GPS e IR:** Monitora atividade nas portas UART.
+
+---
 - 🟢 **Sucesso**: Verde piscando
 - 🟡 **Aviso**: Amarelo piscando
 - 🔵 **Captura**: Azul pulsando

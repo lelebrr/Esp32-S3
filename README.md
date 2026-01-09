@@ -1,6 +1,6 @@
-﻿# Monster S3 Firmware
+﻿# MorphNode Firmware
 
-## ESP32-S3 Pentest Device
+## ESP32-S3 Pentest Device 🦎
 
 Firmware completo para dispositivo de segurança ofensiva portátil, suportando 27+ vetores de ataque.
 
@@ -14,7 +14,7 @@ Firmware completo para dispositivo de segurança ofensiva portátil, suportando 
 
 ```bash
 # Compilar e fazer upload
-pio run -e Monster_S3 -t upload
+pio run -e MorphNode -t upload
 
 # Monitorar saída serial
 pio device monitor
@@ -165,7 +165,7 @@ pio device monitor
 
 ## 📡 Web Dashboard
 
-- **SSID**: `Monster_S3` (oculto)
+- **SSID**: `MorphNode` (oculto)
 - **Senha**: `lele2025`
 - **URL**: http://192.168.4.1
 
@@ -246,34 +246,50 @@ Documentação detalhada disponível em [`/docs`](docs/):
 
 ---
 
-## 📱 Interface LVGL
+## 📱 Interface LVGL (Cyber-Glass UI)
 
-O sistema usa LVGL 8.4 para interface gráfica com:
+O sistema conta com uma nova interface visual "Neon Cyber-Glass" rodando em LVGL 8.4:
+
+### ✨ Destaques Visuais
+-   **Estilo Glassmorphism**: Painéis semi-transparentes com bordas neon (Cyan/Magenta).
+-   **Grid Layout**: Navegação moderna baseada em ícones grandes e scroll suave.
+-   **Startup Cinematográfico**: Animação de boot com "Morphy" (logo vivo).
+-   **Menu Status Bar**: Barra superior persistente com status de WiFi, BLE e Bateria.
+
+### 🦎 Morphy (O Camaleão Processual)
+Um assistente animado processualmente que reage ao sistema:
+-   **Idle**: Observa o ambiente, pisca os olhos.
+-   **Ataque**: Fica vermelho e agressivo.
+-   **Sucesso**: Fica verde e celebra.
+-   **Eating**: Estende a língua para "pegar" pacotes (Hardware Check).
+-   **Party Mode**: Efeito Rainbow RGB (ativável via Web).
 
 ### Menu Principal (8 Categorias)
 | Categoria | Descrição |
 |-----------|----------|
-| Ataque Rápido | Combos pré-configurados (Porteiro, Casa, BLE, IR, Full Auto, Stealth) |
-| WiFi | Deauth, Beacon, Evil Twin (templates BR), PMKID, WPS |
-| BLE | Spam (iOS, Windows, Android, Samsung), BLE BR |
-| NFC | Clone, Fault Injection, Relay |
-| SubGHz | Capture, Replay, Jammers, Brute Force, Spectrum |
-| IR | TV-B-Gone, Brute, Clone |
-| Hardware | Módulos On/Off, LEDs WS2812B, Energia, Reset |
-| IA & Voz | Modo Treino/Combate, CVE, TTS |
+| **Ataque Rápido** | Grid de ícones para combos (Porteiro, Casa, BLE Storm, IR Clone, Full Auto) |
+| **WiFi** | Deauth, Beacon, Evil Twin (templates BR), PMKID, WPS |
+| **BLE** | Spam (iOS, Windows, Android, Samsung), BLE BR |
+| **NFC** | Clone, Fault Injection, Relay |
+| **SubGHz** | Capture, Replay, Jammers, Brute Force, Spectrum |
+| **IR** | TV-B-Gone, Brute, Clone |
+| **Hardware** | Módulos On/Off, LEDs WS2812B, Energia, Reset |
+| **IA & Voz** | Modo Treino/Combate, CVE, TTS, Galeria de Animações |
+
+### 🛠️ MorphNode Studio (Web Customizer)
+Personalize o Morphy em tempo real via navegador:
+-   **Acesso**: `http://192.168.4.1/chameleon`
+-   **Funções**: Troque cores de todas as skins, ajuste velocidade e ative o modo Rainbow.
 
 ### Submenus Deep
 - **WiFi → Evil Twin**: Templates BR (Vivo, Claro, Oi, TIM, GVT)
 - **Hardware → LEDs**: Neon Pulse, Matrix Rain, Rainbow, Ataque Blink
 - **Hardware → Energia**: Deep Sleep 500ms/2s, Overclock 240/160MHz
-- **Hardware → Reset**: Q-Table, Logs, Factory Reset
-- **IA & Voz**: Treino/Combate, Estatísticas, Export JSON
+- **IA & Voz → Galeria**: Previsão de todas as animações do Morphy.
 
-### Recursos Visuais
-- Tema cyberpunk neon
-- Animações 60fps
-- Touch calibrado
-- Navegação por gestos (PAJ7620U2)
+### Recursos de Entrada
+- Touch calibrado (XPT2046)
+- Navegação por gestos (PAJ7620U2 - Wave, Clockwise)
 
 ---
 

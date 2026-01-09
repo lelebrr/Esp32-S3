@@ -1,7 +1,7 @@
 /**
  * @file globals.h
- * @brief Legacy compatibility header - Monster S3 Firmware
- * 
+ * @brief Legacy compatibility header - MorphNode Firmware
+ *
  * Note: This file contains legacy definitions for compatibility.
  * The main firmware uses pin_config.h and individual driver headers.
  */

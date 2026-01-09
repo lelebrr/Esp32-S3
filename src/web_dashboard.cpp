@@ -9,38 +9,43 @@
  * - Real-time attack control
  * - System information
  *
- * @author Monster S3 Team
- * @date 2025-12-23
+ * @author MorphNode Team
+ * @date 2026-01-08
  */
 
 #include "web_dashboard.h"
+#include "web_static/chameleon_html.h" // Frontend
+#include "web_static/ir_remote_html.h" // IR Frontend
+
+
+#include "chameleon_anim.h" // Backend Logic
 #include "attacks_manager.h"
-#include "pin_config.h"
-#include "core/aggressive_sd.h"
-#include "nfc_driver.h"
-#include "usb_driver.h"
-#include "gps_driver.h"
-#include "rf_core.h"
-#include "module_manager.h"
-#include "led_driver.h"
 #include "ble_attacks.h"
+#include "core/aggressive_sd.h"
+#include "gps_driver.h"
 #include "ir_protocols.h"
-#include "wps_attacks.h"
-#include "pmkid_capture.h"
+#include "led_driver.h"
+#include "module_manager.h"
+#include "nfc_driver.h"
 #include "nfc_relay.h"
+#include "pin_config.h"
+#include "pmkid_capture.h"
+#include "rf_core.h"
+#include "usb_driver.h"
+#include "wps_attacks.h"
 #include <Arduino.h>
+#include <ArduinoJson.h>
 #include <ESPAsyncWebServer.h>
 #include <WiFi.h>
-#include <ArduinoJson.h>
 
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
-#define AP_SSID     "Monster_S3"
-#define AP_PASSWORD "lele2025"
-#define AP_HIDDEN   true
-#define WEB_USER    "admin"
-#define WEB_PASS    "lele2025"
+#define AP_SSID "MorphNode"
+#define AP_PASSWORD "morphnode"
+#define AP_HIDDEN true
+#define WEB_USER "admin"
+#define WEB_PASS "lele2025"
 
 AsyncWebServer server(80);
 
@@ -58,7 +63,7 @@ bool checkAuth(AsyncWebServerRequest *request) {
 // ============================================================================
 // HELPER: Send JSON response
 // ============================================================================
-void sendJson(AsyncWebServerRequest *request, JsonDocument& doc, int code = 200) {
+void sendJson(AsyncWebServerRequest *request, JsonDocument &doc, int code = 200) {
     String output;
     serializeJson(doc, output);
     request->send(code, "application/json", output);
@@ -69,18 +74,18 @@ void sendJson(AsyncWebServerRequest *request, JsonDocument& doc, int code = 200)
 // ============================================================================
 void handleStatus(AsyncWebServerRequest *request) {
     if (!checkAuth(request)) return;
-    
+
     JsonDocument doc;
-    doc["device"] = "Monster S3";
-    doc["version"] = "1.0";
+    doc["device"] = "MorphNode";
+    doc["version"] = "2.0";
     doc["uptime"] = millis() / 1000;
     doc["heap"] = ESP.getFreeHeap();
     doc["psram"] = ESP.getFreePsram();
-    
+
     // Attack status
     doc["attack"]["running"] = attacks_is_running();
     doc["attack"]["current"] = attacks_get_name(attacks_get_current());
-    
+
     // GPS status
     doc["gps"]["available"] = GPSDriver::isAvailable();
     doc["gps"]["valid"] = GPSDriver::isValid();
@@ -89,20 +94,20 @@ void handleStatus(AsyncWebServerRequest *request) {
         doc["gps"]["lon"] = GPSDriver::getLongitude();
         doc["gps"]["sats"] = GPSDriver::getSatellites();
     }
-    
+
     // SD status
     doc["sd"]["ready"] = AggressiveSD::isReady();
     if (AggressiveSD::isReady()) {
         doc["sd"]["size_mb"] = AggressiveSD::getCardSize() / (1024 * 1024);
         doc["sd"]["free_mb"] = AggressiveSD::getFreeSpace() / (1024 * 1024);
     }
-    
+
     // NFC status
     doc["nfc"]["ready"] = NFCDriver::isReady();
-    
+
     // RF status
     doc["rf"]["initialized"] = RFCore::isInitialized();
-    
+
     sendJson(request, doc);
 }
 
@@ -111,10 +116,10 @@ void handleStatus(AsyncWebServerRequest *request) {
 // ============================================================================
 void handleAttacksList(AsyncWebServerRequest *request) {
     if (!checkAuth(request)) return;
-    
+
     JsonDocument doc;
     JsonArray attacks = doc["attacks"].to<JsonArray>();
-    
+
     // BLE Attacks
     JsonObject ble = attacks.add<JsonObject>();
     ble["category"] = "BLE";
@@ -125,7 +130,7 @@ void handleAttacksList(AsyncWebServerRequest *request) {
     bleList.add("swift_pair");
     bleList.add("fast_pair");
     bleList.add("samsung_buds");
-    
+
     // WiFi Attacks
     JsonObject wifi = attacks.add<JsonObject>();
     wifi["category"] = "WiFi";
@@ -138,7 +143,7 @@ void handleAttacksList(AsyncWebServerRequest *request) {
     wifiList.add("wps_pixie");
     wifiList.add("wps_brute");
     wifiList.add("wardrive");
-    
+
     // RF Attacks
     JsonObject rf = attacks.add<JsonObject>();
     rf["category"] = "RF SubGHz";
@@ -153,7 +158,7 @@ void handleAttacksList(AsyncWebServerRequest *request) {
     rfList.add("ghost_replay");
     rfList.add("brute_force");
     rfList.add("spectrum");
-    
+
     // NFC Attacks
     JsonObject nfc = attacks.add<JsonObject>();
     nfc["category"] = "NFC";
@@ -163,7 +168,7 @@ void handleAttacksList(AsyncWebServerRequest *request) {
     nfcList.add("phishing");
     nfcList.add("relay_reader");
     nfcList.add("relay_emulator");
-    
+
     // IR Attacks
     JsonObject ir = attacks.add<JsonObject>();
     ir["category"] = "IR";
@@ -172,65 +177,58 @@ void handleAttacksList(AsyncWebServerRequest *request) {
     irList.add("tv_bgone");
     irList.add("clone");
     irList.add("brute_gate");
-    
+
     // USB Attacks
     JsonObject usb = attacks.add<JsonObject>();
     usb["category"] = "USB";
     JsonArray usbList = usb["items"].to<JsonArray>();
     usbList.add("badusb");
     usbList.add("exfil");
-    
+
     sendJson(request, doc);
 }
 
 // ============================================================================
 // API: Start Attack
 // ============================================================================
-void handleAttackStart(AsyncWebServerRequest *request, const String& type) {
+void handleAttackStart(AsyncWebServerRequest *request, const String &type) {
     if (!checkAuth(request)) return;
-    
+
     AttackType attack = ATTACK_NONE;
     bool specialHandler = false;
-    
+
     // BLE
     if (type == "ble_spam") attack = ATTACK_BLE_SPAM;
     else if (type == "ble_spam_brazil") {
         BLEAttacks::start(BLE_ATTACK_SPAM_BRAZIL);
         specialHandler = true;
-    }
-    else if (type == "sour_apple") attack = ATTACK_BLE_SOUR_APPLE;
+    } else if (type == "sour_apple") attack = ATTACK_BLE_SOUR_APPLE;
     else if (type == "swift_pair") attack = ATTACK_BLE_SWIFT_PAIR;
     else if (type == "fast_pair") attack = ATTACK_BLE_FAST_PAIR;
     else if (type == "samsung_buds") {
         BLEAttacks::start(BLE_ATTACK_SAMSUNG_BUDS);
         specialHandler = true;
     }
-    
+
     // WiFi
-    else if (type == "deauth") attack = ATTACK_WIFI_DEAUTH;
+    else if (type == "deauth")
+        attack = ATTACK_WIFI_DEAUTH;
     else if (type == "beacon_spam") attack = ATTACK_WIFI_BEACON_SPAM;
     else if (type == "evil_twin") attack = ATTACK_WIFI_EVIL_TWIN;
     else if (type == "pmkid") attack = ATTACK_WIFI_PMKID;
     else if (type == "pmkid_capture") {
         PMKIDCapture::start();
         specialHandler = true;
-    }
-    else if (type == "wps_pixie") {
+    } else if (type == "wps_pixie") {
         WPSAttacks::scanWPS();
-        if (WPSAttacks::getNetwork(0).wpsEnabled) {
-            WPSAttacks::startPixieDust(WPSAttacks::getNetwork(0));
-        }
+        if (WPSAttacks::getNetwork(0).wpsEnabled) { WPSAttacks::startPixieDust(WPSAttacks::getNetwork(0)); }
         specialHandler = true;
-    }
-    else if (type == "wps_brute") {
+    } else if (type == "wps_brute") {
         WPSAttacks::scanWPS();
-        if (WPSAttacks::getNetwork(0).wpsEnabled) {
-            WPSAttacks::startBruteForce(WPSAttacks::getNetwork(0));
-        }
+        if (WPSAttacks::getNetwork(0).wpsEnabled) { WPSAttacks::startBruteForce(WPSAttacks::getNetwork(0)); }
         specialHandler = true;
-    }
-    else if (type == "wardrive") attack = ATTACK_WIFI_WARDRIVE;
-    
+    } else if (type == "wardrive") attack = ATTACK_WIFI_WARDRIVE;
+
     // RF
     else if (type == "jammer_433") attack = ATTACK_RF_JAMMER_433;
     else if (type == "jammer_315") attack = ATTACK_RF_JAMMER_315;
@@ -242,7 +240,7 @@ void handleAttackStart(AsyncWebServerRequest *request, const String& type) {
     else if (type == "ghost_replay") attack = ATTACK_RF_GHOST_REPLAY;
     else if (type == "brute_force") attack = ATTACK_RF_BRUTE_FORCE;
     else if (type == "spectrum") attack = ATTACK_RF_SPECTRUM;
-    
+
     // NFC
     else if (type == "nfc_clone") attack = ATTACK_NFC_CLONE;
     else if (type == "nfc_fault") attack = ATTACK_NFC_FAULT;
@@ -251,31 +249,31 @@ void handleAttackStart(AsyncWebServerRequest *request, const String& type) {
         NFCRelay::init();
         NFCRelay::setReaderMode();
         specialHandler = true;
-    }
-    else if (type == "relay_emulator") {
+    } else if (type == "relay_emulator") {
         NFCRelay::init();
         NFCRelay::setEmulatorMode();
         specialHandler = true;
     }
-    
+
     // IR
-    else if (type == "ir_brute") attack = ATTACK_IR_BRUTE;
+    else if (type == "ir_brute")
+        attack = ATTACK_IR_BRUTE;
     else if (type == "tv_off" || type == "tv_bgone") {
         IRProtocols::tvBGone();
         specialHandler = true;
-    }
-    else if (type == "ir_clone") attack = ATTACK_IR_CLONE;
+    } else if (type == "ir_clone") attack = ATTACK_IR_CLONE;
     else if (type == "brute_gate") {
         IRProtocols::bruteGate12bit();
         specialHandler = true;
     }
-    
+
     // USB
-    else if (type == "badusb") attack = ATTACK_USB_BADUSB;
+    else if (type == "badusb")
+        attack = ATTACK_USB_BADUSB;
     else if (type == "usb_exfil") attack = ATTACK_USB_EXFIL;
-    
+
     JsonDocument doc;
-    
+
     if (specialHandler) {
         LEDDriver::blinkSuccess();
         doc["status"] = "started";
@@ -297,13 +295,44 @@ void handleAttackStart(AsyncWebServerRequest *request, const String& type) {
 }
 
 // ============================================================================
+// API: Send specific IR Code
+// ============================================================================
+void handleIRSend(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+    if (!checkAuth(request)) return;
+
+    JsonDocument doc;
+    deserializeJson(doc, (const char*)data);
+
+    String protoName = doc["protocol"];
+    uint64_t code = doc["code"];
+    int bits = doc["bits"];
+
+    IRProtocolType proto = IR_PROTO_NEC;
+    if (protoName == "NEC") proto = IR_PROTO_NEC;
+    else if (protoName == "SAMSUNG") proto = IR_PROTO_SAMSUNG;
+    else if (protoName == "SONY") proto = IR_PROTO_SONY;
+    else if (protoName == "RC5") proto = IR_PROTO_RC5;
+    else if (protoName == "RC6") proto = IR_PROTO_RC6;
+    else if (protoName == "LG") proto = IR_PROTO_LG;
+    else if (protoName == "PANASONIC") proto = IR_PROTO_PANASONIC;
+
+    IRProtocols::send(proto, code, bits);
+
+    JsonDocument resp;
+    resp["status"] = "sent";
+    resp["protocol"] = protoName;
+    resp["code"] = code;
+    sendJson(request, resp);
+}
+
+// ============================================================================
 // API: Stop Attack
 // ============================================================================
 void handleAttackStop(AsyncWebServerRequest *request) {
     if (!checkAuth(request)) return;
-    
+
     attacks_stop();
-    
+
     JsonDocument doc;
     doc["status"] = "stopped";
     sendJson(request, doc);
@@ -314,9 +343,9 @@ void handleAttackStop(AsyncWebServerRequest *request) {
 // ============================================================================
 void handleUSBPayload(AsyncWebServerRequest *request) {
     if (!checkAuth(request)) return;
-    
+
     JsonDocument doc;
-    
+
     if (request->hasParam("payload", true)) {
         String payload = request->getParam("payload", true)->value();
         USBDriver::executePayload(payload.c_str());
@@ -335,7 +364,7 @@ void handleUSBPayload(AsyncWebServerRequest *request) {
         doc["status"] = "error";
         doc["message"] = "No payload or file specified";
     }
-    
+
     sendJson(request, doc);
 }
 
@@ -344,11 +373,11 @@ void handleUSBPayload(AsyncWebServerRequest *request) {
 // ============================================================================
 void handleNFCRead(AsyncWebServerRequest *request) {
     if (!checkAuth(request)) return;
-    
+
     JsonDocument doc;
-    
+
     NFCCard card = NFCDriver::readCard(2000);
-    
+
     if (card.valid) {
         doc["status"] = "success";
         doc["uid"] = NFCDriver::uidToString(card.uid, card.uidLength);
@@ -358,195 +387,14 @@ void handleNFCRead(AsyncWebServerRequest *request) {
         doc["status"] = "no_card";
         doc["message"] = "No card detected";
     }
-    
+
     sendJson(request, doc);
 }
 
 // ============================================================================
 // HTML Dashboard Page
 // ============================================================================
-const char* DASHBOARD_HTML = R"rawliteral(
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Monster S3 Dashboard</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Segoe UI', Tahoma, sans-serif; 
-            background: linear-gradient(135deg, #1a1a2e, #16213e);
-            color: #eee;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .container { max-width: 1200px; margin: 0 auto; }
-        h1 { 
-            color: #e94560; 
-            text-align: center; 
-            margin-bottom: 30px;
-            text-shadow: 0 0 20px rgba(233, 69, 96, 0.5);
-        }
-        .status-bar {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        .status-card {
-            background: rgba(255,255,255,0.1);
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-        }
-        .status-card h3 { color: #4ecdc4; font-size: 14px; }
-        .status-card p { font-size: 20px; margin-top: 5px; }
-        .attack-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-        }
-        .attack-category {
-            background: rgba(255,255,255,0.05);
-            padding: 20px;
-            border-radius: 15px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .attack-category h2 {
-            color: #4ecdc4;
-            margin-bottom: 15px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 10px;
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            margin: 5px 0;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s;
-        }
-        button.attack { background: #0f3460; color: white; }
-        button.attack:hover { background: #e94560; transform: scale(1.02); }
-        button.stop { background: #e94560; color: white; font-weight: bold; }
-        button.stop:hover { background: #ff6b6b; }
-        #log {
-            margin-top: 20px;
-            background: #000;
-            padding: 15px;
-            border-radius: 10px;
-            font-family: monospace;
-            font-size: 12px;
-            max-height: 200px;
-            overflow-y: auto;
-            color: #0f0;
-        }
-        .active { animation: pulse 1s infinite; }
-        @keyframes pulse {
-            0%, 100% { box-shadow: 0 0 5px #e94560; }
-            50% { box-shadow: 0 0 20px #e94560; }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🔥 MONSTER S3 🔥</h1>
-        
-        <div class="status-bar">
-            <div class="status-card"><h3>HEAP</h3><p id="heap">-</p></div>
-            <div class="status-card"><h3>UPTIME</h3><p id="uptime">-</p></div>
-            <div class="status-card"><h3>ATTACK</h3><p id="attack">-</p></div>
-            <div class="status-card"><h3>GPS</h3><p id="gps">-</p></div>
-        </div>
-        
-        <div class="attack-grid">
-            <div class="attack-category">
-                <h2>🔵 BLE</h2>
-                <button class="attack" onclick="start('ble_spam')">BLE Spam</button>
-                <button class="attack" onclick="start('sour_apple')">Sour Apple</button>
-                <button class="attack" onclick="start('swift_pair')">Swift Pair</button>
-            </div>
-            
-            <div class="attack-category">
-                <h2>📶 WiFi</h2>
-                <button class="attack" onclick="start('deauth')">Deauth</button>
-                <button class="attack" onclick="start('beacon_spam')">Beacon Spam</button>
-                <button class="attack" onclick="start('wardrive')">Wardriving</button>
-            </div>
-            
-            <div class="attack-category">
-                <h2>📡 RF SubGHz</h2>
-                <button class="attack" onclick="start('jammer_433')">Jammer 433</button>
-                <button class="attack" onclick="start('capture')">Capture</button>
-                <button class="attack" onclick="start('replay')">Replay</button>
-                <button class="attack" onclick="start('ghost_replay')">Ghost Replay</button>
-            </div>
-            
-            <div class="attack-category">
-                <h2>💳 NFC</h2>
-                <button class="attack" onclick="start('nfc_clone')">Clone Card</button>
-                <button class="attack" onclick="start('nfc_fault')">Fault Inject</button>
-                <button class="attack" onclick="start('nfc_phishing')">Phishing Tag</button>
-            </div>
-            
-            <div class="attack-category">
-                <h2>🔴 IR</h2>
-                <button class="attack" onclick="start('tv_off')">TV-B-Gone</button>
-                <button class="attack" onclick="start('ir_brute')">IR Brute</button>
-                <button class="attack" onclick="start('ir_clone')">IR Clone</button>
-            </div>
-            
-            <div class="attack-category">
-                <h2>💾 USB</h2>
-                <button class="attack" onclick="start('badusb')">BadUSB</button>
-                <button class="attack" onclick="start('usb_exfil')">WiFi Exfil</button>
-            </div>
-        </div>
-        
-        <button class="stop" style="margin-top: 20px;" onclick="stop()">🛑 STOP ALL ATTACKS</button>
-        
-        <div id="log"></div>
-    </div>
-    
-    <script>
-        function log(msg) {
-            const l = document.getElementById('log');
-            l.innerHTML = '[' + new Date().toLocaleTimeString() + '] ' + msg + '<br>' + l.innerHTML;
-        }
-        
-        function start(attack) {
-            fetch('/api/attack/' + attack)
-                .then(r => r.json())
-                .then(d => log('Started: ' + d.attack))
-                .catch(e => log('Error: ' + e));
-        }
-        
-        function stop() {
-            fetch('/api/stop')
-                .then(r => r.json())
-                .then(d => log('All attacks stopped'))
-                .catch(e => log('Error: ' + e));
-        }
-        
-        function updateStatus() {
-            fetch('/api/status')
-                .then(r => r.json())
-                .then(d => {
-                    document.getElementById('heap').textContent = Math.round(d.heap/1024) + 'KB';
-                    document.getElementById('uptime').textContent = Math.round(d.uptime/60) + 'm';
-                    document.getElementById('attack').textContent = d.attack.current;
-                    document.getElementById('gps').textContent = d.gps.valid ? '✓' : '✗';
-                });
-        }
-        
-        setInterval(updateStatus, 2000);
-        updateStatus();
-    </script>
-</body>
-</html>
-)rawliteral";
+#include "web_static/dashboard_html.h"
 
 // ============================================================================
 // SETUP WEB DASHBOARD
@@ -565,28 +413,147 @@ void setup_web_dashboard() {
 
     // Status API
     server.on("/api/status", HTTP_GET, handleStatus);
-    
+
     // List attacks
     server.on("/api/attacks", HTTP_GET, handleAttacksList);
-    
+
     // Stop attack
     server.on("/api/stop", HTTP_GET, handleAttackStop);
-    
+
     // NFC read
     server.on("/api/nfc/read", HTTP_GET, handleNFCRead);
-    
+
     // USB payload (POST)
     server.on("/api/usb/payload", HTTP_POST, handleUSBPayload);
-    
+
     // Dynamic attack routes
     server.on("^\\/api\\/attack\\/([a-z_]+)$", HTTP_GET, [](AsyncWebServerRequest *request) {
         String attackType = request->pathArg(0);
         handleAttackStart(request, attackType);
     });
-    
+
     // Start server
+    // ========================================================================
+    // CHAMELEON STUDIO API
+    // ========================================================================
+    
+    // API: WiFi Scan
+    server.on("/api/wifi/scan", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (!checkAuth(request)) return;
+        
+        int n = WiFi.scanNetworks();
+        JsonDocument doc;
+        JsonArray array = doc.to<JsonArray>();
+        
+        for (int i = 0; i < n; ++i) {
+            JsonObject net = array.add<JsonObject>();
+            net["ssid"] = WiFi.SSID(i);
+            net["rssi"] = WiFi.RSSI(i);
+            net["ch"] = WiFi.channel(i);
+            net["enc"] = WiFi.encryptionType(i);
+        }
+        
+        String response;
+        serializeJson(doc, response);
+        request->send(200, "application/json", response);
+    });
+
+    // API: File System (SD)
+    server.on("/api/files", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (!checkAuth(request)) return;
+        
+        JsonDocument doc;
+        JsonArray array = doc.to<JsonArray>();
+        
+        File root = SD.open("/");
+        if(!root){
+            request->send(500, "application/json", "{\"error\":\"SD Error\"}");
+            return;
+        }
+
+        File file = root.openNextFile();
+        while(file){
+            JsonObject f = array.add<JsonObject>();
+            f["name"] = String(file.name());
+            f["size"] = file.size();
+            f["dir"] = file.isDirectory();
+            file = root.openNextFile();
+        }
+        
+        String response;
+        serializeJson(doc, response);
+        request->send(200, "application/json", response);
+    });
+
+    // API: LED Test
+    server.on("/api/led_test", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (!checkAuth(request)) return;
+        // Blink internal LED
+        pinMode(2, OUTPUT);
+        for(int i=0; i<5; i++) {
+            digitalWrite(2, HIGH); delay(50);
+            digitalWrite(2, LOW); delay(50);
+        }
+        request->send(200, "application/json", "{\"status\":\"ok\"}");
+    });
+
+    // Serve HTML
+    server.on("/chameleon", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (!checkAuth(request)) return;
+        request->send_P(200, "text/html", CHAMELEON_HTML);
+    });
+
+    server.on("/ir", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (!checkAuth(request)) return;
+        request->send_P(200, "text/html", IR_REMOTE_HTML);
+    });
+
+    server.on("/api/ir/send", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, handleIRSend);
+
+    // GET Config
+    server.on("/api/chameleon", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (!checkAuth(request)) return;
+        JsonDocument doc;
+        ChameleonConfig cfg = ChameleonAnim::getConfig();
+        doc["idle"] = cfg.color_idle;
+        doc["attack"] = cfg.color_attack;
+        doc["success"] = cfg.color_success;
+        doc["error"] = cfg.color_error;
+        doc["sneaky"] = cfg.color_sneaky;
+        doc["eating"] = cfg.color_eating;
+        doc["party"] = cfg.color_party;
+        doc["rainbow"] = cfg.rainbow_party;
+        doc["speed"] = cfg.anim_speed;
+        sendJson(request, doc);
+    });
+
+    // POST Config (Update)
+    server.on("/api/chameleon", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+        if (!checkAuth(request)) return;
+        JsonDocument doc;
+        DeserializationError error = deserializeJson(doc, data);
+        if (!error) {
+            ChameleonConfig cfg = ChameleonAnim::getConfig();
+            if(doc.containsKey("idle")) cfg.color_idle = doc["idle"];
+            if(doc.containsKey("attack")) cfg.color_attack = doc["attack"];
+            if(doc.containsKey("success")) cfg.color_success = doc["success"];
+            if(doc.containsKey("eating")) cfg.color_eating = doc["eating"];
+            if(doc.containsKey("sneaky")) cfg.color_sneaky = doc["sneaky"];
+            if(doc.containsKey("party")) cfg.color_party = doc["party"];
+            if(doc.containsKey("rainbow")) cfg.rainbow_party = doc["rainbow"];
+            if(doc.containsKey("speed")) cfg.anim_speed = doc["speed"];
+            
+            ChameleonAnim::setConfig(cfg);
+            ChameleonAnim::saveConfig(); // Persist
+            
+            request->send(200, "application/json", "{\"status\":\"ok\"}");
+        } else {
+            request->send(400, "application/json", "{\"status\":\"error\"}");
+        }
+    });
+
     server.begin();
     Serial.println("[WEB] Dashboard Server Started");
-    Serial.println("[WEB] Connect to WiFi 'Monster_S3' password 'lele2025'");
+    Serial.println("[WEB] Connect to WiFi 'MorphNode' password 'lele2025'");
     Serial.println("[WEB] Open http://192.168.4.1 in browser");
 }

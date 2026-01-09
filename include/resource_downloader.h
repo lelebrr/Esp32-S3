@@ -1,11 +1,11 @@
 /**
  * @file resource_downloader.h
  * @brief HTTP Resource Downloader for ESP32-S3
- * 
+ *
  * Downloads TTS voices, Brazilian wordlists, and CVE databases via HTTP.
  * Uses PSRAM buffers for efficient streaming and SHA256 verification.
- * 
- * @author Monster S3 Team
+ *
+ * @author MorphNode Team
  * @date 2025-12-28
  */
 
@@ -40,16 +40,18 @@ enum DownloadResult {
  * @param filename Current file being downloaded
  * @return true to continue, false to cancel
  */
-typedef bool (*DownloadProgressCallback)(size_t downloaded, size_t total, const char* filename);
+typedef bool (*DownloadProgressCallback)(size_t downloaded, size_t total, const char *filename);
 
 // ============================================================================
 // DOWNLOAD URLS (configurable via /config/urls.json)
 // ============================================================================
 
-#define URL_TTS_PTBR_ESPEAK    "https://raw.githubusercontent.com/espeak-ng/espeak-ng/master/dictsource/pt_dict"
-#define URL_WORDLIST_ROCKYOU   "https://github.com/danielmiessler/SecLists/raw/master/Passwords/Leaked-Databases/rockyou-70.txt"
-#define URL_WORDLIST_BR        "https://raw.githubusercontent.com/kkrypt0nn/wordlists/main/wordlists/passwords/common_passwords.txt"
-#define URL_CVE_BR             "https://cve.circl.lu/api/query?vendor=br"
+#define URL_TTS_PTBR_ESPEAK "https://raw.githubusercontent.com/espeak-ng/espeak-ng/master/dictsource/pt_dict"
+#define URL_WORDLIST_ROCKYOU                                                                                 \
+    "https://github.com/danielmiessler/SecLists/raw/master/Passwords/Leaked-Databases/rockyou-70.txt"
+#define URL_WORDLIST_BR                                                                                      \
+    "https://raw.githubusercontent.com/kkrypt0nn/wordlists/main/wordlists/passwords/common_passwords.txt"
+#define URL_CVE_BR "https://cve.circl.lu/api/query?vendor=br"
 
 // ============================================================================
 // PUBLIC API
@@ -100,7 +102,7 @@ DownloadResult download_all_resources();
  * @param expectedSha256 Optional SHA256 hash to verify (NULL to skip)
  * @return DownloadResult status code
  */
-DownloadResult download_file(const char* url, const char* sdPath, const char* expectedSha256 = nullptr);
+DownloadResult download_file(const char *url, const char *sdPath, const char *expectedSha256 = nullptr);
 
 /**
  * @brief Check if essential resources are present on SD
@@ -114,7 +116,7 @@ bool resources_check_complete();
  * @param filesDownloaded Output: number of files downloaded
  * @param errors Output: number of errors encountered
  */
-void downloader_get_stats(size_t* bytesDownloaded, int* filesDownloaded, int* errors);
+void downloader_get_stats(size_t *bytesDownloaded, int *filesDownloaded, int *errors);
 
 /**
  * @brief Cancel ongoing download

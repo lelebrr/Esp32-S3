@@ -13,27 +13,29 @@
  * - TTS integration for voice feedback
  * - JSON export for analysis
  *
- * @author Monster S3 Team
+ * @author MorphNode Team
  * @date 2025-12-28
  */
 
 #include "q_learn_ia.h"
-#include "attacks_manager.h"
-#include "tts_espeak.h"
 #include <WiFi.h>
+#include "attacks_manager.h"
+#include "gps_driver.h"
+#include "rtc_driver.h"
+#include "tts_espeak.h"
 #include <SD.h>
 
 // ============================================================================
 // CONFIGURATION (now uses header constants)
 // ============================================================================
 
-#define ACTIONS AI_ACTIONS   // 8 actions from header
-#define STATES  AI_STATES    // 32 states from header
+#define ACTIONS AI_ACTIONS // 8 actions from header
+#define STATES AI_STATES   // Expanded to allow more combinations if needed, but keeping simple for now
 #define INVALID_MAX 9999.0f
 
 #define Q_TABLE_PATH "/ai/q_table.bin"
 #define HISTORY_PATH "/ai/history.json"
-#define SAVE_INTERVAL 5  // Save every N updates
+#define SAVE_INTERVAL 5 // Save every N updates
 
 // ============================================================================
 // STATE
@@ -43,7 +45,7 @@ static float *q_table = nullptr;
 static bool ai_initialized = false;
 static bool combat_mode = false;
 static int update_count = 0;
-static float epsilon = 0.30f;  // Start with 30% exploration
+static float epsilon = 0.30f; // Start with 30% exploration
 static uint32_t total_updates = 0;
 static float total_rewards = 0.0f;
 
@@ -55,14 +57,14 @@ static AttackType action_map[ACTIONS] = {
     ATTACK_NFC_FAULT,
     ATTACK_RF_GHOST_REPLAY,
     ATTACK_IR_BRUTE,
-    ATTACK_WIFI_PMKID,       // WPS-like (PMKID capture)
-    ATTACK_WIFI_BEACON_SPAM  // KRACK-like (beacon spam)
+    ATTACK_WIFI_PMKID,      // WPS-like (PMKID capture)
+    ATTACK_WIFI_BEACON_SPAM // KRACK-like (beacon spam)
 };
 
-static const char* action_names[ACTIONS] = {
+static const char *action_names[ACTIONS] = {
     "none",
     "BLE Spam",
-    "WiFi Deauth", 
+    "WiFi Deauth",
     "NFC Fault",
     "SubGHz Replay",
     "IR Brute",
@@ -76,22 +78,20 @@ static const char* action_names[ACTIONS] = {
 
 bool q_save_table() {
     if (!q_table || !ai_initialized) return false;
-    
+
     // Ensure directory exists
-    if (!SD.exists("/ai")) {
-        SD.mkdir("/ai");
-    }
-    
+    if (!SD.exists("/ai")) { SD.mkdir("/ai"); }
+
     File file = SD.open(Q_TABLE_PATH, FILE_WRITE);
     if (!file) {
         Serial.println("[AI] Failed to open q_table.bin for writing");
         return false;
     }
-    
+
     size_t size = STATES * ACTIONS * sizeof(float);
-    size_t written = file.write((uint8_t*)q_table, size);
+    size_t written = file.write((uint8_t *)q_table, size);
     file.close();
-    
+
     if (written == size) {
         Serial.printf("[AI] Q-Table saved to SD (%d bytes)\n", written);
         return true;
@@ -103,22 +103,22 @@ bool q_save_table() {
 
 bool q_load_table() {
     if (!q_table) return false;
-    
+
     if (!SD.exists(Q_TABLE_PATH)) {
         Serial.println("[AI] No saved Q-Table found, using defaults");
         return false;
     }
-    
+
     File file = SD.open(Q_TABLE_PATH, FILE_READ);
     if (!file) {
         Serial.println("[AI] Failed to open q_table.bin for reading");
         return false;
     }
-    
+
     size_t size = STATES * ACTIONS * sizeof(float);
-    size_t read = file.read((uint8_t*)q_table, size);
+    size_t read = file.read((uint8_t *)q_table, size);
     file.close();
-    
+
     if (read == size) {
         Serial.printf("[AI] Q-Table loaded from SD (%d bytes)\n", read);
         return true;
@@ -133,8 +133,7 @@ bool q_load_table() {
 static void save_history_entry(int state, int action, float reward) {
     File file = SD.open(HISTORY_PATH, FILE_APPEND);
     if (file) {
-        file.printf("{\"ts\":%lu,\"s\":%d,\"a\":%d,\"r\":%.2f}\n",
-                    millis(), state, action, reward);
+        file.printf("{\"ts\":%lu,\"s\":%d,\"a\":%d,\"r\":%.2f}\n", millis(), state, action, reward);
         file.close();
     }
 }
@@ -145,7 +144,7 @@ static void save_history_entry(int state, int action, float reward) {
 
 void setup_q_learn() {
     if (ai_initialized) return;
-    
+
     // Allocate in PSRAM if available
     size_t size = STATES * ACTIONS * sizeof(float);
     q_table = (float *)ps_malloc(size);
@@ -157,20 +156,17 @@ void setup_q_learn() {
 
     if (q_table) {
         // Initialize with optimistic values
-        for (int i = 0; i < STATES * ACTIONS; i++) {
-            q_table[i] = 0.5f;
-        }
-        
+        for (int i = 0; i < STATES * ACTIONS; i++) { q_table[i] = 0.5f; }
+
         // Try to load saved Q-Table from SD
-        if (SD.begin()) {
-            q_load_table();
-        }
-        
+        if (SD.begin()) { q_load_table(); }
+
         ai_initialized = true;
         update_count = 0;
         Serial.println("[AI] Q-Learning initialized");
-        Serial.printf("[AI] Q-Table: %d states x %d actions = %d entries\n", 
-                      STATES, ACTIONS, STATES * ACTIONS);
+        Serial.printf(
+            "[AI] Q-Table: %d states x %d actions = %d entries\n", STATES, ACTIONS, STATES * ACTIONS
+        );
     } else {
         Serial.println("[AI] FATAL: Q-Table allocation failed!");
     }
@@ -180,31 +176,57 @@ int get_env_state() {
     // =========================================================================
     // REAL ENVIRONMENT STATE DETECTION
     // =========================================================================
-    
+
     // 1. Battery Level (0-3) - Read from s3_driver
-    // Note: MonsterDriver::getBatteryVoltage() is defined in s3_driver.cpp
-    extern float temperatureRead();  // ESP32 internal
-    
-    // Estimate battery from system state since we can't call MonsterDriver directly here
+    // Note: MorphDriver::getBatteryVoltage() is defined in s3_driver.cpp
+    extern float temperatureRead(); // ESP32 internal
+
+    // Estimate battery from system state since we can't call MorphDriver directly here
     // (circular dependency issue) - use heap pressure as proxy
-    float heap_ratio = (float)ESP.getFreeHeap() / 320000.0f;  // ~320KB typical
+    float heap_ratio = (float)ESP.getFreeHeap() / 320000.0f; // ~320KB typical
     int bat_level;
-    if (heap_ratio > 0.7f) bat_level = 3;       // System healthy = battery OK
-    else if (heap_ratio > 0.5f) bat_level = 2;  
-    else if (heap_ratio > 0.3f) bat_level = 1;  
-    else bat_level = 0;                          // Low memory = stressed system
+    if (heap_ratio > 0.7f) bat_level = 3; // System healthy = battery OK
+    else if (heap_ratio > 0.5f) bat_level = 2;
+    else if (heap_ratio > 0.3f) bat_level = 1;
+    else bat_level = 0; // Low memory = stressed system
 
     // 2. Time of Day (0=Day 6-18h, 1=Night 18-6h)
-    // Estimate from uptime (assume boot at ~8am typical)
-    uint32_t uptime_hours = millis() / 3600000;
-    int estimated_hour = (8 + uptime_hours) % 24;
-    int time_state = (estimated_hour < 6 || estimated_hour >= 18) ? 1 : 0;
+    // Use GPS time if valid, else RTC, else uptime estimate
+    int hour = 0;
+    if (GPSDriver::isValid()) {
+        String timeStr = GPSDriver::getTimeString(); // HH:MM:SS
+        hour = timeStr.substring(0, 2).toInt();
+    } else {
+        if (RTCDriver::isRunning()) {
+            hour = RTCDriver::now().hour();
+        } else {
+            // Fallback to uptime
+            hour = (8 + (millis() / 3600000)) % 24;
+        }
+    }
+
+    int time_state = (hour < 6 || hour >= 18) ? 1 : 0;
+
+    // GPS Movement Check (Simple context: Moving 1 vs Stationary 0)
+    int move_state = 0;
+    static float last_lat = 0;
+    static float last_lon = 0;
+
+    if (GPSDriver::isValid()) {
+        float lat = GPSDriver::getLatitude();
+        float lon = GPSDriver::getLongitude();
+
+        // Simple distance check (very rough)
+        if (abs(lat - last_lat) > 0.0001 || abs(lon - last_lon) > 0.0001) { move_state = 1; }
+        last_lat = lat;
+        last_lon = lon;
+    }
 
     // 3. Environment Activity (0-2) based on WiFi activity
-    int env_activity = 0;  // Low
-    
+    int env_activity = 0; // Low
+
     if (WiFi.status() == WL_CONNECTED) env_activity = 1;
-    
+
     // Check for nearby networks
     int n = WiFi.scanComplete();
     if (n == WIFI_SCAN_RUNNING) {
@@ -215,15 +237,24 @@ int get_env_state() {
         // Restart async scan periodically
         static uint32_t lastScan = 0;
         if (millis() - lastScan > 60000) {
-            WiFi.scanNetworks(true, true);  // Async, include hidden
+            WiFi.scanNetworks(true, true); // Async, include hidden
             lastScan = millis();
         }
     }
 
     // Combine into state index (32 possible states)
-    int state = bat_level + (time_state * 4) + (env_activity * 8);
+    // Combine into state:
+    // Bat(4) * Time(2) * Env(3) * Move(2) = 48 states
+    // We need to fit in STATES (defined in header, likely 32 or 64. Ideally we increase header define).
+    // Mapping:
+    // Bit 0-1: Battery (0-3)
+    // Bit 2: Time (0-1)
+    // Bit 3-4: Env Activity (0-2)
+    // Bit 5: Movement (0-1)
+
+    int state = bat_level + (time_state << 2) + (env_activity << 3) + (move_state << 5);
     if (state >= STATES) state = STATES - 1;
-    
+
     return state;
 }
 
@@ -248,7 +279,7 @@ int q_choose_action(int state) {
             best_action = a;
         }
     }
-    
+
     Serial.printf("[AI] Exploiting: best action %d (Q=%.3f)\n", best_action, max_val);
     return best_action;
 }
@@ -256,8 +287,8 @@ int q_choose_action(int state) {
 void q_update(int state, int action, float reward) {
     if (!ai_initialized) return;
 
-    float alpha = 0.1f;  // Learning rate
-    float gamma = 0.9f;  // Discount factor
+    float alpha = 0.1f; // Learning rate
+    float gamma = 0.9f; // Discount factor
 
     float current = q_table[state * ACTIONS + action];
 
@@ -267,9 +298,7 @@ void q_update(int state, int action, float reward) {
     // Find max Q for next state
     float max_next = -INVALID_MAX;
     for (int a = 0; a < ACTIONS; a++) {
-        if (q_table[next_state * ACTIONS + a] > max_next) {
-            max_next = q_table[next_state * ACTIONS + a];
-        }
+        if (q_table[next_state * ACTIONS + a] > max_next) { max_next = q_table[next_state * ACTIONS + a]; }
     }
 
     // Bellman equation update
@@ -280,12 +309,13 @@ void q_update(int state, int action, float reward) {
     total_updates++;
     total_rewards += reward;
 
-    Serial.printf("[AI] Update: S%d A%d R%.2f -> Q%.3f (total: %d)\n",
-                  state, action, reward, new_q, total_updates);
+    Serial.printf(
+        "[AI] Update: S%d A%d R%.2f -> Q%.3f (total: %d)\n", state, action, reward, new_q, total_updates
+    );
 
     // Save history
     save_history_entry(state, action, reward);
-    
+
     // Periodic save to SD and decay exploration
     update_count++;
     if (update_count >= SAVE_INTERVAL) {
@@ -302,15 +332,11 @@ void q_update(int state, int action, float reward) {
 void ai_set_combat_mode(bool enabled) {
     combat_mode = enabled;
     Serial.printf("[AI] Combat mode: %s\n", enabled ? "ENABLED" : "DISABLED");
-    
-    if (enabled) {
-        tts_speak("ia_escolheu");
-    }
+
+    if (enabled) { tts_speak("ia_escolheu"); }
 }
 
-bool ai_get_combat_mode() {
-    return combat_mode;
-}
+bool ai_get_combat_mode() { return combat_mode; }
 
 // ============================================================================
 // MAIN LOOP
@@ -318,10 +344,10 @@ bool ai_get_combat_mode() {
 
 void ai_loop_step() {
     if (!ai_initialized) return;
-    if (!combat_mode) return;  // Only run in combat mode
+    if (!combat_mode) return; // Only run in combat mode
 
     static unsigned long last_step = 0;
-    
+
     // Take decision every 30 seconds
     if (millis() - last_step < 30000) return;
     last_step = millis();
@@ -330,8 +356,7 @@ void ai_loop_step() {
     int action_idx = q_choose_action(state);
     AttackType attack = action_map[action_idx];
 
-    Serial.printf("[AI] Decision: State %d -> Action %d (%s)\n", 
-                  state, action_idx, action_names[action_idx]);
+    Serial.printf("[AI] Decision: State %d -> Action %d (%s)\n", state, action_idx, action_names[action_idx]);
 
     // Execute attack
     if (attack != ATTACK_NONE) {
@@ -343,11 +368,11 @@ void ai_loop_step() {
         } else {
             tts_speak("ataque_iniciado");
         }
-        
-        vTaskDelay(500 / portTICK_PERIOD_MS);  // Wait for TTS
-        
+
+        vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for TTS
+
         attacks_start(attack);
-        
+
         // Initial reward for activity
         q_update(state, action_idx, 0.1f);
     } else {
@@ -363,10 +388,10 @@ void ai_loop_step() {
 
 void ai_give_reward(float reward) {
     if (!ai_initialized) return;
-    
+
     int state = get_env_state();
     AttackType current = attacks_get_current();
-    
+
     // Find action index for current attack
     int action_idx = 0;
     for (int i = 0; i < ACTIONS; i++) {
@@ -375,7 +400,7 @@ void ai_give_reward(float reward) {
             break;
         }
     }
-    
+
     q_update(state, action_idx, reward);
     Serial.printf("[AI] External reward: %.2f for action %d\n", reward, action_idx);
 }
@@ -394,14 +419,14 @@ void ai_report_failure() {
 // NEW ENHANCED API IMPLEMENTATION
 // ============================================================================
 
-void ai_get_statistics(AIStats* stats) {
+void ai_get_statistics(AIStats *stats) {
     if (!stats || !ai_initialized) return;
-    
+
     stats->totalUpdates = total_updates;
     stats->totalRewards = (uint32_t)total_rewards;
     stats->avgReward = (total_updates > 0) ? (total_rewards / total_updates) : 0.0f;
     stats->explorationRate = epsilon;
-    
+
     // Find best overall action
     float max_val = -INVALID_MAX;
     int best_action = 0;
@@ -416,21 +441,26 @@ void ai_get_statistics(AIStats* stats) {
     }
     stats->bestAction = best_action;
     stats->bestQValue = max_val;
-    
-    Serial.printf("[AI] Stats: updates=%d, avgR=%.2f, ε=%.2f, best=%d(Q=%.2f)\n",
-                  stats->totalUpdates, stats->avgReward, stats->explorationRate,
-                  stats->bestAction, stats->bestQValue);
+
+    Serial.printf(
+        "[AI] Stats: updates=%d, avgR=%.2f, ε=%.2f, best=%d(Q=%.2f)\n",
+        stats->totalUpdates,
+        stats->avgReward,
+        stats->explorationRate,
+        stats->bestAction,
+        stats->bestQValue
+    );
 }
 
-bool ai_export_qtable_json(const char* path) {
+bool ai_export_qtable_json(const char *path) {
     if (!ai_initialized || !q_table) return false;
-    
+
     File file = SD.open(path, FILE_WRITE);
     if (!file) {
         Serial.printf("[AI] Failed to open: %s\n", path);
         return false;
     }
-    
+
     file.println("{");
     file.printf("  \"version\": 2,\n");
     file.printf("  \"states\": %d,\n", STATES);
@@ -439,11 +469,11 @@ bool ai_export_qtable_json(const char* path) {
     file.printf("  \"total_updates\": %d,\n", total_updates);
     file.println("  \"action_names\": [");
     for (int a = 0; a < ACTIONS; a++) {
-        file.printf("    \"%s\"%s\n", action_names[a], (a < ACTIONS-1) ? "," : "");
+        file.printf("    \"%s\"%s\n", action_names[a], (a < ACTIONS - 1) ? "," : "");
     }
     file.println("  ],");
     file.println("  \"q_table\": [");
-    
+
     for (int s = 0; s < STATES; s++) {
         file.print("    [");
         for (int a = 0; a < ACTIONS; a++) {
@@ -454,11 +484,11 @@ bool ai_export_qtable_json(const char* path) {
         if (s < STATES - 1) file.println(",");
         else file.println();
     }
-    
+
     file.println("  ]");
     file.println("}");
     file.close();
-    
+
     Serial.printf("[AI] Q-table exported to: %s\n", path);
     return true;
 }
@@ -468,15 +498,13 @@ void ai_set_exploration_rate(float new_epsilon) {
     Serial.printf("[AI] Exploration rate set to: %.2f\n", epsilon);
 }
 
-float ai_get_exploration_rate() {
-    return epsilon;
-}
+float ai_get_exploration_rate() { return epsilon; }
 
 void ai_decay_exploration() {
     // Decay from 30% to 5% over time
     const float min_epsilon = 0.05f;
-    const float decay_rate = 0.995f;  // Slow decay
-    
+    const float decay_rate = 0.995f; // Slow decay
+
     if (epsilon > min_epsilon) {
         epsilon *= decay_rate;
         if (epsilon < min_epsilon) epsilon = min_epsilon;
@@ -486,30 +514,28 @@ void ai_decay_exploration() {
 
 void ai_reset_qtable() {
     if (!q_table) return;
-    
+
     // Reset all values to optimistic 0.5
-    for (int i = 0; i < STATES * ACTIONS; i++) {
-        q_table[i] = 0.5f;
-    }
-    
+    for (int i = 0; i < STATES * ACTIONS; i++) { q_table[i] = 0.5f; }
+
     // Reset statistics
     total_updates = 0;
     total_rewards = 0.0f;
-    epsilon = 0.30f;  // Reset exploration
-    
+    epsilon = 0.30f; // Reset exploration
+
     // Save empty Q-table
     q_save_table();
-    
+
     Serial.println("[AI] Q-table reset to initial values");
 }
 
 int ai_get_best_action() {
     if (!ai_initialized || !q_table) return 0;
-    
+
     int state = get_env_state();
     int best_action = 0;
     float max_val = -9999.0f;
-    
+
     for (int a = 0; a < ACTIONS; a++) {
         float val = q_table[state * ACTIONS + a];
         if (val > max_val) {
@@ -517,8 +543,7 @@ int ai_get_best_action() {
             best_action = a;
         }
     }
-    
+
     Serial.printf("[AI] Best action for state %d: %d (Q=%.3f)\n", state, best_action, max_val);
     return best_action;
 }
-

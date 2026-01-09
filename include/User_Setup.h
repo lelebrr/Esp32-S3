@@ -1,18 +1,18 @@
 /**
  * @file User_Setup.h
- * @brief TFT_eSPI User Setup for Monster S3 Firmware
- * 
+ * @brief TFT_eSPI User Setup for MorphNode Firmware
+ *
  * =============================================================================
  * DISPLAY: MSP2402 - 2.4" ILI9341 TFT 240x320 with XPT2046 Touch
  * =============================================================================
  * Reference: https://www.lcdwiki.com/2.4inch_SPI_Module_ILI9341_SKU:MSP2402
- * 
+ *
  * MCU: ESP32-S3-DevKitC-1 N8R2 (8MB Flash, 2MB PSRAM)
- * 
+ *
  * This file is used by TFT_eSPI library. Most settings are also defined
  * in platformio.ini build_flags for consistency.
- * 
- * @author Monster S3 Team
+ *
+ * @author MorphNode Team
  * @date 2025-12-23
  */
 
@@ -28,7 +28,7 @@
 // =============================================================================
 // DISPLAY DIMENSIONS
 // =============================================================================
-#define TFT_WIDTH  240
+#define TFT_WIDTH 240
 #define TFT_HEIGHT 320
 
 // =============================================================================
@@ -37,27 +37,27 @@
 // Using FSPI (SPI3) on ESP32-S3
 
 // Display SPI Pins
-#define TFT_MOSI  13   // SPI Master Out Slave In
-#define TFT_SCLK  14   // SPI Clock
-#define TFT_MISO  -1   // Not used (display is write-only)
+#define TFT_MOSI 13 // SPI Master Out Slave In
+#define TFT_SCLK 14 // SPI Clock
+#define TFT_MISO -1 // Not used (display is write-only)
 
 // Display Control Pins
-#define TFT_CS    10   // Chip Select
-#define TFT_DC    12   // Data/Command
-#define TFT_RST   11   // Reset
-#define TFT_BL    21   // Backlight (PWM controlled)
+#define TFT_CS 10  // Chip Select
+#define TFT_DC 12  // Data/Command
+#define TFT_RST 11 // Reset
+#define TFT_BL 21  // Backlight (PWM controlled)
 
 // =============================================================================
 // TOUCH CONTROLLER - XPT2046
 // =============================================================================
-#define TOUCH_CS  15   // Touch Chip Select
+#define TOUCH_CS 15 // Touch Chip Select
 
 // =============================================================================
 // SPI FREQUENCIES
 // =============================================================================
-#define SPI_FREQUENCY        40000000   // 40MHz for display
-#define SPI_READ_FREQUENCY   20000000   // 20MHz for reading
-#define SPI_TOUCH_FREQUENCY   2500000   // 2.5MHz for touch
+#define SPI_FREQUENCY 40000000      // 40MHz for display
+#define SPI_READ_FREQUENCY 20000000 // 20MHz for reading
+#define SPI_TOUCH_FREQUENCY 2500000 // 2.5MHz for touch
 
 // =============================================================================
 // COLOR AND DISPLAY SETTINGS

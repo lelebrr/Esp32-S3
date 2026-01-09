@@ -13,9 +13,9 @@
 | BLE | 7 | Spam iOS/Android/Windows/Samsung, iBeacon |
 | RF | 10 | Jammer, Bruteforce, Replay, Spectrum, De Bruijn, Protocol Det |
 | RFID | 6 | Clone, EMV Reader, Chameleon, Amiibo |
-| Ethernet | 4 | ARP Spoof, DHCP Starvation, MAC Flood |
+| RFID | 6 | Clone, EMV Reader, Chameleon, Amiibo |
 | IR | 4 | TV-B-Gone, Jammer, Custom, Receiver |
-| NRF24 | 3 | Jammer 2.4GHz, Spectrum, Channel Hop |
+
 
 ---
 
@@ -235,37 +235,7 @@
 
 ---
 
-## 🌐 Ataques Ethernet (W5500)
 
-### ARP Scanner
-
-- **Arquivo:** `ARPScanner.cpp`
-- **Função:** Descobre hosts na rede local
-
-### ARP Spoofer
-
-- **Arquivo:** `ARPSpoofer.cpp`
-- **Função:** Man-in-the-Middle via ARP
-- **Uso:** Interceptar tráfego de rede
-
-### ARP Poisoner
-
-- **Arquivo:** `ARPoisoner.cpp`
-- **Função:** Envenenar tabela ARP de hosts
-
-### DHCP Starvation
-
-- **Arquivo:** `DHCPStarvation.cpp`
-- **Função:** Esgota pool DHCP do servidor
-- **Efeito:** Novos dispositivos não conseguem IP
-
-### MAC Flooding
-
-- **Arquivo:** `MACFlooding.cpp`
-- **Função:** Inunda switch com MACs falsos
-- **Efeito:** Switch entra em modo hub
-
----
 
 ## 📺 Ataques Infravermelho
 
@@ -303,28 +273,7 @@
 
 ---
 
-## 📡 Ataques NRF24 (2.4GHz)
 
-### NRF24 Jammer
-
-- **Arquivo:** `nrf_jammer.cpp`
-- **Função:** Interfere em comunicações 2.4GHz
-- **Alvos:** Mouses, teclados, drones
-
-### Channel Jammer
-
-- **Função:** Jammer em canal específico
-
-### Channel Hopper
-
-- **Função:** Jammer alternando entre canais
-
-### 2.4G Spectrum
-
-- **Arquivo:** `nrf_spectrum.cpp`
-- **Função:** Analisador de espectro 2.4GHz
-
----
 
 ## ⌨️ Ataques BadUSB/HID
 

@@ -9,5 +9,5 @@
   "cve_database": [
     "https://cve.circl.lu/api/query?vendor=br"
   ],
-  "update_check_url": "https://api.github.com/repos/monster-s3/firmware/releases/latest"
+  "update_check_url": "https://api.github.com/repos/morphnode/firmware/releases/latest"
 }

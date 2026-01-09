@@ -35,7 +35,7 @@
         "arduino",
         "espidf"
     ],
-    "name": "Monster S3 N16R8",
+    "name": "MorphNode N16R8",
     "vendor": "Espressif",
     "upload": {
         "flash_size": "16MB",
